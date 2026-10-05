@@ -1,28 +1,32 @@
-/* Reading-oriented backlink previews adapt to the note column, not the window. */
+/* Reading-oriented backlink previews adapt to the note column, not the window.
+   卡片只承担「引用区」一个层级：8px 圆角（§5.1 lg 档）+ 1px 语义线，不叠投影；
+   标题走 14px 分组标题档（§3a），hover/active 一律 token（§4.5）。 */
 .backlink-reading {
   container-type: inline-size;
   padding: 16px;
-  background: var(--nk-backlink-bg, var(--nk-sidebar));
-  border-radius: 16px;
-}
-html body:not(.night-mode) section.backlink-reading {
-  background-color: #f5f5f8 !important;
-}
-html body section.backlink-reading {
-  background-color: #f5f5f8 !important;
-}
-html body.night-mode section.backlink-reading {
-  background-color: #222d32 !important;
+  background: var(--nk-backlink-bg, var(--nk-canvas));
+  border: 1px solid var(--nk-line);
+  border-radius: 8px;
 }
 .backlink-reading h2 {
   margin: 0;
   color: var(--nk-backlink-heading, var(--nk-muted));
-  font-size: 17px;
-  line-height: 24px;
+  font-size: 14px;
+  line-height: 20px;
   font-weight: 600;
 }
-.backlink-reading h2 span { margin-left: 8px; font-size: 13px; font-weight: 400; }
-.backlink-reading-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; margin: 0 -8px; }
+.backlink-reading h2 span {
+  margin-left: 8px;
+  color: var(--nk-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.backlink-reading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0 16px;
+  margin: 0 -8px;
+}
 .backlink-reading-entry {
   display: flex;
   flex-direction: column;
@@ -35,7 +39,7 @@ html body.night-mode section.backlink-reading {
   margin-top: 8px;
   padding: 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--nk-backlink-title, var(--nk-ink));
   font: inherit;
@@ -43,9 +47,9 @@ html body.night-mode section.backlink-reading {
   cursor: pointer;
   transition: background-color 100ms linear;
 }
-.backlink-reading-entry:hover { background: rgba(0, 0, 0, .05); transition-duration: 50ms; }
-.backlink-reading-entry:active { background: rgba(0, 0, 0, .1); }
-.backlink-reading-entry:focus-visible { outline: 2px solid var(--node-text-link); outline-offset: 2px; }
+.backlink-reading-entry:hover { background: var(--nk-hover); transition-duration: 50ms; }
+.backlink-reading-entry:active { background: var(--nk-tab-hover); }
+.backlink-reading-entry:focus-visible { outline: 2px solid var(--nk-accent); outline-offset: 2px; }
 .backlink-reading-title {
   flex-shrink: 0;
   display: -webkit-box;
@@ -573,6 +577,116 @@ html body .nui-dialog.dialog-item-float:not([dialog-list-mode='andy']) > .nui-di
   height: auto !important;
   max-height: calc(100vh - 2.5em - 45px) !important;
   overflow-y: auto !important;
+}
+
+/* Cmd+点击 / 悬停打开的浮层预览窗：同一套轻量窗口 chrome。
+   头部常驻（用户实测拍板）：曾试过「去标题栏、三键悬浮到标题行与星标合并」，
+   拖拽区太小体验差，已还原。头部=文档流内常显的 13px 窗口条 + 1px 底线。
+   边界=1px 边线 + --nk-shadow 浅投影（§9 登记例外：用户拍板「浮层必须有
+   可分辨边界」，纯边线在白纸面上不可辨）。 */
+html body .nui-dialog.dialog-float-viewer {
+  box-shadow: var(--nk-shadow);
+}
+html body .nui-dialog.dialog-float-viewer > .nui-dialog-head {
+  position: relative;
+  opacity: 1 !important;
+  min-height: 44px;
+  border-bottom: 1px solid var(--nk-line);
+  background: var(--nk-surface);
+}
+html body .nui-dialog.dialog-float-viewer .nui-dialog-title,
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head .dialog-title,
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head > .node-text {
+  opacity: 1 !important;
+  overflow: hidden;
+  color: var(--nk-muted);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* 头部动作按钮是 nui-symbol（div + svg），不是 button；尺寸统一 28px 盒 / 16px 图标。 */
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head .nui-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--nk-muted);
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head .nui-symbol svg {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head .nui-symbol:hover {
+  background: var(--nk-hover);
+  color: var(--nk-ink);
+}
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head .nui-symbol:focus-visible {
+  outline: 2px solid var(--nk-accent);
+  outline-offset: 2px;
+}
+/* 头部动作按钮是 nui-symbol（div + svg），不是 button；尺寸统一 28px 盒 / 16px 图标。 */
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head .nui-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--nk-muted);
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head .nui-symbol svg {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head .nui-symbol:hover {
+  background: var(--nk-hover);
+  color: var(--nk-ink);
+}
+html body .nui-dialog.dialog-float-viewer .nui-dialog-head .nui-symbol:focus-visible {
+  outline: 2px solid var(--nk-accent);
+  outline-offset: 2px;
+}
+html body .nui-dialog.dialog-float-viewer > .nui-dialog-body {
+  background: var(--nk-surface);
+}
+/* 顶部留白收敛：整页阅读的 2em body 上边距 + 标题节点 20px margin 是给
+   主区滚动呼吸用的；浮窗已有常驻窗口条，叠三层留白会被读成「标题飘在中间」。
+   只收标题节点（node-topic）的首屏 margin，不改正文行距。
+   body 边距选择器须与编译层 .floatview-container:not([data-mode=andy]) 版本
+   同权重或更高，否则 2em 会漏回来。 */
+html body
+  .floatview-container
+  .dialog-float-viewer
+  > .nui-dialog-body.node-body {
+  margin-top: 0;
+}
+html body .nui-dialog.dialog-float-viewer .item-editor > .node-top.node-topic > .node-head {
+  margin-top: 8px;
+}
+/* 「N 个提及」（未链接引用）是整页阅读的写作辅助；浮层是快速预览，
+   不需要展示这个板块及其排序/过滤工具条。 */
+html body .dialog-float-viewer .unlinked-ref,
+html body .dialog-float-viewer [id$='-unlinked-sorter-filter-extra'] {
+  display: none;
+}
+/* 引用区在整页阅读里留 100px 底部呼吸是合理的；浮窗高度跟内容走，
+   留白会被读成「底下全是空的」。reference-component 是 emotion 生成类
+   （css-<hash>-reference-component），必须用子串选择器命中。 */
+html body .nui-dialog.dialog-float-viewer [class*='reference-component'] {
+  padding-bottom: 24px;
+}
+html body .nui-dialog.dialog-float-viewer .reference-comp-extra {
+  color: var(--nk-muted);
 }
 
 /* 修复：浮窗折叠标签条的空容器以 pointer-events:all 拦截视口底部 2em 内的所有点击

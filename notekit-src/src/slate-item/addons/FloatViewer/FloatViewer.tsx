@@ -357,6 +357,8 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         body: <FloatViewerComp {...props} />,
         DialogProps: {
           id: dialogId,
+          // 与 Andy 阅读列同宽（DESIGN.md §5 拍板值 625px），浮层预览与列阅读同一内容度量。
+          width: 625,
           // Note previews remain modeless; callers can opt in for utility panels.
           mask: false,
           canClickWay: (ev) => {

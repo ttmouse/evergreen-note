@@ -8,7 +8,7 @@ import { FloatDialogProps, FloatViewerProps } from '../FloatViewer/FloatViewer'
 import { isEmpty } from '../../utils/isEmpty'
 import { RouteToResult } from '../Router/Router'
 
-type ClickInfo = { target: HTMLElement | null; time: number }
+type ClickInfo = { target: HTMLElement | null; time: number; x: number; y: number }
 
 const clickInfo: ClickInfo = {} as any
 
@@ -18,7 +18,34 @@ export function createKeyClickAddon({ app, $ }: NewAddonParams) {
     config = {}
 
     openInDialog(options: FloatViewerProps) {
-      $.floatViewer.show(options)
+      // 浮层贴着点击点、偏鼠标右侧弹出。Router 的 Cmd+点击分支等入口没有
+      // MouseEvent，统一用最近一次 mousedown 的坐标（clickInfo）。
+      // tryShowExisting 会复用旧窗口并忽略 SnapProps，所以 show() 之后
+      // 必须显式 setPosition，复用旧窗时也重新落位。
+      const dialogId = $.floatViewer.show({
+        ...options,
+        DialogProps: {
+          // 笔记预览浮窗是非模态的：showDialog 里 mask 默认 true 会给
+          // Router 的 Cmd+点击分支套上 app-modal 黑色蒙层，这里显式关掉
+          // （调用方仍可用自己的 mask 覆盖）。
+          mask: false,
+          ...options.DialogProps,
+          SnapProps: {
+            ...options.DialogProps?.SnapProps,
+            targetBox: {
+              left: clickInfo.x,
+              top: clickInfo.y,
+              width: 0,
+              height: 0,
+            },
+            place: ['right-out', 'middle'],
+          },
+        },
+      })
+      const left = Math.min(clickInfo.x + 16, window.innerWidth - 625 - 16)
+      const top = Math.min(Math.max(clickInfo.y - 24, 16), window.innerHeight - 160)
+      $.dialog.store.setPosition(dialogId, left, top)
+      return dialogId
     }
 
     openInRightSide(ky: KyString) {
@@ -84,6 +111,8 @@ export function createKeyClickAddon({ app, $ }: NewAddonParams) {
       document.addEventListener('mousedown', (e) => {
         clickInfo.target = e.target as HTMLElement
         clickInfo.time = Date.now()
+        clickInfo.x = e.clientX
+        clickInfo.y = e.clientY
       })
 
       // const { scrollToTop } = $.main
@@ -115,7 +144,8 @@ export function createKeyClickAddon({ app, $ }: NewAddonParams) {
             return
           }
           if (keyState.isPressed('mod') && app.isAddonEnabled('floatViewer')) {
-            $.floatViewer.show({ item: topicItem, isPin: true })
+            // 浮层贴着点击点、偏鼠标右侧弹出（落位逻辑统一在 openInDialog）。
+            $.keyClick.openInDialog({ item: topicItem, isPin: true })
           } else if (keyState.isPressed('shift') && app.isAddonEnabled('main')) {
             $.router.to(topicItem.ky, {}, target)
           } else if (keyState.isPressed('alt') && app.isAddonEnabled('andy')) {

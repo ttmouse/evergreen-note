@@ -84,6 +84,35 @@ export function createAndyAddon({ app, $ }: NewAddonParams) {
       $.keyClick.openInAndyMode(ky, pos)
     }
 
+    /**
+     * 页面级导航（每日/主题/图谱等注册页面）在 Andy 模式下替换当前活动列。
+     * 页面不是阅读路径的一环：点击页面 = 当前列让位换成该页面，
+     * 而不是像笔记链接那样在右侧新增一列（2026-10-06 用户拍板，DESIGN.md §3.6）。
+     */
+    navigatePage(ky: KyString) {
+      const path = ky.replace(/^\/|\/$/g, '')
+      const existing = app.states.floatViewerList.find(dlg => dlg.key === path)
+      const activeId = app.states.floatViewerActiveKey
+      const pos = $.dialog.store.order.indexOf(activeId)
+      if (existing) {
+        // 目标页面已经是列：当前活动列让位（它本身就是目标页时除外），聚焦已有页
+        if (activeId && pos >= 0 && activeId !== existing.dialogId) $.dialog.close(activeId)
+        $.floatViewer.unfold(existing.dialogId)
+        $.andy.scrollIntoView(existing.dialogId)
+        return
+      }
+      if (pos < 0) {
+        // 没有可替换的活动列，退回常规开列
+        $.keyClick.openInAndyMode(ky)
+        return
+      }
+      // 原位替换：关闭当前活动列，目标页面在同一位置打开。
+      // 若关掉的是最后一列，FloatViewer.delete 的定时兜底会在回调里
+      // 复查列表仍为空才重开 diaries；此处同步开列，不会触发。
+      $.dialog.close(activeId)
+      $.keyClick.openInAndyMode(ky, pos)
+    }
+
     scrollIntoView(dialogId: string, attempt = 0) {
       const el = document.getElementById(dialogId)
       if (!el && attempt < 5) {
@@ -175,7 +204,10 @@ export function createAndyAddon({ app, $ }: NewAddonParams) {
 
     addonRun() {
       appendStyle(`
-        .dialog-float-viewer.nui-dialog {
+        /* 仅 Andy 多栏模式去边线/投影：列要无缝拼接成一张纸。
+           浮层预览窗（fixed 模式）保留 workspace-theme 的边线+投影，
+           否则独立小窗在浅色纸面上没有可分辨边界。 */
+        .floatview-container[data-mode='andy'] .dialog-float-viewer.nui-dialog {
           border: 0 !important;
           outline: none !important;
           box-shadow: none !important;

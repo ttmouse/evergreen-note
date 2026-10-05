@@ -77,3 +77,28 @@
 - **修复**：规则选择器收窄为 `html body .MuiDialog-root .MuiBackdrop-root`——真 modal（MUI Dialog）才上深色蒙层，Popover（含菜单/Select）保持透明。`.nui-mask` 只由自研 Dialog 的 `mask` 开关渲染，不受影响。
 - **教训**：给共享组件类名（如 MuiBackdrop-root）加 `!important` 全局样式前，必须先枚举该类的全部使用方（Dialog、Popover、Select 都用 backdrop）；“不可见”也是样式，会被 `!important` 覆盖。
 
+
+## 2026-10-05（T3：颜色分层与组件逐态入正本）：DESIGN.md §4 扩写 + 新增 §4.5
+- **拍了**：①§4 补「颜色来源分层与归属」五层定界——1 --nk-*（契约层）/ 2 旧通用名（桥接别名，只改值不删行）/ 3 NightMode --dark-*（待收编过渡层，禁止新增，映射建议五条标待拍板）/ 4 all-styles 裸 hex（旧遗留层，随挂起的清欠批）/ 5 theme.ts --cl-* 色板（项目自治层，正本只登记边界不约束值：工作区 chrome 不引 --cl-*，--cl-* 不上工作区界面语义，交叉类随清欠批归类）。②新增 §4.5 组件逐态：逐态基线实测入正本——hover 已 token 化（--nk-hover/--nk-tab-hover）、focus 环三源待统一、active 单点无 token 不立新、disabled 零覆盖暂不立规则、选中态维持 .is-active 单信号。
+- **为什么**：T4 清 !important 193 处需要判定依据；颜色五层中 3/5 层游离正本之外是 audit 第一节最严重项。现状如实记录，收敛值一律标【待拍板】——延续上轮口径。
+- **否掉**：①--dark-* 立即收编/改代码——token 清欠挂起中，本单边界「只写正本不改代码」；②disabled 立即立规则——现状浏览器默认降灰无可用性事故，无事实支撑不预立法；③focus 环色直接定值——三源并存是现状描述，选 accent 还是立新 token 影响后续多批，留待 T4 前拍板。
+- **待拍板清单**（下次拍板时一次过）：--dark-* 五条映射、focus 环色归属（--nk-accent 或新 --nk-focus-ring）、active pressed 表达（hover 加深档或个案保留）。
+
+## 2026-10-06（浮层预览窗样式对齐）：backlink-reading 卡片与 float-viewer 窗口 chrome 归档位
+- **拍了**：①「链接到这篇笔记」卡片去 16px 大圆角与硬编码灰底（#f5f5f8/#222d32 三条 !important 规则删除），改 `--nk-backlink-bg` + 1px `--nk-line` + 8px 圆角（§5.1 lg 档）；标题 17px→14px（§3a 分组标题档，17px 本就是待并档）；计数徽标 13→12px；条目圆角 8→6（Control 档）；hover/active 裸 rgba 归 `--nk-hover`/`--nk-tab-hover`（§4.5 点名残留清零）；focus 环色归 `--nk-accent`；两列网格改 `auto-fill/minmax(220px,1fr)`——浮窗 500px 宽下两列过挤。②浮层预览窗（.dialog-float-viewer）补窗口 chrome：头部 44px + 1px 底线 + 标题 13px muted 单行省略（窗口条层级须低于正文标题，§8.3）；头部按钮 28px hover token 化；正文底色 `--nk-surface`；浮窗内引用区 padding-bottom 100px→24px（浮窗高度跟内容，大留白被读成空）；底部引用工具条文字归 `--nk-muted`。
+- **为什么**：用户目检反馈“浮层模式面板和整体设计风格不搭”；卡片旧样式是 token 化之前的散值层（越档字号 + 硬编码 + 多信号叠加），窗口头部则从未入主题体系。
+- **否掉**：给浮窗加投影提层级——§1 浮层不用投影既有拍板（边线表达层级），不翻案；backlink-reading 立独立新 token——`--nk-backlink-*` 三枚已存在，够用。
+- **验收**：浅色/夜间各目检 Cmd+点击浮窗：头部弱于正文 h1、卡片无双重边线、hover 态与全站一致；grep 确认 backlink-reading 段零裸 hex、零 !important。
+
+## 2026-10-06（浮层窗口感勘误）：头部常驻 + 边界加浅投影，登记 §9 例外
+- **事故**：浮层预览窗头部沿用旧规则——绝对定位悬浮 + `:not(.node-head-visible)` 时 opacity:0（滚动>40px 或悬停才显现）。该行为为整页阅读列设计（滚动能看到大标题），独立小窗上结果是「不悬停就看不到钉住/关闭按钮，窗口像浮在纸上的白块」。用户原话：“顶部的那些关闭按钮这些东西也看不到……整个浮层也没有边界。”
+- **拍了**：①浮层预览窗（.dialog-float-viewer）头部改 `position: relative` 常驻文档流、`opacity:1 !important`（压过滚动手势的行内 opacity），13px muted 窗口条 + 1px 底线；②窗口边界在 1px 边线外加 `box-shadow: var(--nk-shadow)`——**§9 例外登记**：偏离「浮层不用投影」既有拍板，依据是用户拍板「浮层必须有可分辨边界」，纯 1px 边线在浅色白纸面上不可辨；投影用既有 token，浅/夜双主题各自取值，不立新值。
+- **边界**：例外范围仅限 .dialog-float-viewer（浮层预览窗）；Andy Mode 阅读列、对话框、菜单不适用，仍守「浮层不用投影」。
+- **验收**：Cmd+点击浮窗不悬停即见头部三按钮与标题；窗口在浅色画布上有可分辨轮廓；浅/夜各目检一次。
+
+## 2026-10-06（Andy 页面级导航语义）：侧栏页面点击原位替换当前列，登记 §3.6
+- **事故**：Andy 多栏模式下点侧栏「主题」，Topic list 在活动列右侧新开一列并新增页签，而非替换当前笔记区域。根因：Router.to 的 Andy 分支把所有导航都当笔记链接走 `$.andy.navigate`（右侧子列语义），注册页面（diaries/topics/graphs 等）没有独立的页面级语义。
+- **拍了**：注册页面导航 = 原位替换当前活动列（Router.to 识别 `path in routes` 走新增的 `$.andy.navigatePage`：已开则展开定位，否则关活动列同位开新列）；笔记链接仍守 §3.1–3.3 阅读路径语义。依据：用户 2026-10-06 原话“点击主题的时候，是应该替代当前笔记区域的”。
+- **边界**：仅注册页面路由；星标（`item/<ky>`，是笔记）不适用，仍走链接语义；Alt+点击（最左开列）、Cmd+点击（弹窗）不变。
+- **验收**：多列状态下点侧栏主题/图谱/每日 → 活动列原位变成目标页面，页签数不增；页面已是列时仅定位不重复开列；笔记内链接点击行为与改造前一致。
+- **复测修正（同日）**：v1 的「目标已是列→仅聚焦」在已开场景下视觉上与原 bug 无异（用户复测即命中此态）。改为让位语义：目标已开 → 当前活动列关闭、聚焦已有页（不重建不新增）；目标未开 → 关活动列、同位开页。真实点击链路验收 14/14（tools/andy-page-nav-verify.mjs，隔离实例，含 §3.1 条目链接右侧开列回归项），证据 test-runs/andy-page-nav-verify/result.json。
