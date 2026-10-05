@@ -153,13 +153,16 @@ export function createMainAddon({ app, $ }: NewAddonParams) {
     addonRun() {
       // 笔记保存时同步刷新工作区标签页标题（含 Andy 模式顶部标签）：
       // 标签标题只在打开时取一次，之后改名（如 ⌘⌥N 新建的 Untitled 命名）标签会一直是旧名。
-      cover($.dbMemory.saveItem as any, (item: any, ...args: any[]) => {
+      // 注意：必须先捕获原函数再 cover——钩子内若经 $.dbMemory.saveItem 调用，
+      // 拿到的已是钩子自身（Topic 插件还会再 cover 一层），会无穷递归。
+      const originalSaveItem = $.dbMemory.saveItem
+      cover(originalSaveItem as any, (item: any, ...args: any[]) => {
         const tab = this.workspaceTabs.find((t) => t.key === item?.ky)
         if (tab) {
           const title = Item.headString(item, { parseRefer: true }) || tab.title
           if (title !== tab.title) tab.title = title
         }
-        return ($.dbMemory as any).saveItem.call($.dbMemory, item, ...args)
+        return (originalSaveItem as any).apply($.dbMemory, args.length ? [item, ...args] : [item])
       })
 
       $.router.history.listen(() => {
