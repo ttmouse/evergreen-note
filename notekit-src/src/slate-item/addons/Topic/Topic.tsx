@@ -339,10 +339,12 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
             // 与 TopicList 的「添加主题」一致：临时标题 Untitled + 随机后缀，
             // 进入页面后标题处于全选状态，直接输入即改名。
             const topicTitle = `Untitled ${nanoid(4)}`
-            // 与 Daily 的 ⌘L 同理：⌘ 仍处于按下状态时 router.to 会把
-            // 这次跳转误判成「⌘+点击 → 弹窗打开」，先清掉修饰键状态。
+            // 与 Daily 的 ⌘L 同理：⌘ 仍处于按下状态时 router.to 会把这次跳转
+            // 误判成「⌘+点击 → 弹窗打开」；⌥ 同理会触发「Alt+点击 → Andy 模式
+            // 打开」。新建主题应遵循当前模式：常规→主区，Andy→当前列，全部清零。
             keyState.pressed.ctrl = 0
             keyState.pressed.meta = 0
+            keyState.pressed.alt = 0
             $.topic.route(topicTitle)
             // 路由渲染完成后，把光标放进新页面的标题并全选，直接输入即可命名。
             atLater(

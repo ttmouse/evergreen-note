@@ -5,7 +5,7 @@ import { MainComp } from './MainComp'
 import { makeAutoObservable } from 'mobx'
 import { mkid } from '../../utils/string/mkid'
 import { icons } from '../../../components/SvgIcon'
-import { after } from '../../engine/helper'
+import { after, cover } from '../../engine/helper'
 import { scrollToTop } from '../../utils/dom/scrollToTop'
 import { $t } from '../../../i18n'
 import { appendStyle } from '@/slate-item/utils/dom/appendStyle'
@@ -151,6 +151,17 @@ export function createMainAddon({ app, $ }: NewAddonParams) {
     }
 
     addonRun() {
+      // 笔记保存时同步刷新工作区标签页标题（含 Andy 模式顶部标签）：
+      // 标签标题只在打开时取一次，之后改名（如 ⌘⌥N 新建的 Untitled 命名）标签会一直是旧名。
+      cover($.dbMemory.saveItem as any, (item: any, ...args: any[]) => {
+        const tab = this.workspaceTabs.find((t) => t.key === item?.ky)
+        if (tab) {
+          const title = Item.headString(item, { parseRefer: true }) || tab.title
+          if (title !== tab.title) tab.title = title
+        }
+        return ($.dbMemory as any).saveItem.call($.dbMemory, item, ...args)
+      })
+
       $.router.history.listen(() => {
         this.trackWorkspaceRoute()
         const key = this.workspaceActiveKey

@@ -149,6 +149,16 @@ export function createDblKeyDetector(e: KeyboardEvent) {
 }
 
 const detects: { [k: string]: number } = {}
+
+/**
+ * 从 event.code 还原出「物理键位」对应的主键名：
+ * KeyN -> 'n'、Digit1 -> '1'，其余（BracketLeft 等符号键）返回 null。
+ */
+function keyFromCode(event: KeyboardEventLike): string | null {
+  const m = /^(?:Key|Digit)([A-Z0-9])$/.exec((event as any).code ?? '')
+  return m ? m[1].toLowerCase() : null
+}
+
 // Support double-pressing hotkey
 export function isMyHotkey(
   hk: string | readonly string[],
@@ -169,5 +179,15 @@ export function isMyHotkey(
 
     return false
   }
-  return isHotkey(hk, options, event)
+  if (isHotkey(hk, options, event)) return true
+  // macOS 上 Option 会改写字母/数字键产生的字符（⌥N 的 event.key 是 'ñ'，
+  // ⌥⇧1 是 'İ' 之类），byKey 比对永远失败，导致所有 Alt+字母/数字快捷键失效。
+  // 兜底改用物理键位（event.code）再比对一次；对已能按 key 命中的组合无影响。
+  if ((event as any).altKey) {
+    const physicalKey = keyFromCode(event)
+    if (physicalKey && physicalKey !== (event as any).key?.toLowerCase()) {
+      return isHotkey(hk, options, { ...event, key: physicalKey })
+    }
+  }
+  return false
 }

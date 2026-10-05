@@ -140,7 +140,11 @@ export function DialogComp<T>(props: DialogProps<T>) {
   const handleClose =
     onClose ??
     ((e: any, reason: string) => {
-      setClose(reason === 'backdropClick' && clickAway)
+      // ESC 退出浮层：原实现只放行 backdropClick，导致默认处理的浮层按 ESC 关不掉
+      // （custom onClose 的浮层自行决定）。钉住（pin）也不例外，ESC 一律可退出。
+      if (reason === 'escapeKeyDown' || (reason === 'backdropClick' && clickAway)) {
+        setClose(true)
+      }
     })
 
   const [titleId] = React.useState(() => `dialog-title-${mkid()}`)
