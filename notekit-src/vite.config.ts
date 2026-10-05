@@ -6,7 +6,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 const SRC = fileURLToPath(new URL('./src', import.meta.url))
 const DEV_PORT = Number(process.env.NOTEKIT_DEV_PORT || 3000)
-const API_PORT = Number(process.env.NOTEKIT_PORT || 11820)
+const API_PORT = Number(process.env.NOTEKIT_PORT || 11814)
 const EXT_TRY = ['', '.ts', '.tsx', '.js', '.jsx', '.css', '.less', '.json']
 
 function resolvable(abs: string): boolean {

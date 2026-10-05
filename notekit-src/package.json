@@ -9,6 +9,11 @@
   "main": "desktop/main.cjs",
   "description": "A local-first hierarchical markdown note app (Electron + React + zero-dependency Node server + SQLite).",
   "license": "GPL-3.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

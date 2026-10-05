@@ -36,7 +36,7 @@ pnpm install
 
 # 浏览器模式：构建前端 + 启动本地服务
 pnpm build
-pnpm serve               # http://127.0.0.1:11820
+pnpm serve               # http://127.0.0.1:11814
 
 # Electron 桌面应用
 pnpm desktop
@@ -49,6 +49,18 @@ pnpm test:storage
 ```
 
 数据目录与端口可在 `notekit-src/package.json` 中通过 `profileName` / `defaultPort` 调整。首次启动使用空库，不会读取任何已有数据。
+
+> **Electron 安装提示**：桌面模式依赖 Electron 二进制（约 100MB）。若下载缓慢或失败，可用镜像：
+>
+> ```bash
+> ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ pnpm install
+> ```
+>
+> 若安装后 `pnpm desktop` 报 "Electron failed to install correctly"，手动补跑一次下载即可：
+>
+> ```bash
+> node node_modules/electron/install.js
+> ```
 
 打包 macOS `.app` 可使用仓库根目录的 `tools/build-desktop-app.py`。
 
