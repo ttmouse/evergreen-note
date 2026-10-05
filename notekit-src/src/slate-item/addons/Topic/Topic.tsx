@@ -333,7 +333,7 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
         newTopic: {
           title: $t`topic.new_topic`,
           icon: 'svg_add',
-          hotkey: 'mod+alt+n',
+          hotkey: 'mod+n',
           context: 'everywhere',
           handle() {
             // 与 TopicList 的「添加主题」一致：临时标题 Untitled + 随机后缀，
