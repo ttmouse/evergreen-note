@@ -81,7 +81,7 @@ export function createMainAddon({ app, $ }: NewAddonParams) {
       const item = key === 'diaries' ? null : $.dbMemory.getItem(key)
       if (key !== 'diaries' && !item?.ky) return
       const existingTitle = this.workspaceTabs.find(tab => tab.key === key)?.title
-      this.openWorkspaceTab(key, title || existingTitle || (item ? Item.headString(item, { parseRefer: true }) : $.router.routes.diaries?.title) || key)
+      this.openWorkspaceTab(key, title || existingTitle || (item ? Item.headString(item, { parseRefer: true }) : $.router.routes.diaries?.title) || (item ? 'Untitled' : key))
     }
 
     replaceWorkspaceTab(sourceKey: string, key: string) {
@@ -90,7 +90,7 @@ export function createMainAddon({ app, $ }: NewAddonParams) {
       if (index < 0 || this.workspaceTabs.some(tab => tab.key === key)) return
       const item = $.dbMemory.getItem(key)
       if (!item?.ky) return
-      this.workspaceTabs.splice(index, 1, { key, title: Item.headString(item, { parseRefer: true }) || key })
+      this.workspaceTabs.splice(index, 1, { key, title: Item.headString(item, { parseRefer: true }) || 'Untitled' })
       this.workspaceActiveKey = key
     }
 
@@ -159,7 +159,7 @@ export function createMainAddon({ app, $ }: NewAddonParams) {
       cover(originalSaveItem as any, (item: any, ...args: any[]) => {
         const tab = this.workspaceTabs.find((t) => t.key === item?.ky)
         if (tab) {
-          const title = Item.headString(item, { parseRefer: true }) || tab.title
+          const title = Item.headString(item, { parseRefer: true }) || (item.draft ? 'Untitled' : tab.title)
           if (title !== tab.title) tab.title = title
         }
         return (originalSaveItem as any).apply($.dbMemory, args.length ? [item, ...args] : [item])

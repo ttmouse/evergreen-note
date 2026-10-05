@@ -99,6 +99,22 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
     }
 
     /**
+     * 创建草稿主题：只有后台唯一 ID（ky），标题留空、不设 topic 身份。
+     * 不进主题索引/主题列表（DbMemory 只索引有 topic 或有标题的主题），
+     * 用户输入标题保存时在 saveItem cover 里转正（查重 + 建立 topic 身份）。
+     */
+    createDraftTopic() {
+      const item = Item.newItem({
+        leaves: [{ text: '' }],
+        ori: '',
+        weight: time(),
+        draft: true,
+      } as any)
+      $.dbMemory.saveItem(item, { saveTime: 1 })
+      return item
+    }
+
+    /**
      * 创建主题
      * @param topic
      * @param values
@@ -336,39 +352,45 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
           hotkey: 'mod+n',
           context: 'everywhere',
           handle() {
-            // 与 TopicList 的「添加主题」一致：临时标题 Untitled + 随机后缀，
-            // 进入页面后标题处于全选状态，直接输入即改名。
-            const topicTitle = `Untitled ${nanoid(4)}`
+            // 草稿式新建：后台有唯一 ID（ky），标题留空（界面显示 Untitled 占位符）。
+            // 用户输入标题保存时才「转正」为主题（见 addonRun 里 saveItem cover 的
+            // draft 分支：查重 + 建立 topic 身份）。不把 ID 当标题用。
+            const item = $.topic.createDraftTopic()
             // 与 Daily 的 ⌘L 同理：⌘ 仍处于按下状态时 router.to 会把这次跳转
             // 误判成「⌘+点击 → 弹窗打开」；⌥ 同理会触发「Alt+点击 → Andy 模式
             // 打开」。新建主题应遵循当前模式：常规→主区，Andy→当前列，全部清零。
             keyState.pressed.ctrl = 0
             keyState.pressed.meta = 0
             keyState.pressed.alt = 0
-            $.topic.route(topicTitle)
-            // 路由渲染完成后，把光标放进新页面的标题并全选，直接输入即可命名。
-            atLater(
-              () => {
-                const head = Array.from(
-                  document.querySelectorAll('header.node-head')
-                ).find((h) => h.textContent?.includes(topicTitle))
-                if (!head) return
-                const text = head.querySelector('[data-slate-string]')
-                  ?.firstChild as Text | undefined
-                const sel = window.getSelection()
-                if (text && sel) {
-                  const range = document.createRange()
+            $.router.to(item as any)
+            // 路由渲染完成后，把光标放进新页面的标题（空标题时定位到起点），
+            // 直接输入即可命名。编辑器渲染完成时间不定，带重试。
+            const focusHead = (tries = 0) => {
+              const head = document.querySelector(
+                '.editor-view.editor-from-router .node-head'
+              ) as HTMLElement | null
+              if (!head) {
+                if (tries < 20) setTimeout(() => focusHead(tries + 1), 200)
+                return
+              }
+              head.focus()
+              const text = head.querySelector('[data-slate-string]')
+                ?.firstChild as Text | undefined
+              const sel = window.getSelection()
+              if (sel) {
+                const range = document.createRange()
+                if (text) {
                   range.setStart(text, 0)
                   range.setEnd(text, text.length)
-                  sel.removeAllRanges()
-                  sel.addRange(range)
                 } else {
-                  ;(head as HTMLElement).focus()
+                  range.selectNodeContents(head)
+                  range.collapse(true)
                 }
-              },
-              `focus-new-topic-${topicTitle}`,
-              400
-            )
+                sel.removeAllRanges()
+                sel.addRange(range)
+              }
+            }
+            setTimeout(focusHead, 150)
           },
         },
         turnIntoSubTopic: {
@@ -397,6 +419,28 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
       topic.lockHead((props) => /^app\/.+/i.test(props.item.topic ?? ''))
 
       cover(saveItem, (item, ...args) => {
+        // 草稿主题转正：标题仍是空 → 原样放行（草稿允许空标题，界面显示占位符）；
+        // 用户输入了标题 → 查重后建立 topic 身份（isTopic + topic），摘掉 draft 标记。
+        if ((item as any).draft) {
+          const title = Item.headString(item)
+          if (isEmpty(trim(title))) {
+            return saveItem.call(dbMemory, item, ...args)
+          }
+          const refined = topic.refine(title)
+          if (topic.isExist(refined)) {
+            showSnack({
+              content: $t(`topic.has_exist`, { topic: refined }),
+              severity: 'error',
+            })
+            return dbMemory.getItem(item.ky)
+          }
+          const promoted = omit(
+            { ...item, isTopic: true, topic: refined } as any,
+            ['draft']
+          )
+          return saveItem.call(dbMemory, promoted, ...args)
+        }
+
         // Stop saving empty topic
         if (item.topic && Item.headString(item).length < 1) {
           showSnack('The topic title should not be empty')
