@@ -980,7 +980,7 @@ body .mark-hint:not(.element-bilink *, .node-topic > .node-head *) {
 
 /* Sidebar previews stay on the flat navigation surface.
    User rule (2026-10-03): no rounded tinted block + left accent bar.
-   See notes/UI设计禁用规则.md. Keep type aligned with the navigation tree. */
+   See docs/design-rules/DESIGN.md §2. Keep type aligned with the navigation tree. */
 body nav.nav-area section.node.node-with-refer {
   background: transparent !important;
   box-shadow: none;

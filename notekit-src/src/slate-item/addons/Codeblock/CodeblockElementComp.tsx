@@ -8,7 +8,7 @@ import { useItem } from '../../hooks/useItem'
 import { loadScript } from '../../utils/dom/loadScript'
 import { loadCss } from '../../utils/dom/loadCss'
 import { InlineOuterComp } from '../Inlines/InlineOuterComp'
-import { useAwait } from '../../hooks/useAwait'
+import { loadCodeMirrorMode } from './loadCodeMirrorMode'
 import { useEditor } from '../../hooks/useEditor'
 import './codeblock.less'
 import { ItemTransforms } from '../../transforms/item'
@@ -48,8 +48,6 @@ export function LangsMenu(props: {
     />
   )
 }
-
-export const modesLoaded = ['javascript', 'css', 'markdown'];
 
 function getMime(langObj: LangInfo) {
   if (langObj.mime) {
@@ -93,115 +91,120 @@ export function CodeMirror5Comp(
   const [cm, setCm] = React.useState<any>(null)
   const lineNumbers = true
 
-  useAwait(async () => {
-    await loadScript('js/codemirror/lib/codemirror.min.js')
+  React.useEffect(() => {
+    let disposed = false
+    setCm(null)
+    const initialize = async () => {
+      await loadScript('js/codemirror/lib/codemirror.min.js')
 
-    const mode = getMode(langMode, langName)
-    const opt: CodeblockProps = {
-      ...$.codeblock.defaultOptions,
-      autofocus: Date.now() - $.codeblock.autoTimer < 100,
-      lineNumbers,
-      mode: mode.mime ?? mode.name,
-      nkMode: mode.name,
-      value,
-    }
+      const mode = getMode(langMode, langName)
+      const opt: CodeblockProps = {
+        ...$.codeblock.defaultOptions,
+        autofocus: Date.now() - $.codeblock.autoTimer < 100,
+        lineNumbers,
+        mode: mode.mime ?? mode.name,
+        nkMode: mode.name,
+        value: langValue ?? '',
+      }
 
-    if (!modesLoaded.includes(opt.nkMode ?? opt.mode)) {
-      modesLoaded.push(opt.nkMode ?? opt.mode)
-    }
+      const srcList = [
+        loadCss('js/codemirror/lib/codemirror.css'),
+        $.codeblock.loadTheme(opt.theme ?? 'mdn-like'),
+      ]
+      await Promise.all(srcList)
+      const hasMode = await loadCodeMirrorMode($.codeblock, opt.nkMode ?? opt.mode)
+      if (!hasMode) opt.mode = 'text/plain'
 
-    const srcList = [
-      loadCss('js/codemirror/lib/codemirror.css'),
-      ...modesLoaded.map(
-        (mode) => $.codeblock.loadMode(mode)
-      ),
-      $.codeblock.loadTheme(opt.theme ?? 'mdn-like'),
-    ]
+      const { CodeMirror } = window as any
 
-    if (opt.nkMode === 'htmlembedded') {
-      srcList.push($.codeblock.loadMode('multiplex'))
-    }
+      if (disposed || !ref.current) {
+        return
+      }
+      ref.current.innerHTML = ''
 
-    await Promise.all(srcList)
+      const codeMirror = CodeMirror(ref.current, opt)
+      $.codeblock.setTheme(codeMirror)
+      setCm(codeMirror)
 
-    const { CodeMirror } = window as any
+      codeMirror.on('change', () => {
+        const content = codeMirror.getValue()
 
-    if (!ref.current) {
-      return
-    }
-    ref.current.innerHTML = ''
-
-    const codeMirror = CodeMirror(ref.current, opt)
-    $.codeblock.setTheme(codeMirror)
-    setCm(codeMirror)
-
-    codeMirror.on('change', () => {
-      const content = codeMirror.getValue()
-
-      // 临时屏蔽 setBaseAndExtent
-      const originalSetBaseAndExtent = window.getSelection()!.setBaseAndExtent.bind(window.getSelection())
-      window.getSelection()!.setBaseAndExtent = () => {}
+        // 临时屏蔽 setBaseAndExtent
+        const originalSetBaseAndExtent = window.getSelection()!.setBaseAndExtent.bind(window.getSelection())
+        window.getSelection()!.setBaseAndExtent = () => {}
       
-      $.inlines.setProps(slateEditor, item.GetSlPath(), {
-        value: content,
-        mode: opt.nkMode ?? opt.mode,
-        langName,
-        iky,
-      } as any)
+        $.inlines.setProps(slateEditor, item.GetSlPath(), {
+          value: content,
+          ...(element.codeBlockText !== undefined ? { codeBlockText: content } : {}),
+          mode: opt.nkMode ?? opt.mode,
+          langName,
+          iky,
+        } as any)
       
-      // 还原
-      Promise.resolve().then(() => {
-        window.getSelection()!.setBaseAndExtent = originalSetBaseAndExtent
+        // 还原
+        Promise.resolve().then(() => {
+          window.getSelection()!.setBaseAndExtent = originalSetBaseAndExtent
+        })
+
+        setValue(content)
       })
 
-      setValue(content)
-    })
-
-    codeMirror.on('keydown', (_: any, e: KeyboardEvent) => {
-      if (e.shiftKey && e.key === 'Enter') {
-        const cbPath = ReactEditor.findPath(slateEditor as any, element)
-        const [nextNode, nextPath] = Editor.next(slateEditor as any, {
-          at: cbPath,
-        })!
-        const str = Node.string(nextNode).trim()
-        if (str.length < 1 || str === ZERO_WIDTH_SPACE) {
-          ItemTransforms.insertNextItems(slateEditor, {
-            at: item.GetSlPath(),
-            focus: true,
-          })
-        } else {
-          ReactEditor.focus(slateEditor as any)
-          Transforms.select(slateEditor, { path: nextPath, offset: 0 })
-        }
-        e.preventDefault()
-      } else if (e.key === 'Backspace' || e.key === 'Delete') {
-        if (codeMirror.getValue().length < 1) {
+      codeMirror.on('keydown', (_: any, e: KeyboardEvent) => {
+        if (e.shiftKey && e.key === 'Enter') {
           const cbPath = ReactEditor.findPath(slateEditor as any, element)
-          ReactEditor.focus(slateEditor as any)
-          const [, nextPath] = Editor.next(slateEditor as any, { at: cbPath })!
-          Transforms.select(slateEditor, { path: nextPath, offset: 0 })
-          slateEditor.deleteBackward('character')
+          const [nextNode, nextPath] = Editor.next(slateEditor as any, {
+            at: cbPath,
+          })!
+          const str = Node.string(nextNode).trim()
+          if (str.length < 1 || str === ZERO_WIDTH_SPACE) {
+            ItemTransforms.insertNextItems(slateEditor, {
+              at: item.GetSlPath(),
+              focus: true,
+            })
+          } else {
+            ReactEditor.focus(slateEditor as any)
+            Transforms.select(slateEditor, { path: nextPath, offset: 0 })
+          }
           e.preventDefault()
+        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+          if (codeMirror.getValue().length < 1) {
+            const cbPath = ReactEditor.findPath(slateEditor as any, element)
+            ReactEditor.focus(slateEditor as any)
+            const [, nextPath] = Editor.next(slateEditor as any, { at: cbPath })!
+            Transforms.select(slateEditor, { path: nextPath, offset: 0 })
+            slateEditor.deleteBackward('character')
+            e.preventDefault()
+          }
         }
-      }
-      $.typingMode?.open(true)
-    })
+        $.typingMode?.open(true)
+      })
 
-    codeMirror.on('cursorActivity', () => {
-      const pos = codeMirror.getCursor()
-      if (pos.outside === 1) {
-        const next = slateEditor.itemPathNext(item.GetSlPath())
-        if (next) {
-          slateEditor.itemFocus(next)
+      codeMirror.on('cursorActivity', () => {
+        const pos = codeMirror.getCursor()
+        if (pos.outside === 1) {
+          const next = slateEditor.itemPathNext(item.GetSlPath())
+          if (next) {
+            slateEditor.itemFocus(next)
+          }
+        } else if (pos.outside === -1) {
+          const prev = slateEditor.itemPathPrev(item.GetSlPath())
+          if (prev) {
+            slateEditor.itemFocus(prev)
+          }
         }
-      } else if (pos.outside === -1) {
-        const prev = slateEditor.itemPathPrev(item.GetSlPath())
-        if (prev) {
-          slateEditor.itemFocus(prev)
-        }
-      }
-    })
-  }, [langMode])
+      })
+    }
+    initialize().catch(error => console.warn('Code editor unavailable; showing source text.', error))
+    return () => {
+      disposed = true
+      if (ref.current) ref.current.innerHTML = ''
+    }
+  }, [langMode, langName])
+
+  React.useEffect(() => {
+    setValue(langValue ?? '')
+    if (cm && cm.getValue() !== (langValue ?? '')) cm.setValue(langValue ?? '')
+  }, [langValue, cm])
 
   React.useEffect(() => {
     if (!cm || !ref.current) return
@@ -257,6 +260,8 @@ export function CodeMirror5Comp(
     $.inlines.setProps(slateEditor, item.GetSlPath(), {
       langName: lang.langName,
       mode: lang.mode,
+      ...(element.codeBlockName !== undefined ? { codeBlockName: lang.langName } : {}),
+      ...(element.codeBlockMode !== undefined ? { codeBlockMode: lang.mode } : {}),
       iky,
     } as any)
 
@@ -265,11 +270,6 @@ export function CodeMirror5Comp(
       window.getSelection()!.setBaseAndExtent = originalSetBaseAndExtent
     })
 
-    // 同步更新 CodeMirror 的 mode
-    if (cm) {
-      const modeInfo = getMode(lang.mode, lang.langName)
-      cm.setOption('mode', modeInfo.mime ?? modeInfo.name)
-    }
   }
 
   const inner = (
@@ -295,6 +295,7 @@ export function CodeMirror5Comp(
         onChange={handleLangMenuChange}
       />
       <div className={classList.join(' ')} ref={ref} />
+      {!cm && <pre className="codeblock-source" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: '8px 0', padding: '8px' }}>{value}</pre>}
     </div>
   )
   return <InlineOuterComp cssInlineBlock {...props} noFocusRing inner={inner} />

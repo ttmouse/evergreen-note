@@ -1,11 +1,10 @@
 import React from 'react'
 import { useAddons } from '../../hooks/useAddons'
-import { useAwait } from '../../hooks/useAwait'
 import { cls } from '../../styles'
 import { loadCss } from '../../utils/dom/loadCss'
 import { loadScript } from '../../utils/dom/loadScript'
 import { CodeblockProps } from './CodeblockProps'
-import { modesLoaded } from './CodeblockElementComp'
+import { loadCodeMirrorMode } from './loadCodeMirrorMode'
 
 export function CodeblockComp(props: CodeblockProps) {
   const ref = React.useRef<HTMLDivElement>(null)
@@ -19,49 +18,52 @@ export function CodeblockComp(props: CodeblockProps) {
     onChange = () => null,
   } = props
   const [val, setVal] = React.useState(value)
+  const [ready, setReady] = React.useState(false)
 
-  useAwait(async () => {
-    if (!ref.current) {
-      return
+  React.useEffect(() => {
+    let disposed = false
+    const initialize = async () => {
+      if (!ref.current) {
+        return
+      }
+
+      await loadScript('js/codemirror/lib/codemirror.min.js')
+      const opt = {
+        mode,
+        nkMode,
+        lineWrapping: true,
+        indentUnit: 2,
+        tabSize: 2,
+        theme: 'mdn-like',
+        lineNumbers,
+        value,
+        autofocus,
+      }
+
+      const srcList = [
+        loadCss('js/codemirror/lib/codemirror.css'),
+        $.codeblock.loadTheme(opt.theme),
+      ]
+      await Promise.all(srcList)
+      const hasMode = await loadCodeMirrorMode($.codeblock, opt.nkMode ?? opt.mode)
+      if (!hasMode) opt.mode = 'text/plain'
+      if (disposed || !ref.current) return
+      const { CodeMirror } = window as any
+      const codeMirror = CodeMirror(ref.current, opt)
+      $.codeblock.setTheme(codeMirror)
+      setReady(true)
+
+      codeMirror.on('change', (e: any) => {
+        const content = codeMirror.getValue()
+        setVal(content)
+        onChange(e, content)
+      })
     }
-
-    await loadScript('js/codemirror/lib/codemirror.min.js')
-    const opt = {
-      mode,
-      nkMode,
-      lineWrapping: true,
-      indentUnit: 2,
-      tabSize: 2,
-      theme: 'mdn-like',
-      lineNumbers,
-      value,
-      autofocus,
+    initialize().catch(error => console.warn('Code editor unavailable; showing source text.', error))
+    return () => {
+      disposed = true
+      if (ref.current) ref.current.innerHTML = ''
     }
-
-    if (!modesLoaded.includes(opt.nkMode ?? opt.mode)) {
-      modesLoaded.push(opt.nkMode ?? opt.mode)
-    }
-
-    const srcList = [
-      loadCss('js/codemirror/lib/codemirror.css'),
-      ...modesLoaded.map(
-        (theMode) => $.codeblock.loadMode(theMode)
-      ),
-      $.codeblock.loadTheme(opt.theme),
-    ]
-    if ((opt.nkMode ?? opt.mode) === 'htmlembedded') {
-      srcList.push($.codeblock.loadMode('multiplex'))
-    }
-    await Promise.all(srcList)
-    const { CodeMirror } = window as any
-    const codeMirror = CodeMirror(ref.current, opt)
-    $.codeblock.setTheme(codeMirror)
-
-    codeMirror.on('change', (e: any) => {
-      const content = codeMirror.getValue()
-      setVal(content)
-      onChange(e, content)
-    })
   }, [])
 
   const classList = [
@@ -88,5 +90,8 @@ export function CodeblockComp(props: CodeblockProps) {
     'codeblock',
   ]
 
-  return <div className={classList.join(' ')} ref={ref} />
+  return <>
+    <div className={classList.join(' ')} ref={ref} />
+    {!ready && <pre className="codeblock-source" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{val}</pre>}
+  </>
 }

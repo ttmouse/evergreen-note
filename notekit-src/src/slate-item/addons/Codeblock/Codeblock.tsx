@@ -165,11 +165,19 @@ export function createCodeblockAddon({ app, $ }: NewAddonParams) {
 
     setTheme(codeMirrorEditor: any) {
       const theme = this.whichTheme()
-      this.loadTheme(theme)
-      codeMirrorEditor.setOption('theme', theme)
+      this.loadTheme(theme).then(() => {
+        codeMirrorEditor.setOption('theme', theme)
+      }).catch(() => {
+        // Keep the already loaded default theme when optional theme assets fail.
+      })
     }
 
     loadMode(mode: string) {
+      // The server falls back to index.html for absent assets. Do not execute
+      // that HTML as JavaScript for languages whose mode is not bundled.
+      if (!['javascript', 'css', 'markdown', 'shell'].includes(mode)) {
+        return Promise.reject(new Error(`CodeMirror mode is not bundled: ${mode}`))
+      }
       return loadScript(`js/codemirror/mode/${mode}/${mode}.js`)
     }
 
