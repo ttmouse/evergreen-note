@@ -1,6 +1,9 @@
 /* Reading-oriented backlink previews adapt to the note column, not the window.
    卡片只承担「引用区」一个层级：8px 圆角（§5.1 lg 档）+ 1px 语义线，不叠投影；
-   标题走 14px 分组标题档（§3a），hover/active 一律 token（§4.5）。 */
+   标题走 14px 分组标题档（§3a），hover/active 一律 token（§4.5）。
+   条目高度跟内容走：min-height 64px（§5.2 八档）+ 网格行内等高。
+   旧的固定 118px 在「两行标题 + 四行引文」下内容高 124px，底边切掉 6px 字形；
+   短卡片又被撑出半张空白。改内容驱动后两种情形都消除（2026-10-06 决策日志）。 */
 .backlink-reading {
   container-type: inline-size;
   padding: 16px;
@@ -34,7 +37,7 @@
   justify-content: flex-start;
   width: 100%;
   min-width: 0;
-  height: 118px;
+  min-height: 64px;
   overflow: hidden;
   margin-top: 8px;
   padding: 8px;
@@ -56,8 +59,8 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 400;
 }
 .backlink-reading-excerpt {
@@ -66,7 +69,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
   overflow: hidden;
-  margin-top: 12px;
+  margin-top: 8px;
   color: var(--nk-muted);
   font-size: 12px;
   line-height: 16px;
@@ -687,6 +690,12 @@ html body .nui-dialog.dialog-float-viewer [class*='reference-component'] {
 }
 html body .nui-dialog.dialog-float-viewer .reference-comp-extra {
   color: var(--nk-muted);
+}
+/* 浮窗支持拖拽调宽（用户拍板）：MobileEditBar 的全局规则隐藏了 dialog 内的
+   resize 手柄，浮窗恢复右下角手柄——悬停浮窗时手柄显现，横向拖拽调宽；
+   高度仍随内容自适应（.dialog-item-float 的 height:auto 压过 inline 覆盖）。 */
+html body .nui-dialog.dialog-float-viewer .nui-resize-handle {
+  display: block;
 }
 
 /* 修复：浮窗折叠标签条的空容器以 pointer-events:all 拦截视口底部 2em 内的所有点击

@@ -355,6 +355,10 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         key: theItem.ky,
         title: theTitle as any,
         body: <FloatViewerComp {...props} />,
+        // rest 必须在 DialogProps 之前展开：调用方的 DialogProps（mask/SnapProps
+        // 等）要生效，但不得覆盖这里的默认 width（625，Andy 列宽）——
+        // 调用方显式传 width 时仍以后者为准（见内部展开顺序）。
+        ...rest,
         DialogProps: {
           id: dialogId,
           // 与 Andy 阅读列同宽（DESIGN.md §5 拍板值 625px），浮层预览与列阅读同一内容度量。
@@ -371,9 +375,8 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
             ]
             return !target.matches(exclude.join(','))
           },
-          ...dialogProps,
+          ...(rest.DialogProps ?? {}),
         },
-        ...rest,
       })
       return dialogId
     }
@@ -533,6 +536,14 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
       return app.states.floatViewerList.some((dlg) => dlg.dialogId === dialogId)
     }
 
+    /** 有任何可见（未折叠）的浮层打开时为真；Esc 关闭前的守卫用。 */
+    hasAnyVisible() {
+      return app.states.floatViewerList.some((dlg) => {
+        const entry = $.dialog.store.get(dlg.dialogId)
+        return !!entry && entry.visible && !entry.folded
+      })
+    }
+
     add(floatInfo: FloatViewerItem) {
       if ($.floatViewer.has(floatInfo.dialogId)) {
         return
@@ -586,6 +597,32 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
               $.floatViewer.handledCloseEvents.add(nativeEvent)
             }
             $.floatViewer.closeActiveNote()
+            return false
+          },
+        },
+        closeActiveNoteByEsc: {
+          title: '关闭当前浮层（Esc）',
+          hotkey: 'esc',
+          context: 'everywhere',
+          handle({ event }) {
+            const nativeEvent = ((event as any)?.nativeEvent ?? event) as KeyboardEvent
+            if (nativeEvent?.repeat) return true
+            // MUI Popover/Menu/Dialog 打开时 Esc 归它们（关菜单/对话框），不抢。
+            const el = nativeEvent?.target as HTMLElement | null
+            if (el?.closest?.('.MuiPopover-root, .MuiMenu-root, .MuiDialog-root')) return true
+            // closeActiveNote 在 fixed 模式关的是工作区标签（单标签时 no-op），
+            // 不是浮层。Esc 必须直接关「最上层的可见浮层」。
+            const visible = app.states.floatViewerList.filter(d => {
+              const e = $.dialog.store.get(d.dialogId)
+              return e && e.visible && !e.folded
+            })
+            if (!visible.length) return true
+            const order = $.dialog.store.order
+            let target = visible[visible.length - 1].dialogId
+            for (let i = order.length - 1; i >= 0; i--) {
+              if (visible.some(v => v.dialogId === order[i])) { target = order[i]; break }
+            }
+            $.dialog.close(target)
             return false
           },
         },
