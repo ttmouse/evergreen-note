@@ -297,5 +297,5 @@ export function CodeMirror5Comp(
       <div className={classList.join(' ')} ref={ref} />
     </div>
   )
-  return <InlineOuterComp cssInlineBlock {...props} inner={inner} />
+  return <InlineOuterComp cssInlineBlock {...props} noFocusRing inner={inner} />
 }
