@@ -18,7 +18,23 @@ appendStyle(`
     color: var(--placeholder);
     content: attr(placeholder);
   }
+  /* IME 组合输入期间占位符不隐藏，会和组合串叠成两行（空标题草稿打字时必现）。
+     本仓 Slate 0.126 无 data-slate-composed 标记，用组合事件在节点上切类名。 */
+  .node-empty-text.ime-composing > .node-head .node-text::before {
+    content: none;
+  }
 `)
+
+// compositionstart/end 捕获阶段全局监听一次，给组合所在节点挂 ime-composing 类
+if (typeof document !== 'undefined' && !(window as any).__imeComposingHook) {
+  ;(window as any).__imeComposingHook = true
+  const toggle = (e: Event, on: boolean) => {
+    const node = (e.target as HTMLElement)?.closest?.('.node-empty-text')
+    node?.classList.toggle('ime-composing', on)
+  }
+  document.addEventListener('compositionstart', (e) => toggle(e, true), true)
+  document.addEventListener('compositionend', (e) => toggle(e, false), true)
+}
 
 export const Text = (props: ElementComponentProps<any>) => {
   const { children, attributes, element, item } = props
