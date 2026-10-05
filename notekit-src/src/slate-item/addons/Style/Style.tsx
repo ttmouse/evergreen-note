@@ -64,6 +64,7 @@ export function createStyleAddon(params: NewAddonParams) {
                 title: $t`style.management`,
                 item: 'AppStyles',
                 container: createTmpDom(),
+                DialogProps: { mask: true },
               })
             },
             others: {

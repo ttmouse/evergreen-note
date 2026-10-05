@@ -66,6 +66,7 @@ export function createAliasAddon({ $ }: NewAddonParams) {
                 title: $t`alias.management`,
                 item: APP_ALIASES_KY as any,
                 container: createTmpDom(),
+                DialogProps: { mask: true },
               })
             },
             quote: $t`alias.management_quote`,
@@ -95,6 +96,7 @@ export function createAliasAddon({ $ }: NewAddonParams) {
               title,
               item: theItem,
               keepTitleVisible: true,
+              DialogProps: { mask: true },
             })
           },
         },

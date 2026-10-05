@@ -152,12 +152,15 @@ export function createAddonCenterAddon({ app, $ }: NewAddonParams) {
         dialogId: 'addon-center-manager',
         title: $t`addonCenter.title`,
         titleVisibility: 'visible',
-        clickAway: false,
+        backdrop: true,
+        clickAway: true,
         onClose: (_event, reason) => {
-          if (reason === 'escapeKeyDown') $.dialog.close(dialogId)
+          if (reason === 'escapeKeyDown' || reason === 'backdropClick') {
+            $.dialog.close(dialogId)
+          }
         },
         maxWidth: 'lg',
-        classList: ['addon-center-dialog'],
+        classList: ['addon-center-dialog', 'app-modal'],
         body: <AddonCenterComp />,
       })
     }

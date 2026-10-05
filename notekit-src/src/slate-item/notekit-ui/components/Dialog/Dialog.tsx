@@ -218,6 +218,7 @@ export const Dialog = (props: DialogProps) => {
   } = props
 
   const ref = React.useRef<HTMLElement>(null)
+  const [maskContainer, setMaskContainer] = React.useState<HTMLElement | null>(null)
 
   const [states, dispatch] = React.useReducer(
     (current: DialogStates, action: DialogAction) => {
@@ -544,12 +545,21 @@ export const Dialog = (props: DialogProps) => {
   })
 
   const { visible } = states
+  React.useLayoutEffect(() => {
+    if (!visible || !mask || states.attributes?.['dialog-list-mode'] === 'andy') return
+    const container = ref.current?.parentElement
+    if (container) setMaskContainer(container)
+  }, [visible, mask, states.attributes?.['dialog-list-mode']])
+
   const setVisible = (v: boolean) =>
     dispatch({ type: 'set_visible', payload: v })
 
   const isAwayRef = React.useRef((ev: MouseEvent) => {})
   isAwayRef.current = (ev: MouseEvent) => {
-    if (states.pin || !canClickWay) {
+    if (
+      (states.pin && (!mask || states.attributes?.['dialog-list-mode'] === 'andy')) ||
+      !canClickWay
+    ) {
       return
     }
     if (typeof canClickWay === 'function' && !canClickWay(ev)) {
@@ -724,8 +734,11 @@ export const Dialog = (props: DialogProps) => {
           footer={footerContent}
           type="nui-dialog"
         >
-          {mask && (
-            <Mask opacity={typeof mask === 'number' ? mask : undefined} />
+          {mask && maskContainer && states.attributes?.['dialog-list-mode'] !== 'andy' && (
+            <Mask
+              container={maskContainer}
+              opacity={typeof mask === 'number' ? mask : undefined}
+            />
           )}
           {canResize && (
             <DialogResizer

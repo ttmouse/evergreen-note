@@ -53,6 +53,7 @@ notekit-src/backups/
 .zcodeignore
 .claude/
 .gemini/
+/skills/
 
 # ===== Python =====
 __pycache__/

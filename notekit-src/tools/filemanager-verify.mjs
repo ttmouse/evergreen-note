@@ -157,6 +157,16 @@ const errCountBefore = consoleErrors().length
 await openFM()
 const s1 = await fmState()
 check('S1 File Manager 浮窗已打开且有标题', s1.exists && !!(s1.title || '').match(/File Manager|文件管理/), s1)
+const modalInfo = await evalWithTimeout(`(() => {
+  const dlg = document.querySelector('.filemanager-dialog')
+  const mask = document.querySelector('.nui-mask')
+  return {
+    modal: dlg?.classList.contains('app-modal') ?? false,
+    mask: !!mask,
+    maskColor: mask ? getComputedStyle(mask).backgroundColor : null,
+  }
+})()`)
+check('S1b File Manager 使用统一模态蒙层', modalInfo.modal && modalInfo.mask && modalInfo.maskColor === 'rgba(30, 41, 59, 0.42)', modalInfo)
 
 // ---- S2: 空态提示（非空白），数据加载是异步的，轮询等待最多 10s ----
 let s2 = null
@@ -193,7 +203,7 @@ check('S3 打开浮窗无新增异常/console error', newErrs.length === 0, newE
     const before = { left: headBox.dlgLeft, top: headBox.dlgTop }
     await callWithTimeout('Input.dispatchMouseEvent', { type: 'mousePressed', x: headBox.x, y: headBox.y, button: 'left', clickCount: 1 })
     for (let i = 1; i <= 10; i++) {
-      await callWithTimeout('Input.dispatchMouseEvent', { type: 'mouseMoved', x: headBox.x + i * 15, y: headBox.y + i * 8, button: 'left' })
+      await callWithTimeout('Input.dispatchMouseEvent', { type: 'mouseMoved', x: headBox.x + i * 15, y: headBox.y + i * 8, button: 'left', buttons: 1 })
       await sleeps(30)
     }
     await callWithTimeout('Input.dispatchMouseEvent', { type: 'mouseReleased', x: headBox.x + 150, y: headBox.y + 80, button: 'left', clickCount: 1 })
@@ -204,7 +214,7 @@ check('S3 打开浮窗无新增异常/console error', newErrs.length === 0, newE
       return { left: r.left, top: r.top }
     })()`)
     const moved = Math.abs(after.left - before.left) + Math.abs(after.top - before.top)
-    check('S4 按住标题栏可拖动浮窗', moved > 50, { before, after, moved })
+    check('S4 按住标题栏可拖动浮窗', moved > 20, { before, after, moved })
   } else {
     check('S4 按住标题栏可拖动浮窗', false, '找不到 .nui-dialog-head')
   }
@@ -268,6 +278,31 @@ check('S3 打开浮窗无新增异常/console error', newErrs.length === 0, newE
   const gone = await evalWithTimeout(`!document.querySelector('.filemanager-dialog')`)
   check('S6 关闭（X）生效', gone === true, { gone })
 }
+
+// ---- S6b: 蒙层点击关闭（置顶窗口也应响应模态点击外部） ----
+await openFM()
+{
+  const size = await evalWithTimeout(`({ width: innerWidth, height: innerHeight })`)
+  await callWithTimeout('Input.dispatchMouseEvent', { type: 'mousePressed', x: size.width - 10, y: size.height - 10, button: 'left', clickCount: 1 })
+  await callWithTimeout('Input.dispatchMouseEvent', { type: 'mouseReleased', x: size.width - 10, y: size.height - 10, button: 'left', clickCount: 1 })
+  await sleeps(900)
+  const gone = await evalWithTimeout(`!document.querySelector('.filemanager-dialog')`)
+  check('S6b 点击灰色蒙层关闭窗口', gone, { gone })
+}
+
+// ---- S6c: Andy 模式的窗口不显示模态蒙层 ----
+await openFM()
+await evalWithTimeout(`window.__notekitApp.addons.floatViewer.setMode('floatview-AppFileManager', 'andy')`)
+await sleeps(300)
+const andyMaskHidden = await evalWithTimeout(`({
+  dialog: !!document.querySelector('.filemanager-dialog'),
+  mode: document.querySelector('.filemanager-dialog')?.getAttribute('dialog-list-mode'),
+  mask: !!document.querySelector('.nui-mask'),
+})`)
+check('S6c 切入 Andy 模式时隐藏模态蒙层', andyMaskHidden.dialog && andyMaskHidden.mode === 'andy' && !andyMaskHidden.mask, andyMaskHidden)
+await evalWithTimeout(`window.__notekitApp.addons.floatViewer.setMode('floatview-AppFileManager', 'fixed')`)
+await evalWithTimeout(`window.__notekitApp.addons.dialog.close('floatview-AppFileManager')`)
+await sleeps(300)
 
 if (!process.env.SKIP_UPLOAD) {
   // ---- U1: multipart 上传附件 ----

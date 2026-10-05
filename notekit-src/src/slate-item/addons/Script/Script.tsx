@@ -54,6 +54,7 @@ export function createScriptAddon(addonParams: NewAddonParams) {
                 title: $t`script.management`,
                 item: 'AppScripts',
                 container: createTmpDom(),
+                DialogProps: { mask: true },
               })
             },
             others: {

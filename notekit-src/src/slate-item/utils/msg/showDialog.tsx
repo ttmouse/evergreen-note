@@ -106,7 +106,7 @@ export function DialogComp<T>(props: DialogProps<T>) {
     title,
     body,
     buttons = {},
-    backdrop = false,
+    backdrop = true,
     clickAway = true,
     classList = [],
     dialogId = mkid(),
@@ -134,7 +134,7 @@ export function DialogComp<T>(props: DialogProps<T>) {
     )
   }
 
-  classList.push('dialog-outer')
+  classList.push('dialog-outer', 'app-modal')
   const [close, setClose] = usePubState(`is-dialog-close:${dialogId}`, false)
 
   const handleClose =

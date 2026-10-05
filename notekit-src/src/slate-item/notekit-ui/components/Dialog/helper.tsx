@@ -198,8 +198,10 @@ export const movable = (ele: HTMLElement, options: MovableOptions = {}) => {
     }
   }
   
-  ele.addEventListener('mousedown', handlePointerDown as EventListener)
-  ele.addEventListener('touchstart', handlePointerDown as EventListener, { passive: false })
+  // Capture on the dialog root so nested title-bar controls/components cannot
+  // stop propagation before the draggable handle sees the pointer down.
+  ele.addEventListener('mousedown', handlePointerDown as EventListener, true)
+  ele.addEventListener('touchstart', handlePointerDown as EventListener, { capture: true, passive: false })
   window.addEventListener('mousemove', handlePointerMove as EventListener)
   window.addEventListener('mouseup', handlePointerUp as EventListener)
 
@@ -208,7 +210,7 @@ export const movable = (ele: HTMLElement, options: MovableOptions = {}) => {
     window.removeEventListener('mouseup', handlePointerUp as EventListener)
     window.removeEventListener('touchmove', handlePointerMove as EventListener)
     window.removeEventListener('touchend', handlePointerUp as EventListener)
-    ele.removeEventListener('mousedown', handlePointerDown as EventListener)
-    ele.removeEventListener('touchstart', handlePointerDown as EventListener)
+    ele.removeEventListener('mousedown', handlePointerDown as EventListener, true)
+    ele.removeEventListener('touchstart', handlePointerDown as EventListener, true)
   }
 }

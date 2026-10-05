@@ -355,6 +355,7 @@ export function createSearchAddon(params: NewAddonParams) {
           place: ['right-in', 'bottom-out'],
         },
         ...rest,
+        DialogProps: { mask: true },
         item: 'AppSearch',
         editorProps: {
           readOnly: true,

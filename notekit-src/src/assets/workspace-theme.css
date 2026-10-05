@@ -1080,6 +1080,12 @@ html.mac-desktop .main-area.node > div:first-child {
 html.mac-desktop .main-area.node > div:first-child :is(.node-icon, .node-extra, .crumbs-item, button, input, a, [role="button"]) {
   -webkit-app-region: no-drag;
 }
+/* Floating dialogs can overlap the app's top native drag strip. Make their
+   full surface interactive so the OS drag region cannot swallow dialog input. */
+html.mac-desktop .nui-dialog,
+html.mac-desktop .nui-dialog * {
+  -webkit-app-region: no-drag;
+}
 html.mac-desktop .floatview-container[data-mode='andy'] > .floatview-container-head {
   -webkit-app-region: drag;
 }
@@ -1344,6 +1350,27 @@ body .workspace-header-actions .node-icon > svg {
 /* Andy's floating container disables pointer events; restore toolbar hit testing. */
 body .floatview-container[data-mode='andy'] > .floatview-container-head .workspace-header-actions {
   pointer-events: auto;
+}
+
+/* Shared modal treatment for utility panels, search, and management dialogs. */
+html body .nui-mask {
+  background-color: rgba(30, 41, 59, 0.42) !important;
+  z-index: 1000 !important;
+  opacity: 1 !important;
+  -webkit-app-region: no-drag;
+}
+html body .MuiBackdrop-root {
+  background-color: rgba(30, 41, 59, 0.42) !important;
+  -webkit-app-region: no-drag;
+}
+html body .app-modal.nui-dialog,
+html body .app-modal .MuiPaper-root {
+  border-radius: var(--radius-lg, 12px) !important;
+  box-shadow: var(--float-shadow, 0 12px 40px rgba(15, 23, 42, 0.22)) !important;
+}
+html body .app-modal .MuiDialogTitle-root {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--cl-border, rgba(0, 0, 0, 0.12));
 }
 
 /* Backlink panels: keep the sorter/filter toolbar on the same line as the panel title. */

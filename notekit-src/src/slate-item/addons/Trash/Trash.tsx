@@ -120,7 +120,9 @@ export function createTrashAddon({ app, $ }: NewAddonParams) {
       const dialogId = $.dialog.show({
         title: $t`trash.title`,
         body: <TrashComp />,
-        classList: ['trash-dialog'],
+        classList: ['trash-dialog', 'app-modal'],
+        backdrop: true,
+        clickAway: true,
         width: 600,
         SnapProps: {
           targetBox: window,

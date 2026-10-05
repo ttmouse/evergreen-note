@@ -267,10 +267,10 @@ export function createPreferAddon(addonParams: NewAddonParams) {
           $.prefer.setValue(name as PreferName, value)
         },
         DialogProps: {
-          classList: ['preferences-dialog'],
+          classList: ['preferences-dialog', 'app-modal'],
           maxWidth: 'md',
           backdrop: true,
-          clickAway: false,
+          clickAway: true,
           ...dialogProps,
         },
       })

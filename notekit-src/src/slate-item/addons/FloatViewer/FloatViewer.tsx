@@ -149,9 +149,7 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         title,
         body,
         pos,
-        container = document.querySelector(
-          `#${$.floatViewer.containerId} .floatview-container-subitems`
-        ),
+        container: requestedContainer,
         ...rest
       } = props
 
@@ -169,8 +167,16 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
 
       const { DialogProps: dialogProps = {} } = rest
       const { cssClass, ...dialogPropsWithoutCssClass } = dialogProps
+      const isAndyWindow =
+        app.states.floatViewerMode === 'andy' ||
+        dialogProps.attributes?.['dialog-list-mode'] === 'andy'
+      const isModal = !isAndyWindow && (dialogProps.mask ?? true)
+      const container = requestedContainer ?? document.querySelector(
+        `#${$.floatViewer.containerId} .floatview-container-subitems`
+      ) as HTMLElement | null
       const classList = [
         ...(cssClass ?? []),
+        ...(isModal ? ['app-modal'] : []),
         'dialog-item-float',
         'dialog-float-viewer',
       ]
@@ -231,6 +237,8 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         canPin: {
           pin: isPin,
         },
+        // Utility windows are modal outside Andy mode; note previews and Andy windows stay modeless.
+        mask: isModal,
         pos,
         canClose: true,
         canFold: true,
@@ -349,6 +357,8 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         body: <FloatViewerComp {...props} />,
         DialogProps: {
           id: dialogId,
+          // Note previews remain modeless; callers can opt in for utility panels.
+          mask: false,
           canClickWay: (ev) => {
             const target = ev.target as HTMLElement
             const exclude = [

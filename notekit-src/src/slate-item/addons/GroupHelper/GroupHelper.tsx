@@ -49,6 +49,7 @@ export function createGroupHelperAddon(addonParams: NewAddonParams) {
                 title: $t`Group Management`,
                 item: 'AppGroups',
                 container: createTmpDom(),
+                DialogProps: { mask: true },
               })
             },
             others: {

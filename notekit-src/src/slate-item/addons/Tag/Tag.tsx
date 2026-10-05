@@ -328,6 +328,7 @@ export function createTagAddon({ $ }: NewAddonParams) {
                 title: $t`tag.management`,
                 item: TAG_TOPIC_KY,
                 container: createTmpDom(),
+                DialogProps: { mask: true },
               })
             },
             others: {

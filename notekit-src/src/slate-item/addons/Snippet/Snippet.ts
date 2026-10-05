@@ -327,6 +327,7 @@ export function createSnippetAddon({ app, $ }: NewAddonParams) {
                 title: $t`snippet.management`,
                 item: SNIPPET_TOPIC_KY,
                 container: createTmpDom(),
+                DialogProps: { mask: true },
               })
             },
             others: {
