@@ -18,6 +18,8 @@ import { KYS } from '../../utils/string/mkid'
 import { omit } from '../../utils/object/omit'
 import { ItemEditor } from '../EditorFactory/ItemEditor'
 import { HotkeyMaps } from '../Hotkey/Hotkey'
+import { keyState } from '../KeyClick/helper'
+import { nanoid } from '../../utils/string/mkid'
 import { $t } from '../../../i18n'
 
 export type TopicPersist = UnitPersist & {
@@ -328,6 +330,45 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
 
     addonCommands(): HotkeyMaps {
       return {
+        newTopic: {
+          title: $t`topic.new_topic`,
+          icon: 'svg_add',
+          hotkey: 'mod+alt+n',
+          context: 'everywhere',
+          handle() {
+            // 与 TopicList 的「添加主题」一致：临时标题 Untitled + 随机后缀，
+            // 进入页面后标题处于全选状态，直接输入即改名。
+            const topicTitle = `Untitled ${nanoid(4)}`
+            // 与 Daily 的 ⌘L 同理：⌘ 仍处于按下状态时 router.to 会把
+            // 这次跳转误判成「⌘+点击 → 弹窗打开」，先清掉修饰键状态。
+            keyState.pressed.ctrl = 0
+            keyState.pressed.meta = 0
+            $.topic.route(topicTitle)
+            // 路由渲染完成后，把光标放进新页面的标题并全选，直接输入即可命名。
+            atLater(
+              () => {
+                const head = Array.from(
+                  document.querySelectorAll('header.node-head')
+                ).find((h) => h.textContent?.includes(topicTitle))
+                if (!head) return
+                const text = head.querySelector('[data-slate-string]')
+                  ?.firstChild as Text | undefined
+                const sel = window.getSelection()
+                if (text && sel) {
+                  const range = document.createRange()
+                  range.setStart(text, 0)
+                  range.setEnd(text, text.length)
+                  sel.removeAllRanges()
+                  sel.addRange(range)
+                } else {
+                  ;(head as HTMLElement).focus()
+                }
+              },
+              `focus-new-topic-${topicTitle}`,
+              400
+            )
+          },
+        },
         turnIntoSubTopic: {
           hotkey: 'mod+m',
           title: $t`topic.turn_into_sub_topic`,
@@ -358,6 +399,24 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
         if (item.topic && Item.headString(item).length < 1) {
           showSnack('The topic title should not be empty')
           return dbMemory.getItem(item.ky)
+        }
+
+        // 主题改名保存前做重名检查：目标标题已被其他主题占用则阻止保存。
+        // 与 check() 不同，这里要排除自身（标题未变时不算重名）。
+        if (Item.isTopic(item)) {
+          const newTopic = topic.refine(Item.headString(item))
+          const oldItem = dbMemory.getItem(item.ky)
+          if (
+            !isEmpty(newTopic) &&
+            newTopic !== oldItem?.topic &&
+            topic.isExist(newTopic)
+          ) {
+            showSnack({
+              content: $t(`topic.has_exist`, { topic: newTopic }),
+              severity: 'error',
+            })
+            return oldItem
+          }
         }
 
         const newItem = topic.updateTopicProp(item)

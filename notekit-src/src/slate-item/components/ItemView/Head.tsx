@@ -14,6 +14,7 @@ import { ItemStyle } from '../../addons/LayoutFactory/LayoutFactory'
 import { ITEM_CHANGED } from '../../addons/EditorFactory/EditorFactory'
 import { Item } from '@/slate-item'
 import { useSlateRef } from '../../hooks/useSlateRef'
+import './topic-dup.css'
 
 type CtxVars = {
   isInline: boolean
@@ -27,8 +28,28 @@ export const TopHead = (props: ElementComponentProps<any>) => {
   const isInline = React.useContext(ContextEditorInline)
   const $ = useAddons()
 
+  // 主题标题重名的持续状态：重名期间标题显示为危险色并常驻提示，
+  // 直到冲突解除（保存拦截见 Topic.addonRun 的 saveItem cover）。
+  // 与 Head 的 memo 依赖保持一致，随内容输入实时刷新。
+  const dupTopic = React.useMemo(() => {
+    if (isInline || isEmpty(item?.topic)) return null
+    try {
+      const refined = $.topic?.refine?.(Item.headString(item))
+      if (!refined) return null
+      const existed: any = $.dbMemory?.indexed?.topic?.[refined]
+      if (existed && existed.ky !== item.ky) return existed
+    } catch {
+      return null
+    }
+    return null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ITEM_CHANGED[item.$id]])
+
   return (
-    <header className={`${nodeStyleTop.head} node-head`} {...attributes}>
+    <header
+      className={`${nodeStyleTop.head} node-head${dupTopic ? ' topic-dup-title' : ''}`}
+      {...attributes}
+    >
       {isInline ? null : (
         <MemoizedExtra item={item} subitems={$.editorView.extraItems} />
       )}

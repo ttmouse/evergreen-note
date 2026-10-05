@@ -1,0 +1,7 @@
+/* 主题标题重名的持续状态样式（保存拦截见 addons/Topic/Topic.tsx）
+   设计约束（docs/design-rules/DESIGN.md §2/§4）：单信号表达，文字颜色承担状态，
+   不加底色/边框/竖条；颜色走编辑器自治层 --cl-* 变量，不写裸 hex。 */
+
+.node-head.topic-dup-title {
+  color: var(--cl-red-600);
+}

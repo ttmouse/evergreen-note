@@ -734,6 +734,8 @@
     "slash_menu_title": "Embed web"
   },
   "topic": {
+    "new_topic": "New topic",
+    "input_topic_title": "Enter topic title",
     "turn_into_sub_topic": "Turn into sub topic",
     "turn_into_root_topic": "Turn into top topic",
     "topicalize": "Topicalize",

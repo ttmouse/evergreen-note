@@ -734,6 +734,8 @@
     "slash_menu_title": "网页嵌入"
   },
   "topic": {
+    "new_topic": "新建主题",
+    "input_topic_title": "输入主题标题",
     "turn_into_sub_topic": "设为子主题",
     "turn_into_root_topic": "设为顶级主题",
     "topicalize": "转换成主题",
