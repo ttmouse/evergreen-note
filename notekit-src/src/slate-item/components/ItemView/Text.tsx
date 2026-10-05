@@ -19,21 +19,18 @@ appendStyle(`
     content: attr(placeholder);
   }
   /* IME 组合输入期间占位符不隐藏，会和组合串叠成两行（空标题草稿打字时必现）。
-     本仓 Slate 0.126 无 data-slate-composed 标记，用组合事件在节点上切类名。 */
-  .node-empty-text.ime-composing > .node-head .node-text::before {
+     本仓 Slate 0.126 无 data-slate-composed 标记，用组合事件在 body 上切类
+     （不能挂在 .node 上——React 重渲染会重置 className 把外加类清掉）。 */
+  body.ime-composing .node-empty-text > .node-head .node-text::before {
     content: none;
   }
 `)
 
-// compositionstart/end 捕获阶段全局监听一次，给组合所在节点挂 ime-composing 类
+// compositionstart/end 捕获阶段全局监听一次，组合期间给 body 挂 ime-composing 类
 if (typeof document !== 'undefined' && !(window as any).__imeComposingHook) {
   ;(window as any).__imeComposingHook = true
-  const toggle = (e: Event, on: boolean) => {
-    const node = (e.target as HTMLElement)?.closest?.('.node-empty-text')
-    node?.classList.toggle('ime-composing', on)
-  }
-  document.addEventListener('compositionstart', (e) => toggle(e, true), true)
-  document.addEventListener('compositionend', (e) => toggle(e, false), true)
+  document.addEventListener('compositionstart', () => document.body.classList.add('ime-composing'), true)
+  document.addEventListener('compositionend', () => document.body.classList.remove('ime-composing'), true)
 }
 
 export const Text = (props: ElementComponentProps<any>) => {
