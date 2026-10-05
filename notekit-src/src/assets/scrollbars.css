@@ -1,0 +1,51 @@
+/* Keep the gutter unchanged; only actual scrolling reveals the thumb.
+   Specificity overrides theme and hover rules, including injected addon styles. */
+html:root,
+html:root :is(body, body *) {
+  /* Chromium's scrollbar-color overrides custom thumb geometry. */
+  scrollbar-color: auto !important;
+  scrollbar-width: auto !important;
+}
+html:root::-webkit-scrollbar,
+html:root :is(body, body *)::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+html:root::-webkit-scrollbar,
+html:root :is(body, body *)::-webkit-scrollbar,
+html:root::-webkit-scrollbar-track,
+html:root :is(body, body *)::-webkit-scrollbar-track,
+html:root::-webkit-scrollbar-corner,
+html:root :is(body, body *)::-webkit-scrollbar-corner,
+html:root::-webkit-scrollbar-thumb,
+html:root :is(body, body *)::-webkit-scrollbar-thumb {
+  background: transparent !important;
+}
+html:root::-webkit-scrollbar-thumb,
+html:root :is(body, body *)::-webkit-scrollbar-thumb {
+  border: 3px solid transparent !important;
+  border-radius: 10px !important;
+  background-clip: padding-box !important;
+}
+html:root[data-scrollbar-active]::-webkit-scrollbar-thumb,
+html:root :is(body, body *)[data-scrollbar-active]::-webkit-scrollbar-thumb {
+  background-color: var(--nk-line-strong, #9ca3af) !important;
+}
+/* Hover the thumb itself, never the surrounding scrollable content. */
+html:root[data-scrollbar-active]::-webkit-scrollbar-thumb:hover,
+html:root :is(body, body *)[data-scrollbar-active]::-webkit-scrollbar-thumb:hover,
+html:root[data-scrollbar-active]::-webkit-scrollbar-thumb:active,
+html:root :is(body, body *)[data-scrollbar-active]::-webkit-scrollbar-thumb:active {
+  border-width: 1px !important;
+}
+@supports not selector(::-webkit-scrollbar) {
+  html:root,
+  html:root :is(body, body *) {
+    scrollbar-color: transparent transparent !important;
+    scrollbar-width: thin !important;
+  }
+  html:root[data-scrollbar-active],
+  html:root :is(body, body *)[data-scrollbar-active] {
+    scrollbar-color: var(--nk-line-strong, #9ca3af) transparent !important;
+  }
+}

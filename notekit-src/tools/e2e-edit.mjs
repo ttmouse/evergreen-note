@@ -1,0 +1,30 @@
+import { connect } from './cdp-client.mjs'
+import { writeFileSync } from 'node:fs'
+const [port,output] = process.argv.slice(2)
+const c=await connect(port)
+await c.evaluate(`window.__notekitApp.addons.topic.route('SQLite迁移验收'); true`)
+await new Promise(r=>setTimeout(r,600))
+const before=await c.evaluate(`(()=>{const child=document.querySelector('[data-ky="legacy-child"]');return {visible:!!child,text:child?.innerText,editors:document.querySelectorAll('[contenteditable="true"]').length}})()`)
+if(!before.visible||!before.text.includes('迁移前的正文'))throw new Error('迁移的笔记没有显示在编辑器中')
+await c.evaluate(`(()=>{const item=document.querySelector('[data-ky="legacy-child"]');const span=item.querySelector('[data-slate-string]');const editor=span.closest('[contenteditable="true"]');editor.focus();const range=document.createRange();range.selectNodeContents(span);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);return true})()`)
+const marker='，SQLite重启验收-'+Date.now()
+await c.call('Input.insertText',{text:marker})
+await c.evaluate(`window.__notekitApp.addons.dbDisk.flush()`)
+const after=await c.evaluate(`(async()=>{const row=await window.__notekitApp.addons.dbDisk.open('db-1-v2main').node.get('legacy-child');return {row,text:document.querySelector('[data-ky="legacy-child"]')?.innerText}})()`)
+if(!JSON.stringify(after.row.leaves).includes(marker))throw new Error('真实编辑器的修改没有写入 SQLite')
+const status=await c.evaluate(`fetch('/api/storage/status').then(r=>r.json())`)
+const legacy=await c.evaluate(`(async()=>{const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('db-1-v2main');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});try{return await new Promise((resolve,reject)=>{const r=db.transaction('node','readonly').objectStore('node').get('legacy-child');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}finally{db.close()}})()`)
+if(JSON.stringify(legacy.leaves).includes(marker))throw new Error('笔记仍然写入 IndexedDB')
+const finalMarker='，退出前最后一次修改-'+Date.now()
+const report={finalMarker,before,sqliteAfterEdit:after,indexedDbUnchanged:legacy.leaves,mode:status.mode,migrations:status.migrations.map(x=>({dbid:x.dbid,tables:x.tables})),runtimeErrors:c.events.filter(e=>e.method==='Runtime.exceptionThrown'||(e.method==='Runtime.consoleAPICalled'&&e.params.type==='error'))}
+writeFileSync(output,JSON.stringify(report,null,2));console.log(JSON.stringify(report))
+// 在最后一次编辑后立刻关闭窗口，覆盖保存延迟与正常退出的竞态。
+await c.evaluate(`(()=>{const span=document.querySelector('[data-ky="legacy-child"] [data-slate-string]');span.closest('[contenteditable="true"]').focus();const range=document.createRange();range.selectNodeContents(span);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);return true})()`)
+await c.call('Input.insertText',{text:finalMarker})
+const finalUi = await c.evaluate(`document.querySelector('[data-ky="legacy-child"]')?.innerText`)
+if (!finalUi.includes(finalMarker)) throw new Error('最终输入未进入编辑器正文')
+report.finalUi = finalUi
+report.finalModel = await c.evaluate(`(()=>{const el=document.querySelector('[data-ky="legacy-child"]');return {editorPresent:!!el?.$editor,memory:window.__notekitApp.addons.dbMemory.getItem('legacy-child').leaves}})()`)
+writeFileSync(output,JSON.stringify(report,null,2))
+await c.evaluate(`window.close(); true`).catch(()=>{})
+c.close()

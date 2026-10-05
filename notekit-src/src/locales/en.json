@@ -1,0 +1,880 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Confirm",
+    "notice": "Notice",
+    "gotit": "Got it",
+    "edit": "Edit",
+    "logout": "Logout",
+    "trash": "Trash",
+    "copy": "Copy",
+    "cut": "Cut",
+    "paste": "Paste",
+    "delete": "Delete",
+    "delete_confirm": "Are you sure to delete",
+    "more": "More",
+    "manage": "Manage",
+    "print": "Print",
+    "done": "Done",
+    "updated": "Updated",
+    "enable": "Enable",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "all": "All",
+    "search": "Search",
+    "others": "Others",
+    "insert_above": "Insert above",
+    "insert_below": "Insert below",
+    "on": "On",
+    "off": "Off",
+    "yes": "Yes",
+    "no": "No",
+    "new_option": "New option",
+    "add": "Add",
+    "new": "New",
+    "loading": "Loading",
+    "submit": "Submit",
+    "save": "Save",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "clear": "Clear",
+    "height": "Height",
+    "width": "Width",
+    "url": "URL",
+    "open": "Open",
+    "operations": "Operations"
+  },
+  "editor": {
+    "export_current": "Export current document",
+    "import_current": "Import a file",
+    "right_open": "Open in right side",
+    "add_aliases": "Add aliases",
+    "item_not_found": "The item does not exist"
+  },
+  "exports": {
+    "choose_target_title": "Choose target format",
+    "target_format": "Target format",
+    "export_button": "Export",
+    "pdf_format_alert": "{{appName}} exports PDF by the browser's print function, it will show the browser's print dialog, just select [Save as PDF] for the destination, then click the SAVE button.",
+    "editor_dropdown_title": "Export this document",
+    "export_database": "Export this database"
+  },
+  "imports": {
+    "title": "Import",
+    "quote": "Import items from local files",
+    "import_database": "Import a database",
+    "form_title": "Choose source format",
+    "source_format": "Source format",
+    "item_id": "ID of item",
+    "keep_id": "Keep original ID",
+    "generate_id": "Generate new ID",
+    "item_time": "Time (created, updated)",
+    "keep_time": "Keep original time",
+    "generate_time": "Generate new time",
+    "import_button": "Import",
+    "editor_dropdown_title": "Import a file",
+    "json_error": "The imported source is not valid JSON",
+    "empty_warning": "The imported source is empty",
+    "plain_text": "Plain text"
+  },
+  "script": {
+    "title": "User scripts",
+    "quote": "Add your own javascript to customize features",
+    "management": "Scripts management",
+    "error": "Script error occurred in your script",
+    "check": "Check it",
+    "reload": "Reload to apply new configuration",
+    "installed_text": "Installed",
+    "install_text": "Install"
+  },
+  "style": {
+    "title": "User styles",
+    "quote": "Add your own css code to customize app's appearance, like: background color, font size, etc. LESS syntax is supported",
+    "management": "Styles management",
+    "installed_styles": "Installed styles",
+    "install_text": "Install",
+    "installed_text": "Installed"
+  },
+  "snippet": {
+    "title": "Snippet",
+    "quote": "You can easily create a snippet(template) and apply it to any item, this is very useful for reusing you knowledge. what's more, you can also create assign a condition to the snippet, and the snippet will be automatically applied to the item when the condition is met.",
+    "management": "Snippets management",
+    "turn_into_snippet": "As snippet",
+    "form_title": "Snippet settings",
+    "condition": "Activation condition",
+    "condition_quote": "Import the snippet when some item meet this condition",
+    "with_title": "Import title",
+    "with_title_quote": "Whether to import the title while using this snippet",
+    "setting_button": "Snippet settings",
+    "import_snippet": "Import snippet"
+  },
+  "hint": {
+    "title": "Connection hint",
+    "quote": "Give you a hint when some topic connections detected, help you take networked notes.",
+    "ignore_globally": "Ignore globally",
+    "ignore_globally_quote": "Ignore some keywords globally, will not show hint for them in all topics.",
+    "make_link": "Make a link",
+    "view_notes": "View notes",
+    "ignore": "Ignore this keyword",
+    "in_current_item": "In current item",
+    "in_current_topic": "In current topic",
+    "globally": "Globally",
+    "ingore_success": "Keyword ignored: {{keyword}}"
+  },
+  "tag": {
+    "title": "Tags",
+    "quote": "Tag your items with #",
+    "management": "Tags management"
+  },
+  "random": {
+    "title": "Random review",
+    "quote": "Review your notes randomly, you can set a rule to filter items as random range",
+    "random_route_rule": "Random route rule",
+    "random_route_rule_quote": "The range of the global random route, the rule follows search syntax",
+    "no_item_found": "No item found for the random rule: {{rule}}",
+    "route": "Random route",
+    "slash_menu_title": "Random block"
+  },
+  "alias": {
+    "title": "Topic alias",
+    "quote": "Define aliases to topic, and redirect to the main topic. For example, you can define \"\"alias: [[A]]\"\" to topic [[B]], then when you visit [[A]], it will redirect to [[B]].",
+    "management": "Alias management",
+    "management_quote": "Open App/Aliases to manage aliases.",
+    "editor_dropdown_label": "Manage aliases",
+    "float_view_title": "Aliases of [{{topic}}]"
+  },
+  "addonCenter": {
+    "settings": "Plugin settings",
+    "search": "Search plugin names or descriptions…",
+    "clear_search": "Clear search",
+    "filter": "Filter plugins",
+    "no_results": "No matching plugins",
+    "search_hint": "Try another keyword or change the filter.",
+    "select_hint": "Select a plugin to view its details and manage its status.",
+    "title": "Addons",
+    "management": "Addons management",
+    "management_quote": "Most of the addons can be enabled or disabled, currently {{count}} addons were enabled",
+    "updated": "Updated:{{updated}}",
+    "reload": "Reload the page to apply the changes",
+    "found": "{{count}} addons found",
+    "from_public": "Notice: The below content is RoamEdit public documentation, it is also a sandbox for you to have any try on it, all of the modification won’t be posted to server.",
+    "doc_library": "docs-en"
+  },
+  "imghost": {
+    "title": "Image host",
+    "quote": "Support third-pary image hosting service (currently only supports AliOSS)",
+    "host_name": "Host name",
+    "alioss_alert": "Make sure you've set up the AliOSS service and created a bucket, and then fill in the above information",
+    "success_msg": "Upload successfully: {{filename}}"
+  },
+  "clue": {
+    "title": "Clue",
+    "quote": "Give some clues for you about the items、hyperlinks、bi-links. For example, when you fold a item, it will tell you the word count of the item.",
+    "words_count": "{{count}} words"
+  },
+  "ui": {
+    "title": "Appearance",
+    "ui_lang": "Language",
+    "ui_dark_mode": "Dark mode",
+    "reload": "Reload the page to apply the changes"
+  },
+  "attachment": {
+    "title": "Attachment",
+    "quote": "Insert attachments into your notes",
+    "slash_menu_title": "Attachment"
+  },
+  "backlink": {
+    "title": "Backlink",
+    "quote": "Display linked references and unlinked references for a topic item",
+    "linked_references": "{{count}} Linked References",
+    "unlinked_references": "{{count}} Unlinked References"
+  },
+  "bilink": {
+    "title": "Page reference",
+    "quote": "Easily create bidirectional links by typing [[]]",
+    "link_today": "Link to today",
+    "link_tomorrow": "Link to tomorrow",
+    "link_yesterday": "Link to yesterday",
+    "form_title": "Page reference",
+    "link_text": "Text of link",
+    "link_target": "Target of link(optional)",
+    "link_target_quote": "The topic you want to link to",
+    "bracket_visible": "Show square brackets"
+  },
+  "borderFoldup": {
+    "title": "Border foldup",
+    "quote": "Click left border of block to foldup each subitem"
+  },
+  "codeblock": {
+    "title": "Code block",
+    "quote": "Insert code block into your notes",
+    "slash_menu_title": "Code block"
+  },
+  "conf": {
+    "title": "Preferences"
+  },
+  "copy": {
+    "plain_text": "Plain text",
+    "embed": "Embed block",
+    "block": "Block",
+    "web_url": "Web URL",
+    "roamedit_url": "roamedit:// Link"
+  },
+  "counter": {
+    "title": "Item count",
+    "quote": "Count the number of items that match given rule",
+    "slash_menu_title": "Item count",
+    "inline_form_title": "Rule of item count",
+    "direct_subitems": "Direct subitems",
+    "subitems": "Direct subitems",
+    "descendant": "All descendant",
+    "enditems": "End subitems",
+    "customized": "Customized",
+    "customized_title": "Customized rule",
+    "customized_quote": "If the target items is under current block, please use {%self} to represent it. If without {%self}, it will count all items in database. And if the customized rule is empty, it is same as direct subitems."
+  },
+  "daily": {
+    "title": "Daily note",
+    "quote": "A frictionless default input for personal knowledge management systems",
+    "nav_title": "Diaries",
+    "today": "Open today's note",
+    "yesterday": "Open yesterday's note"
+  },
+  "embed": {
+    "title": "Block embed",
+    "quote": "Embed a block into current block",
+    "slash_menu_title": "Block embed"
+  },
+  "mirror": {
+    "title": "Mirror block",
+    "quote": "You can create mirror blocks for an existing content block, it makes the content block be able to appear in multiple places.",
+    "mirror_references": "{{count}} Mirror items"
+  },
+  "exportPdf": {
+    "title": "Export PDF",
+    "quote": "Export PDF by browser's print function",
+    "notice": "{{appName}} exports PDF by the browser's print function, it will show the browser's print dialog, just select [Save as PDF] for the destination, then click the SAVE button.`"
+  },
+  "extArea": {
+    "title": "Right sidebar",
+    "quote": "Display your notes in the right sidebar.",
+    "editor_dropdown_title": "Open in right side"
+  },
+  "floatBar": {
+    "title": "Float bar",
+    "quote": "Display a float bar when you select text",
+    "placement": "Placement",
+    "placement_above": "Above the selected text",
+    "placement_below": "Below the selected text",
+    "placement_quote": "If you are using some browser extensions that may conflict with the float bar, you can try to change the placement of float bar"
+  },
+  "floatMenu": {
+    "title": "Float menu",
+    "quote": "A menu for bullet",
+    "unfold_siblings": "Unfold siblings",
+    "fold_siblings": "Fold siblings"
+  },
+  "floatViewer": {
+    "title": "Float viewer",
+    "quote": "Diaplay a float dialog to view the detail of a link when mouse hover"
+  },
+  "help": {
+    "title": "Help",
+    "quote": "Provide some helpful information in the app, such as hotkeys, documentation, etc. you will see a question mark icon in the bottom right corner of the app.",
+    "hotkeys": "Hotkeys",
+    "documentation": "Documentation",
+    "official_site": "Official site",
+    "forum": "Forum"
+  },
+  "hyperlink": {
+    "title": "Hyperlink",
+    "quote": "Insert hyperlink into your note",
+    "url": "URL",
+    "text": "Text",
+    "form_title": "Edit hyperlink"
+  },
+  "img": {
+    "title": "Image",
+    "quote": "Insert image into your note",
+    "image_url": "Image URL",
+    "alt_text": "Alt text",
+    "link_url": "Link URL",
+    "width": "Width",
+    "form_title": "Edit image",
+    "slash_menu_title": "Image"
+  },
+  "latex": {
+    "title": "Latex",
+    "quote": "Insert latex into note",
+    "slash_menu_title": "Latex"
+  },
+  "flexmap": {
+    "title": "Mindmap",
+    "quote": "Display your notes in mindmap view",
+    "slash_menu_title": "Mindmap",
+    "untitled": "Untitled mindmap",
+    "item_menu_title": "Mindmap"
+  },
+  "kanban": {
+    "title": "Kanban",
+    "quote": "Display your notes in kanban view",
+    "untitled": "Untitled Kanban",
+    "column_placeholder": "Column {{order}}",
+    "slash_menu_title": "Kanban",
+    "item_menu_title": "Kanban"
+  },
+  "layoutFactory": {
+    "title": "Layouts",
+    "quote": "Display a block in different layouts, such as table, kanban, mindmap, markdown, etc.",
+    "outline": "Outline",
+    "item_menu_title": "Choose a layout",
+    "item_menu_defaults": "Default"
+  },
+  "whiteboard": {
+    "title": "Whiteboard",
+    "quote": "The whiteboard is a tool for organizing your thoughts. It is very flexible. You can freely place your notes at any coordinates on the whiteboard. And with the arrow connection function, you can indicate the relationships between the notes.",
+    "zoom_in": "Zoom in",
+    "zoom_out": "Zoom out",
+    "zoom_fit": "Zoom to fit",
+    "zoom_current": "The current zoom scale is {{zoom}}%",
+    "zoom_reset": "Click to reset to 100%",
+    "create_block": "Create block",
+    "search_or_create": "Search or create",
+    "search_topic_only": "Search topic only",
+    "search_item_only": "Search blocks only"
+  },
+  "tableSimple": {
+    "title": "Simple table",
+    "quote": "Display your notes in simple-table view",
+    "slash_menu_title": "Simple table",
+    "first_column_layout_error": "Can not apply table layout to the first column",
+    "first_column_subitems_error": "A column with subitems can not be the first column",
+    "untitled": "Untitled table"
+  },
+  "markdown": {
+    "title": "Markdown",
+    "quote": "Support markdown syntax",
+    "h1": "Header 1",
+    "h2": "Header 2",
+    "h3": "Header 3",
+    "h4": "Header 4",
+    "h5": "Header 5",
+    "h6": "Header 6",
+    "divider": "Divider",
+    "bold": "Bold",
+    "underline": "Underline",
+    "strikethrough": "Strikethrough",
+    "italic": "Italic",
+    "highlight": "Highlight",
+    "code": "Code",
+    "parapraph": "Normal text",
+    "clear_format": "Clear formatting"
+  },
+  "mermaidGraph": {
+    "title": "Mermaid",
+    "quote": "Create a graph by mermaid",
+    "form_title": "Mermaid graph",
+    "slash_menu_title": "Mermaid graph"
+  },
+  "nameSpace": {
+    "title": "Name space",
+    "quote": "Solve the polysemy issue. Sometimes a keyword can have multiple meanings, we try to distinguish them by name space.",
+    "form_title_choose": "Select meaning",
+    "meaning_of": "Meaning of “{{keyword}}”",
+    "bind_button": "Bind",
+    "open_button": "Open",
+    "link_button": "Link",
+    "namespace_references": "{{count}} Different meanings"
+  },
+  "networkGraph": {
+    "title": "Network graph",
+    "quote": "Give you an overview graph to check your knowledge network",
+    "nav_title": "Graphs"
+  },
+  "orderedList": {
+    "title": "Ordered List",
+    "quote": "Set a block to be an ordered list",
+    "nested": "Nested counter",
+    "number": "Number",
+    "number_dot": "Number.",
+    "number_right_bracket": "Number)",
+    "(number)": "(Number)",
+    "lower": "Lowercase",
+    "lower)": "Lowercase)",
+    "(lower)": "(Lowercase)",
+    "lower_dot": "Lowercase.",
+    "upper": "Uppercase",
+    "upper_dot": "Uppercase.",
+    "roman": "Roman",
+    "item_menu_title": "Ordered List",
+    "item_menu_undered_list": "Unordered list"
+  },
+  "pomo": {
+    "title": "Pomo timer",
+    "quote": "Pomo timer for your productivity, you can create a pomo timer component in your notes",
+    "duration": "Duration(minutes)",
+    "slash_menu_title": "Pomo timer",
+    "log": "Generate log",
+    "log_quote": "Create a log in daily note when time up",
+    "log_msg": "completed {{duration}}-minutes pomo timer",
+    "rating_title": "Rating for this pomo",
+    "rating_quote": "You have completed a pomo. would you like to rate it",
+    "comment_title": "How do you feel right now"
+  },
+  "recent": {
+    "title": "Recent",
+    "quote": "Track the recent visited items",
+    "nav_title": "Recent"
+  },
+  "refer": {
+    "title": "Block reference",
+    "quote": "You can easily reference the content of existing blocks in your notes, by typing ((block ID)).",
+    "form_title": "Block reference",
+    "slash_menu_title": "Block reference",
+    "refky": "Block ID",
+    "alias_text": "Alias",
+    "float_bar_title": "Move the selected text to daily note, then create a block reference for it",
+    "current_page_is_target_page": "The current page is just the target page",
+    "refer_icon_tip": "Click to view {{count}} references"
+  },
+  "search": {
+    "title": "Search",
+    "quote": "Search your notes",
+    "keyword_case_error": "The keyword AND or OR should be uppercase",
+    "float_bar_title": "Search selected text",
+    "slash_menu_title": "Search"
+  },
+  "star": {
+    "title": "Star",
+    "quote": "Add a star to an item.",
+    "nav_title": "Star"
+  },
+  "statusBar": {
+    "title": "Status bar",
+    "quote": "Status bar is a place to show some interactive infos in runtime."
+  },
+  "blockStyle": {
+    "title": "Block style",
+    "quote": "Change a block’s appearance with your own CSS code",
+    "install_dialog_title": "Enable style",
+    "install_dialog_body": "The block style “{{styleName}}” has NOT been enabled",
+    "install_button": "Enable",
+    "install_success": "The block style “{{styleName}}” is installed",
+    "clear": "Clear this style",
+    "form_title": "Block style settings",
+    "condition": "Activation condition",
+    "condition_quote": "Automatically apply the block style when a block meet this condition. Note: you can also apply the block style manually by clicking the block style item in the block menu."
+  },
+  "summary": {
+    "title": "Summary",
+    "quote": "Support to create a summary in a mindmap item",
+    "can_not_remove_start_and_end": "Can not remove a start or end point of summary",
+    "can_not_move_summary": "Can not move a summary item",
+    "can_not_move_start_and_end": "Can move a start or end point of summary",
+    "not_same_parent": "Both the start and end of the summary must be in the same parent",
+    "not_in_mindmap": "The summary item can only be created in mindmap",
+    "should_not_intersect": "A summary should not intersect with another summary"
+  },
+  "sync": {
+    "title": "Sync",
+    "quote": "Sync your data among devices",
+    "up": "Uploading items",
+    "todo": "Pending {{waitingCount}} items",
+    "done": "Sync is done",
+    "fetching": "Fetching items from server",
+    "offline": "Network offline",
+    "fail": "Some items failed to sync"
+  },
+  "topicList": {
+    "title": "Topic list",
+    "quote": "Display all of the created topics",
+    "new_form_title": "New topic",
+    "topic_title": "Topic title",
+    "nav_title": "Topics",
+    "new_topic_button": "new topic"
+  },
+  "typingMode": {
+    "title": "Typing mode",
+    "quote": "Hide some elements when you are typing to keep your focus"
+  },
+  "hotkey": {
+    "title": "Hotkeys",
+    "browser_back": "Back",
+    "browser_forward": "Forward",
+    "up": "Move caret up",
+    "down": "Move caret down",
+    "left": "Move caret left",
+    "right": "Move caret right",
+    "move_item_down": "Move item down",
+    "move_item_right": "Move item right",
+    "move_item_up": "Move item up",
+    "move_item_left": "Move item left",
+    "indent": "Indent",
+    "outdent": "Outdent",
+    "fixed_outdent": "Fixed outdent",
+    "zoom_in": "Zoom in",
+    "insert_item": "Insert item",
+    "soft_break": "Soft break",
+    "insert_subitem": "Insert subitem",
+    "delete_backward": "Delete backward",
+    "delete_word_backward": "Delete word backward",
+    "delete_word_forward": "Delete word forward",
+    "delete_item_directly": "Delete item directly",
+    "collapse_children": "Collapse children",
+    "expand_children": "Expand children",
+    "delete_forward": "Delete forward",
+    "select_all": "Select all text",
+    "expand_collapse_siblings": "Expand or collapse siblings",
+    "bold": "Bold",
+    "underline": "Underline",
+    "strikethrough": "Strikethrough",
+    "code": "Code",
+    "highlight": "Highlight",
+    "italic": "Italic"
+  },
+  "crumbs": {
+    "title": "Item path",
+    "quote": "Control editor how to display item path",
+    "document_crumbs_position": "Position of document’s breadcrumbs",
+    "top_bar": "Top bar",
+    "top_doc": "Top of document",
+    "block_ref_crumbs_visible": "Display path in block reference",
+    "top_bar_quote": "The item path component will be truncated if the text is too long.",
+    "top_doc_quote": "The item path component will be fully displayed without truncation."
+  },
+  "slash": {
+    "title": "Slash menu",
+    "quote": "Diaplay a function menu while typeng ‘/‘",
+    "current_time": "Current time"
+  },
+  "sorter": {
+    "default": "Default",
+    "reminder": "Reminder",
+    "updated": "Updated",
+    "created": "Created",
+    "word_count_self": "Word Count (Self)",
+    "word_count_sub": "Word Count (+Sub)",
+    "mention_count": "Mention Count",
+    "items_count": "Items Count",
+    "a_to_z": "A to Z",
+    "included_number": "Included Number",
+    "char_repetition": "Char Repetition",
+    "comprehensive": "Comprehensive",
+    "customized_method": "Customized Method",
+    "asc": "Asc",
+    "desc": "Desc",
+    "input_repeat_char": "Please input the repeat char",
+    "input_customized_sorter": "Please input the customized sorter function"
+  },
+  "sliderbar": {
+    "title": "Slider",
+    "quote": "Insert slider into your notes",
+    "slash_menu_title": "Slider"
+  },
+  "checkbox": {
+    "title": "Checkbox",
+    "quote": "Insert checkbox into your notes",
+    "slash_menu_title": "Checkbox"
+  },
+  "rating": {
+    "title": "Rating",
+    "quote": "Insert rating component into your notes",
+    "slash_menu_title": "Rating"
+  },
+  "switcher": {
+    "title": "Switch",
+    "quote": "Insert switch composent into your notes",
+    "slash_menu_title": "Switch"
+  },
+  "searchDialog": {
+    "title": "Search dialog",
+    "quote": "Search your notes",
+    "create_topic": "Create topic",
+    "no_data": "No matching notes",
+    "empty_prompt": "Type a keyword to find topics and note content",
+    "keyboard_help": "↑↓ Select · Enter Open · Esc Close",
+    "results_count": "{{count}} matching notes"
+  },
+  "customMark": {
+    "title": "Custom mark",
+    "quote": "Custom mark addon make you can add custom mark to your notes, such as text color, font-family, superscript, subscript, etc.",
+    "red": "Red",
+    "green": "Green",
+    "blue": "Blue",
+    "yellow": "Yellow",
+    "subscript": "Subscript",
+    "superscript": "Superscript",
+    "above": "Above",
+    "normal": "Normal",
+    "custom_mark": "Custom mark",
+    "add_format": "Add format",
+    "support_less": "Support LESS syntax to write CSS",
+    "style": "Style",
+    "format_name": "Format name",
+    "management": "Manage custom format",
+    "note": "Note",
+    "trigger_pattern": "Trigger pattern",
+    "trigger_quote": "Trigger this format when inline text match the pattern. Say you have a pattern like <<*>>, when you input <<Hello world>> in your note, this will trigger the current custom format.",
+    "text_color": "Text color"
+  },
+  "scroller": {
+    "title": "Scroller",
+    "quote": "Scroll to the target item when you try to zoom into a ref item"
+  },
+  "sandbox": {
+    "title": "Sandbox",
+    "back": "Back to my library"
+  },
+  "calendar": {
+    "month": "{{month}}"
+  },
+  "heatmap": {
+    "title": "Heatmap",
+    "quote": "A heat map, or heat map, is a data visualization technique that shows how hard you're working on your notes in two-dimensional color blocks",
+    "slash_menu_title": "Heatmap",
+    "start_month": "Start month",
+    "end_month": "End month"
+  },
+  "dailyActivity": {
+    "title": "Daily activity",
+    "quote": "Display daily activity at the bottom of each daily note",
+    "created_references": "{{count}} Created items",
+    "updated_references": "{{count}} Updated items"
+  },
+  "datePicker": {
+    "title": "Date picker",
+    "quote": "Date picker",
+    "slash_menu_title": "Date picker"
+  },
+  "dateTool": {
+    "title": "Date tool",
+    "quote": "Provides some date-related functionality",
+    "calendar": "Calendar"
+  },
+  "reminder": {
+    "title": "Reminder",
+    "quote": "You can set a condition (such as deadline) to an item, and you will be reminded when the condition is met",
+    "form_title": "Remind",
+    "repeat_interval": "Every",
+    "repeat_plan": "Remind",
+    "repeat_once": "Once",
+    "repeat_daily": "Daily",
+    "repeat_weekly": "Weekly",
+    "repeat_monthly": "Monthly",
+    "repeat_yearly": "Yearly",
+    "repeat_never": "Never",
+    "unit_hour": "Hours",
+    "unit_day": "Days",
+    "unit_week": "Weeks",
+    "unit_month": "Months",
+    "unit_year": "Years",
+    "item_menu_title": "Remind",
+    "due_date": "Due date",
+    "due_time": "Due time",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
+    "sun": "Su",
+    "mon": "M",
+    "tue": "T",
+    "wed": "W",
+    "thu": "T",
+    "fri": "F",
+    "sat": "Sa",
+    "day_of_week": "Day of week",
+    "day_of_month": "Day of month",
+    "day_of_year_quote": "Repeat on [{{mm}}-{{dd}}] every year",
+    "day_of_month_option": "Day {{day}}",
+    "last_day_of_month": "Last day",
+    "someday": "{{days}}d",
+    "somedayago": "{{days}}d ago",
+    "remind_references": "{{count}} Due reminders",
+    "menu_never": "Stop reminder",
+    "menu_restore": "Restore reminder",
+    "menu_clear": "Clear reminder",
+    "menu_delay": "Delay",
+    "delay_date": "Delay date",
+    "menu_no_delay": "Cancel delay",
+    "done": "Done",
+    "discard": "Discard",
+    "todo": "Todo",
+    "resolve": "Resolve",
+    "delay_days": "Delay days",
+    "delay_days_quote": "Input a number to delay days",
+    "custom_delay": "Input number",
+    "zoomin": "Open due date",
+    "done_at": "Done at {{fmtTime}}",
+    "done_today": "Done today"
+  },
+  "moment": {
+    "title": "Moment",
+    "quote": "MOMENT is a feature that indexes notes based on chronological order. It differs from Daily notes in that Daily notes indexes notes by days, while MOMENT refines the granularity of time indexing to every moment. Its value is obvious: (1) you can find all the notes you have created in chronological order; (2) you can get rid of the trouble of \"\"where to save the notes\"\" when taking notes, which is better than Daily Notes.",
+    "nav_title": "Moment",
+    "placeholder": "Keep this moment"
+  },
+  "gpt3": {
+    "title": "GPT-3",
+    "quote": "AI powered by GPT-3 to assist your note-taking",
+    "api_key_quote": "API Key is required to use GPT-3",
+    "asking": "Asking GPT-3..."
+  },
+  "nav": {
+    "collapse": "Collapse",
+    "expand": "Expand"
+  },
+  "inlinesBar": {
+    "title": "Inline element toolbar",
+    "clear_format": "Turn into text",
+    "turn_into": "Turn into:"
+  },
+  "embedweb": {
+    "title": "Embed web",
+    "quote": "You can embed a webpage into your notes",
+    "turn_into_embed": "Turn in to Embed",
+    "slash_menu_title": "Embed web"
+  },
+  "topic": {
+    "turn_into_sub_topic": "Turn into sub topic",
+    "turn_into_root_topic": "Turn into top topic",
+    "topicalize": "Topicalize",
+    "no_empty": "The topic title can't be empty",
+    "has_exist": "The topic “{{topic}}“ already exists."
+  },
+  "libAdmin": {
+    "title": "Library management",
+    "list": "Libraries",
+    "form_title": "Library",
+    "save_success": "Save successfully",
+    "save_fail": "Save failed",
+    "open_new_lib": "Open new library now",
+    "delete_success": "Successfully delete library",
+    "opening_library": "Loading library, wait a while ...",
+    "library_id": "Library ID",
+    "library_title": "Library title",
+    "library_quote": "Description"
+  },
+  "prefer": {
+    "title": "Preference plan",
+    "quote": "This add-on allows you to create multiple sets of preferences for different knowledge base requirements scenarios. For example, for some knowledge bases, you only want to use the simplest functions, so you can disable the redundant add-on functions; and for some knowledge bases that you do not want to synchronize to the server, you can create a preference plan for this library and disable the synchronization add-on.",
+    "default_plan": "Default preference plan",
+    "global_plan": "Global preferences",
+    "plan_list": "Preference plans",
+    "choose_plan": "Choose preference plan",
+    "manage_plan": "Manage preference plans",
+    "plan_quote": "A library can have its own independent preference plan or share the preferences of other knowledge bases. When specific preference settings are modified in this library, these settings will be saved to this preference plan.",
+    "plan_title": "Preference plan title",
+    "plan_desc": "Description of the Preference plan",
+    "new_plan_quote": "Give the newly created preference plan a title for future management",
+    "set_default_library": "Set as default library"
+  },
+  "placeholder": {
+    "title": "Placeholder",
+    "quote": "When we create a note template, we want to preset some input hints in the white input box, this input hint is just called “placeholder”"
+  },
+  "pathHighlight": {
+    "title": "Path highlight",
+    "quote": "For the node being edited, show its path in the current outline document with highlighting"
+  },
+  "slidebar": {
+    "title": "Slide bar",
+    "quote": "Insert slide bar into your note"
+  },
+  "client": {
+    "title": "Client Service Core",
+    "backward": "Backward",
+    "forward": "Forward",
+    "save_all_and_exit": "Roam Edit will exit after saving all data."
+  },
+  "paste": {
+    "is_codeblock": "Paste the text as a code block ?"
+  },
+  "trash": {
+    "title": "Trash",
+    "restore": "Restore",
+    "deleted_at": "Deleted at",
+    "restore_item": "Restore this item",
+    "restore_below_items": "Restore below {{count}} items",
+    "trash_is_empty": "Trash is empty",
+    "clear": "Clear"
+  },
+  "docver": {
+    "title": "History",
+    "quote": "You can track the updates of a topic’s document, and revert to a desired old version",
+    "no_versions": "No tracked versions",
+    "revert_from": "Revert from",
+    "revert_to": "Revert to this version",
+    "dialog_title": "History of {{topic}}",
+    "update_msg": "{{time}} updated {{count}} items of [[{{topic}}]]",
+    "choose_op": "Please choose an operation",
+    "show_history": "Show history of this topic",
+    "confirm_op": "Confirm operation",
+    "update_dialog_title": "Recent updates"
+  },
+  "srs": {
+    "title": "Review",
+    "quote": "Now you can review your notes with this SRS(Spaced Repetition System)  add-on, When taking notes, you may add certain markings such as bolding, underlining, or equations to highlight important information that you wish to test your knowledge on using flashcards. During review, you can then hide the marked content to test your memory effectively.",
+    "nav_title": "Review",
+    "rule_quote": "When taking notes, you can add certain markers to highlight key points that you hope to quiz yourself about flashcards, such as bolding, underlining, using formulas, and so on. Then, when reviewing, you can hide the marked content to test your memory",
+    "rule_title": "Cloze text rules",
+    "keywords_title": "Keywords",
+    "keywords_quote": "Type keywords to find out items to review",
+    "regexp_title": "Regular expression",
+    "setup_notice": "You have not set up the flashcard collection yet, please input keywords to find out items to review",
+    "setup": "Setup",
+    "quality1": "Forgot",
+    "quality2": "Partially recalled",
+    "quality3": "Recalled with effort",
+    "quality5": "Perfectly recalled",
+    "show_answer": "Show Answer",
+    "tip_start_review": "Click to review {{count}} flashcards",
+    "tip_setup": "Set up the flashcard collection",
+    "deck_form_title": "Setup flashcard collection",
+    "no_flashcards": "No items to review in this collection currently",
+    "soon": "Soon",
+    "days": "Days",
+    "hours": "Hours",
+    "no_more_flashcards": "Great job! You have completed all of the flashcards. Keep up the good work and continue to review regularly to reinforce your knowledge and improve your retention.",
+    "generate_log": "Generate a log",
+    "generate_log_text": "in Daily Notes about this review",
+    "finished": "fisished the review task for",
+    "reviewed": "reviewed {{count}} flashcards",
+    "duration": "took {{duration}} minutes",
+    "cloze_subitems": "Subitems",
+    "cloze_quote": "Block description",
+    "cloze_bold": "Bold",
+    "cloze_underline": "Underline",
+    "cloze_code": "Inline code",
+    "cloze_italic": "Italic",
+    "cloze_codeblock": "Code block",
+    "cloze_latex": "Latex",
+    "cloze_refer": "Block reference",
+    "cloze_bilink": "Page reference",
+    "cloze_tag": "Tag",
+    "cloze_note": "Annotation",
+    "create_deck_from": "Make a flashcard collection",
+    "confirm_create_collection_from": "You will make a flashcard collection {{referTopic}} under {{srsTopic}}, and all its subitems will be flashcards",
+    "linked_references": "{{count}} Items found for current review collection",
+    "located": "Items to be reviewed are located at"
+  },
+  "editorView": {
+    "tip_node_btn_fold": "Click to fold",
+    "tip_node_btn_unfold": "Click to unfold",
+    "tip_zoom_btn_shift_click": "Shift+click to open in right side",
+    "tip_zoom_btn_ctrl_click": "Ctrl+click to open in popup window",
+    "tip_zoom_btn_alt_click": "Alt+click to open in andy mode",
+    "tip_zoom_btn_click": "Click to zoom in"
+  },
+  "keyClick": {
+    "title": "Key click",
+    "quote": "Allows you to combine keyboard and mouse to open document. for example, shift + click to open document in side bar, ctrl + click to open document in a popup window"
+  },
+  "share": {
+    "share": "Share",
+    "success_msg": "{{link}}",
+    "sharing": "Sharing..."
+  },
+  "fileManager": {
+    "empty": "No files yet. Images and attachments you upload will show up here."
+  }
+}

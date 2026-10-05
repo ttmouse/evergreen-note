@@ -1,0 +1,52 @@
+# ===== Application runtime / local data (never publish) =====
+**/.server-data/
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+/data/
+/data-dir.txt
+**/*.log
+**/crash.log
+*.app/
+
+# ===== Dependencies / build outputs =====
+**/node_modules/
+**/dist/
+**/build/
+**/coverage/
+**/.next/
+**/.vite/
+notekit-src/tmp/
+notekit-src/artifacts/
+notekit-src/backups/
+
+# ===== Working-process directories (local only) =====
+/.bak/
+**/*.bak
+**/*.bak.*
+/notes/
+/work/
+/artifacts/
+/test-runs/
+/backlog/
+/agent_team/
+/project-ledger/
+/.zkge/
+/.reasonix/
+/scripts/
+/.project-knowledge.json
+
+# ===== Local agent-tooling config =====
+.zcodeignore
+.claude/
+.gemini/
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+
+# ===== OS / editor noise =====
+.DS_Store
+.Trashes
+.vscode/
+.idea/

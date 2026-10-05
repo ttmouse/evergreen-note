@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evergreen note</title>
+  <!--
+    原模板由服务端渲染注入这三个值：
+      window.USER_ID / window.USER_NAME / window.VAPID_PUBLIC
+    constants.ts 里 MEMBER_ID = Number(window.USER_ID ?? 0)。
+    这里给开发期占位值；接真实后端时应由服务端按模板注入。
+  -->
+  <script>
+    window.USER_ID = 1;
+    window.USER_NAME = 'dev';
+    window.VAPID_PUBLIC = '';
+  </script>
+  <!-- 开发期错误采集：把加载期错误的完整堆栈留在 window.__errs，便于用 CDP 读取 -->
+  <script>
+    window.__errs = [];
+    window.addEventListener('error', function (e) {
+      window.__errs.push(String((e.error && e.error.stack) || e.message));
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      window.__errs.push('REJECTION: ' + String((e.reason && e.reason.stack) || e.reason));
+    });
+  </script>
+</head>
+
+<body>
+  <div class="applications"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

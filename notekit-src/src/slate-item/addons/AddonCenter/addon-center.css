@@ -1,0 +1,78 @@
+/* Workspace tokens keep plugin management consistent in both themes. */
+body .addon-center-dialog .MuiDialog-paper { width: min(960px, calc(100vw - 32px)); min-width: 0 !important; max-width: calc(100vw - 32px); max-height: calc(100dvh - 64px); margin: 16px; background: var(--nk-surface); color: var(--nk-ink); border: 1px solid var(--nk-line-strong); border-radius: 10px; box-shadow: none; }
+body .addon-center-dialog .dialog-title { position: relative; min-height: 44px; padding: 10px 48px 10px 20px; border-color: var(--nk-line); color: var(--nk-ink); font: inherit; font-size: 14px; font-weight: 600; opacity: 1 !important; }
+body .addon-center-dialog .dialog-title .MuiIconButton-root { color: var(--nk-muted); width: 32px; height: 32px; margin: 5px; }
+body .addon-center-dialog .dialog-title svg { width: 18px; height: 18px; }
+body .addon-center-dialog .dialog-body .addon-center-wrap { display: flex; flex-wrap: nowrap; width: 100%; min-width: 0; height: min(680px, calc(100dvh - 112px)); overflow: hidden; background: var(--nk-surface); color: var(--nk-ink); font-size: 14px; line-height: 1.5; }
+body .addon-center-dialog .addon-center-wrap > .addon-list { display: flex; flex-direction: column; flex: 0 0 320px; min-width: 0; height: 100%; overflow: hidden; background: var(--nk-sidebar); border-right: 1px solid var(--nk-line); }
+body .addon-center-dialog .addon-search-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin: 16px 16px 12px; padding: 8px 10px; min-height: 36px; border: 1px solid var(--nk-line-strong); border-radius: 6px; background: var(--nk-surface); color: var(--nk-muted); }
+body .addon-center-dialog .addon-search-wrap:focus-within { border-color: var(--nk-accent); }
+body .addon-center-dialog .addon-search-wrap input { flex: 1; min-width: 0; width: 100%; padding: 0; outline: none; border: 0; background: transparent; color: var(--nk-ink); font: inherit; font-size: 13px; }
+body .addon-center-dialog .addon-search-wrap input:focus-visible { outline: none; }
+body .addon-center-dialog .addon-search-wrap input::placeholder { color: var(--nk-muted); opacity: 1; }
+body .addon-center-dialog .addon-search-wrap button { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 24px; height: 24px; margin: -4px; padding: 0; border: 0; background: transparent; color: var(--nk-muted); cursor: pointer; }
+body .addon-center-dialog .addon-filters { display: flex; gap: 4px; padding: 0 16px; flex-shrink: 0; }
+body .addon-center-dialog .addon-filters button { flex: 1; min-width: 0; padding: 6px 2px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--nk-muted); font: inherit; font-size: 12px; cursor: pointer; }
+body .addon-center-dialog .addon-filters button[aria-pressed='true'] { color: var(--nk-accent); border-bottom-color: var(--nk-accent); font-weight: 600; }
+body .addon-center-dialog .addon-count { flex-shrink: 0; margin: 0; padding: 12px 20px 8px; color: var(--nk-muted); font-size: 12px; }
+body .addon-center-dialog .addon-results { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 8px 8px; }
+body .addon-center-dialog .addon-row { display: block; width: 100%; padding: 14px 12px; border: 0; border-bottom: 1px solid var(--nk-line); border-radius: 0; background: transparent; color: var(--nk-ink); font: inherit; text-align: left; cursor: pointer; }
+body .addon-center-dialog .addon-row-heading { display: flex; align-items: baseline; gap: 8px; }
+body .addon-center-dialog .addon-row-title { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
+body .addon-center-dialog .addon-row[aria-pressed='true'] .addon-row-title { color: var(--nk-accent); font-weight: 600; }
+body .addon-center-dialog .addon-status { flex-shrink: 0; color: var(--nk-muted); font-size: 11px; }
+body .addon-center-dialog .addon-row-quote { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin-top: 4px; color: var(--nk-muted); font-size: 12px; line-height: 1.6; }
+body .addon-center-dialog .addon-row:hover, body .addon-center-dialog .addon-filters button:hover, body .addon-center-dialog .addon-search-wrap button:hover { background: var(--nk-hover); }
+body .addon-center-dialog .addon-row:active { background: var(--nk-accent-soft); }
+body .addon-center-dialog button:focus-visible { outline: 2px solid var(--nk-accent); outline-offset: -2px; }
+body .addon-center-dialog .word-highlight { color: inherit !important; background: var(--nk-accent-soft) !important; font-size: inherit; font-weight: 600; }
+body .addon-center-dialog .addon-center-wrap > .addon-detail-pane { flex: 1; min-width: 0; height: 100%; padding: 28px 32px; overflow-y: auto; overscroll-behavior: contain; }
+body .addon-center-dialog .addon-detail { min-width: 0; overflow-wrap: anywhere; }
+body .addon-center-dialog .addon-detail h1 { margin: 0 0 12px; color: var(--nk-ink); font-size: 22px; line-height: 1.4; font-weight: 600; }
+body .addon-center-dialog .addon-detail .MuiTypography-root { color: var(--nk-muted); font: inherit; margin-bottom: 12px; }
+body .addon-center-dialog .addon-detail .MuiButton-root { border: 1px solid var(--nk-line-strong); border-radius: 6px; background: transparent; box-shadow: none; color: var(--nk-ink); font: inherit; font-size: 13px; text-transform: none; }
+body .addon-center-dialog .addon-detail .MuiButton-root:hover { background: var(--nk-hover); }
+body .addon-center-dialog .addon-detail .MuiIconButton-root { color: var(--nk-muted); }
+body .addon-center-dialog .addon-welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--nk-muted); }
+body .addon-center-dialog .addon-welcome h2 { margin: 16px 0 8px; color: var(--nk-ink); font-size: 18px; font-weight: 600; }
+body .addon-center-dialog .addon-welcome p { max-width: 280px; margin: 0; font-size: 13px; line-height: 1.7; }
+body .addon-center-dialog .addon-no-results { padding: 24px 12px; color: var(--nk-muted); font-size: 12px; }
+body .addon-center-dialog .addon-no-results p { margin: 0 0 8px; color: var(--nk-ink); font-size: 14px; }
+@media (max-width: 640px) {
+  body .addon-center-dialog .addon-center-wrap > .addon-list { flex-basis: 44%; }
+  body .addon-center-dialog .addon-center-wrap > .addon-detail-pane { padding: 20px 16px; }
+  body .addon-center-dialog .addon-search-wrap { margin: 12px 8px 8px; }
+  body .addon-center-dialog .addon-filters { padding: 0 8px; gap: 0; flex-wrap: wrap; }
+  body .addon-center-dialog .addon-filters button { flex-basis: 50%; }
+  body .addon-center-dialog .addon-row { padding: 12px 8px; }
+  body .addon-center-dialog .addon-row-heading { flex-wrap: wrap; gap: 2px 8px; }
+  body .addon-center-dialog .addon-count { padding-left: 16px; }
+}
+/* NightMode injects a legacy !important color on every dialog descendant. */
+html body .addon-center-dialog .dialog-title,
+html body .addon-center-dialog .addon-row,
+html body .addon-center-dialog .addon-row-title,
+html body .addon-center-dialog .addon-row-title span,
+html body .addon-center-dialog .addon-detail h1,
+html body .addon-center-dialog .addon-detail .MuiButton-root,
+html body .addon-center-dialog .addon-search-wrap input { color: var(--nk-ink) !important; }
+html body .addon-center-dialog .addon-row-quote,
+html body .addon-center-dialog .addon-row-quote span,
+html body .addon-center-dialog .addon-status,
+html body .addon-center-dialog .addon-count,
+html body .addon-center-dialog .addon-filters button,
+html body .addon-center-dialog .addon-welcome,
+html body .addon-center-dialog .addon-welcome p,
+html body .addon-center-dialog .addon-no-results,
+html body .addon-center-dialog .addon-no-results span,
+html body .addon-center-dialog .addon-detail .MuiTypography-root,
+html body .addon-center-dialog .addon-detail .MuiIconButton-root,
+html body .addon-center-dialog .addon-search-wrap svg { color: var(--nk-muted) !important; }
+html body .addon-center-dialog .addon-row[aria-pressed='true'] .addon-row-title,
+html body .addon-center-dialog .addon-row[aria-pressed='true'] .addon-row-title span,
+html body .addon-center-dialog .addon-filters button[aria-pressed='true'] { color: var(--nk-accent) !important; }
+html body .addon-center-dialog .addon-welcome h2,
+html body .addon-center-dialog .addon-no-results p { color: var(--nk-ink) !important; }
+html body .addon-center-dialog .addon-center-wrap > .addon-list { background: var(--nk-sidebar) !important; }
+html body .addon-center-dialog .dialog-title-inner { color: var(--nk-ink) !important; }
+html body .addon-center-dialog .dialog-title svg { color: var(--nk-muted) !important; }

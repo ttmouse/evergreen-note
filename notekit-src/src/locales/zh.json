@@ -1,0 +1,882 @@
+{
+  "common": {
+    "cancel": "取消",
+    "close": "关闭",
+    "confirm": "确认",
+    "notice": "提示",
+    "gotit": "知道了",
+    "edit": "编辑",
+    "logout": "退出登录",
+    "trash": "回收站",
+    "copy": "复制",
+    "cut": "剪切",
+    "paste": "粘贴",
+    "delete": "删除",
+    "delete_confirm": "确定删除吗",
+    "more": "更多",
+    "manage": "管理",
+    "print": "打印",
+    "done": "完成",
+    "updated": "最后更新",
+    "enable": "启用",
+    "enabled": "已启用",
+    "disabled": "未启用",
+    "all": "全部",
+    "search": "查找",
+    "others": "其他",
+    "insert_above": "在上方插入节点",
+    "insert_below": "在下方插入节点",
+    "on": "启用",
+    "off": "停用",
+    "yes": "是",
+    "no": "否",
+    "new_option": "新项",
+    "add": "添加",
+    "new": "新建",
+    "loading": "正在加载",
+    "submit": "提交",
+    "save": "保存",
+    "collapse": "收起",
+    "expand": "展开",
+    "clear": "清除",
+    "height": "高度",
+    "width": "宽度",
+    "url": "网址",
+    "open": "打开",
+    "operations": "操作"
+  },
+  "editor": {
+    "export_current": "导出",
+    "import_current": "导入",
+    "right_open": "右侧打开",
+    "add_aliases": "同义词",
+    "item_not_found": "笔记不存在"
+  },
+  "exports": {
+    "choose_target_title": "选择导出格式",
+    "target_format": "目标格式",
+    "export_button": "导出",
+    "pdf_format_alert": "{{appName}} 通过浏览器的打印功能来导出 PDF 文件，稍后将显示浏览器打印对话窗口，请在[打印设备]选项里选中[保存为PDF]，然后点击对话窗口右下角的[保存]按钮",
+    "editor_dropdown_title": "导出当前文档",
+    "export_database": "导出当前数据库"
+  },
+  "imports": {
+    "title": "导入",
+    "quote": "通过本地的文件导入笔记",
+    "import_database": "导入数据库",
+    "form_title": "选择导入格式",
+    "source_format": "源文件格式",
+    "item_id": "笔记的ID",
+    "keep_id": "保持原ID",
+    "generate_id": "生成新ID",
+    "item_time": "笔记的时间",
+    "keep_time": "使用原来的时间",
+    "generate_time": "生成新的时间",
+    "import_button": "导入",
+    "editor_dropdown_title": "导入单个文件",
+    "json_error": "导入的文件不是有效的JSON格式",
+    "empty_warning": "导入的文件内容是空的",
+    "plain_text": "纯文本"
+  },
+  "script": {
+    "title": "自定义JS",
+    "quote": "添加你自己的JS脚本去扩展更多功能",
+    "management": "脚本管理",
+    "error": "自定义JS存在错误",
+    "check": "检查",
+    "reload": "脚本将在页面刷新之后生效",
+    "installed_text": "已安装",
+    "install_text": "安装"
+  },
+  "style": {
+    "title": "自定义CSS",
+    "quote": "添加你自己的CSS代码去定制软件的界面风格",
+    "management": "样式管理",
+    "installed_styles": "已激活的样式",
+    "install_text": "安装",
+    "installed_text": "已安装"
+  },
+  "snippet": {
+    "title": "笔记模板",
+    "quote": "将你的笔记设为模板，以便以后重复使用",
+    "management": "管理笔记模板",
+    "turn_into_snippet": "设为笔记模板",
+    "form_title": "笔记模板设置",
+    "condition": "触发条件",
+    "condition_quote": "你可以设置一个匹配条件，以后当你编辑的笔记若符合此条件，就会自动调用当前的模板；当然你仍然可以通过手动的方式来调用此模板",
+    "with_title": "是否导入标题",
+    "with_title_quote": "使用此模板时，是否导入模板的标题",
+    "setting_button": "模板设置",
+    "import_snippet": "导入模板"
+  },
+  "hint": {
+    "title": "链接探测器",
+    "quote": "检测你的笔记内容是否包含你用过的主题关键词，并将发现的关键词标注出来，让你实时发现当前笔记与以往笔记之间的联系",
+    "ignore_globally": "全局范围忽略",
+    "ignore_globally_quote": "在全范围内忽略一些关键词，即这些关键词会被链接探测器忽略，不会给出任何标记提示",
+    "make_link": "添加链接",
+    "view_notes": "查看笔记",
+    "ignore": "忽略此关键词",
+    "in_current_item": "在当前节点",
+    "in_current_topic": "在当前主题",
+    "globally": "在整库范围",
+    "ingore_success": "已忽略：{{keyword}}"
+  },
+  "tag": {
+    "title": "标签",
+    "quote": "通过标签来管理你的笔记。可以通过 # 符号快速创建标签",
+    "management": "标签管理"
+  },
+  "random": {
+    "title": "随机回顾",
+    "quote": "以随机的方式回顾过去的笔记，让今天的思想与过去的思想来一场不期而遇的碰撞，说不定又产生新的思考",
+    "random_route_rule": "随机规则",
+    "random_route_rule_quote": "设定一个数据规则以限制随机的内容范围",
+    "no_item_found": "没有找到符合“{{rule}}”的内容",
+    "route": "随机回顾",
+    "slash_menu_title": "随机笔记块"
+  },
+  "alias": {
+    "title": "同义词",
+    "quote": "在你的笔记库中定义同义词，以便更好地去跟踪你的笔记联系",
+    "management": "同义词管理",
+    "management_quote": "打开 App/Aliases 管理同义词",
+    "editor_dropdown_label": "管理同义词",
+    "float_view_title": "[{{topic}}]的同义词"
+  },
+  "addonCenter": {
+    "settings": "插件设置",
+    "search": "搜索插件名称或描述…",
+    "clear_search": "清除搜索",
+    "filter": "筛选插件",
+    "no_results": "没有匹配的插件",
+    "search_hint": "试试其他关键词或切换筛选条件。",
+    "select_hint": "从左侧选择插件，查看介绍并管理启用状态。",
+    "title": "插件中心",
+    "management": "插件管理",
+    "management_quote": "强大而灵活的插件机制，让你可以根据自己的需要去开启或关闭诸多插件。当前激活了{{count}}个插件",
+    "updated": "更新于{{updated}}",
+    "reload": "插件将在刷新页面后生效",
+    "found": "找到{{count}}个插件",
+    "from_public": "注意：以下内容来自RoamEdit公开文档，同时它是一个沙盒，你可以做各种编辑尝试，所有修改都不会保存到服务器",
+    "doc_library": "docs"
+  },
+  "imghost": {
+    "title": "图床",
+    "quote": "支持第三方图床，目前支持了阿里云OSS",
+    "host_name": "图床名称",
+    "alioss_alert": "确保你已在阿里云管理后台设置好了Bucket，然后将相关信息填写到这里",
+    "success_msg": "上传成功:  {{filename}}"
+  },
+  "clue": {
+    "title": "笔记信息提示",
+    "quote": "给你提供一些有关于笔记的额外信息，例如当你折叠一个节点时，在它的右侧显示它的字数、当鼠标经过双向链接或者点击笔记节点时，在底部状态栏中显示它的字数、下级节点数等等",
+    "words_count": "{{count}}字"
+  },
+  "ui": {
+    "title": "外观",
+    "ui_lang": "语言",
+    "ui_dark_mode": "黑夜模式",
+    "reload": "新配置将在刷新页面后生效"
+  },
+  "attachment": {
+    "title": "附件",
+    "quote": "在笔记中插入附件",
+    "slash_menu_title": "上传文件"
+  },
+  "backlink": {
+    "title": "反向链接",
+    "quote": "在一个笔记主题之下显示所有链接了它的笔记",
+    "linked_references": "{{count}} 个反向链接",
+    "unlinked_references": "{{count}} 个提及"
+  },
+  "bilink": {
+    "title": "双向链接",
+    "quote": "在你的笔记中使用 [[ ]] 插入双向链接",
+    "link_today": "链接到今天",
+    "link_tomorrow": "链接到明天",
+    "link_yesterday": "链接到昨天",
+    "form_title": "编辑链接",
+    "link_text": "文本",
+    "link_target": "链接到的主题(选填）",
+    "link_target_quote": "点击链接所打开的主题",
+    "bracket_visible": "显示中括号"
+  },
+  "borderFoldup": {
+    "title": "边线折叠",
+    "quote": "点击笔记节点的左侧边缘线，折叠它的所有子节点"
+  },
+  "codeblock": {
+    "title": "代码块",
+    "quote": "在你的笔记中插入代码块",
+    "slash_menu_title": "代码块"
+  },
+  "conf": {
+    "title": "偏好设置"
+  },
+  "copy": {
+    "plain_text": "纯文本",
+    "embed": "嵌入块",
+    "block": "笔记块",
+    "web_url": "外部网址",
+    "roamedit_url": "roamedit:// 链接"
+  },
+  "counter": {
+    "title": "节点统计器",
+    "quote": "你可以在笔记中插入一个节点统计器，并且可以指定你希望统计的节点所应符合的规则",
+    "slash_menu_title": "节点统计器",
+    "inline_form_title": "节点计数规则",
+    "direct_subitems": "直属子节点",
+    "subitems": "直属子节点",
+    "descendant": "所有层级子节点",
+    "enditems": "末端子节点",
+    "customized": "自定义",
+    "customized_title": "自定义规则",
+    "customized_quote": "如果你希望统计当前节点之下的子节点，请记得加上关键词 {%self}，如果没指定 {%self}}，则会在整库范围内统计符合条件的节点"
+  },
+  "daily": {
+    "title": "每日笔记",
+    "quote": "系统每天为你生成一个笔记主题，每当你想记录一些什么时，可以先无脑地第一时间在这个每日笔记里快速录入，这将大大降低你做笔记的磨擦阻力",
+    "nav_title": "每日",
+    "today": "打开今日笔记",
+    "yesterday": "打开昨日笔记"
+  },
+  "embed": {
+    "title": "嵌入块",
+    "quote": "在你的笔记中嵌入其他已有笔记，从而达到知识复用的效果",
+    "slash_menu_title": "嵌入块"
+  },
+  "mirror": {
+    "title": "镜像块",
+    "quote": "你可以给一个笔记块创建一个“镜像块”, 使得这个笔记块能够同时出现在多个场合",
+    "mirror_references": "{{count}} 个镜像节点"
+  },
+  "exportPdf": {
+    "title": "导出PDF",
+    "quote": "通过浏览器打印功能自带的特性导出PDF文件",
+    "notice": ""
+  },
+  "extArea": {
+    "title": "右侧打开",
+    "quote": "在右侧栏打开你的笔记",
+    "editor_dropdown_title": "右侧打开"
+  },
+  "floatBar": {
+    "title": "悬浮工具条",
+    "quote": "在选中文字时显示一个编辑文字的工具条",
+    "placement": "显示位置",
+    "placement_above": "显示在选中文本的上方",
+    "placement_below": "显示在选中文本的下方",
+    "placement_quote": "如果你使用的一些浏览器插件的显示位置与悬浮工具条有冲突，可以设置工具条的显示位置"
+  },
+  "floatMenu": {
+    "title": "笔记块功能菜单",
+    "quote": "笔记块功能菜单",
+    "unfold_siblings": "展开同级节点",
+    "fold_siblings": "折叠同级节点"
+  },
+  "floatViewer": {
+    "title": "悬浮预览窗口",
+    "quote": "当鼠标经过双向链接、块引用时，在一个悬浮窗口显示它的详细笔记内容"
+  },
+  "help": {
+    "title": "帮助",
+    "quote": "在软件界面里显示一些帮助信息，例如快捷键、按钮功能说明等，在页面右下角你会看见一个问号图标",
+    "hotkeys": "快捷键",
+    "documentation": "使用手册",
+    "official_site": "官网",
+    "forum": "论坛"
+  },
+  "hyperlink": {
+    "title": "超链接",
+    "quote": "在笔记中插入超链接",
+    "url": "网址",
+    "text": "文本",
+    "form_title": "编辑链接"
+  },
+  "img": {
+    "title": "图片",
+    "quote": "在笔记中插入图片",
+    "image_url": "图片网址",
+    "alt_text": "图片描述",
+    "link_url": "超链接",
+    "width": "图片宽度",
+    "form_title": "编辑图片",
+    "slash_menu_title": "图片"
+  },
+  "latex": {
+    "title": "Latex公式",
+    "quote": "在笔记中插入Latex公式",
+    "slash_menu_title": "Latex公式"
+  },
+  "flexmap": {
+    "title": "思维导图",
+    "quote": "以思维导图的形式显示你的笔记",
+    "slash_menu_title": "思维导图",
+    "untitled": "无题",
+    "item_menu_title": "思维导图"
+  },
+  "kanban": {
+    "title": "看板",
+    "quote": "以看板形式显示笔记",
+    "untitled": "无题",
+    "column_placeholder": "第{{order}}列",
+    "slash_menu_title": "看板",
+    "item_menu_title": "看板"
+  },
+  "layoutFactory": {
+    "title": "笔记视图",
+    "quote": "让你的笔记呈现方式更加多样化，例如，你可以将你的笔记一键切换为：思维导图、看板、表格、Markdown等等",
+    "outline": "大纲",
+    "item_menu_title": "选择视图",
+    "item_menu_defaults": "默认"
+  },
+  "whiteboard": {
+    "title": "白板",
+    "quote": "白板是一种用于整理思考的功能, 它非常灵活, 你可以自由地在白板的任意坐标位置放置你的笔记, 并且通过箭头连线的功能, 标注出笔记与笔记之间的关系.",
+    "zoom_in": "放大",
+    "zoom_out": "缩小",
+    "zoom_fit": "缩放以查看全图",
+    "zoom_current": "当前缩放比例是{{zoom}}%",
+    "zoom_reset": "点击恢复到100%",
+    "create_block": "创建笔记块",
+    "search_or_create": "搜索或添加笔记",
+    "search_topic_only": "搜索笔记主题",
+    "search_item_only": "搜索普通笔记块"
+  },
+  "tableSimple": {
+    "title": "简单表格",
+    "quote": "以表格形式显示笔记",
+    "slash_menu_title": "简单表格",
+    "first_column_layout_error": "第一列不能修改笔记视图",
+    "first_column_subitems_error": "有子节点的单元格不能放在第一列",
+    "untitled": "无题"
+  },
+  "markdown": {
+    "title": "Markdown",
+    "quote": "支持在笔记中使用 Markdown 语法",
+    "h1": "一级标题",
+    "h2": "二级标题",
+    "h3": "三级标题",
+    "h4": "四级标题",
+    "h5": "五级标题",
+    "h6": "六级标题",
+    "divider": "分隔线",
+    "bold": "加粗",
+    "underline": "下划线",
+    "strikethrough": "删除线",
+    "italic": "斜体",
+    "highlight": "高亮",
+    "code": "行内代码",
+    "parapraph": "普通文本",
+    "clear_format": "清除格式"
+  },
+  "mermaidGraph": {
+    "title": "Mermaid(代码画图)",
+    "quote": "使用 mermaid 支持的语法画图",
+    "form_title": "Mermaid graph",
+    "slash_menu_title": "Mermaid代码画图"
+  },
+  "nameSpace": {
+    "title": "命名空间",
+    "quote": "通过命名空间，解决一词多义的问题。比如有不同的人都取名“刘德华”，可以这样区分他们：“歌手/刘德华”、“农民/刘德华”、“板鸭/刘德华”",
+    "form_title_choose": "选择语义",
+    "meaning_of": "“{{keyword}}”的语义",
+    "bind_button": "绑定",
+    "open_button": "打开",
+    "link_button": "链接",
+    "namespace_references": "{{count}}个不同的语义"
+  },
+  "networkGraph": {
+    "title": "图谱",
+    "quote": "当你在笔记中添加了不少的双向链接，本插件就可以根据这些链接生成一个网络化的图谱，让你从整体上把握知识联系",
+    "nav_title": "图谱"
+  },
+  "orderedList": {
+    "title": "有序列表",
+    "quote": "以有序列表的形式显示笔记",
+    "nested": "嵌套序号",
+    "number": "数字",
+    "number_dot": "数字.",
+    "number_right_bracket": "数字)",
+    "(number)": "(数字)",
+    "lower": "小写字母",
+    "lower)": "小写字母)",
+    "(lower)": "(小写字母)",
+    "lower_dot": "小写字母.",
+    "upper": "大写字母",
+    "upper_dot": "大写字母.",
+    "roman": "罗马数字",
+    "item_menu_title": "有序列表",
+    "item_menu_undered_list": "无序列表"
+  },
+  "pomo": {
+    "title": "番茄钟",
+    "quote": "在你的笔记中插入番茄钟，更方便地管理你的工作与学习时间",
+    "duration": "时长(分钟)",
+    "slash_menu_title": "番茄钟",
+    "log": "生成日志",
+    "log_quote": "时间结束后在每日笔记创建一条日志记录，可理解为一次打卡",
+    "log_msg": "完成了{{duration}}分钟的番茄钟",
+    "rating_title": "对这次番茄钟打分",
+    "rating_quote": "你完成了一个番茄钟，要给自己的表现打分吗？",
+    "comment_title": "此刻感想"
+  },
+  "recent": {
+    "title": "最近浏览",
+    "quote": "跟踪最近打开过的笔记",
+    "nav_title": "最近打开"
+  },
+  "refer": {
+    "title": "引用块",
+    "quote": "在你的笔记里引用过去记录过的笔记。“块引用”与“块嵌入”的区别是：“块引用”只引用笔记节点自身的内容，而不会引用节点的下级节点内容；“块嵌入”则会完整地嵌入节点及它的下级节点。",
+    "form_title": "引用块",
+    "slash_menu_title": "引用块",
+    "refky": "节点ID",
+    "alias_text": "显示的文本",
+    "float_bar_title": "将选中文本移转到“每日笔记”之下，然后再引用回这里",
+    "current_page_is_target_page": "要打开的页面正是当前页面",
+    "refer_icon_tip": "点击查看{{count}}个引用"
+  },
+  "search": {
+    "title": "搜索",
+    "quote": "搜索你的笔记",
+    "keyword_case_error": "关键词中应使用大写的 AND、OR、NOT",
+    "float_bar_title": "搜索选中的文本",
+    "slash_menu_title": "搜索"
+  },
+  "star": {
+    "title": "星标",
+    "quote": "将一些常用的、重要的笔记设为星标",
+    "nav_title": "星标"
+  },
+  "statusBar": {
+    "title": "底部状态栏",
+    "quote": "状态栏用于实时显示一些功能交互的提示信息，例如字数、节点数、链接数等"
+  },
+  "blockStyle": {
+    "title": "自定义Block样式",
+    "quote": "通过 CSS 代码定制你想要的笔记样式",
+    "install_dialog_title": "激活样式",
+    "install_dialog_body": "自定义样式“{{styleName}}”还没激活",
+    "install_button": "激活",
+    "install_success": "“{{styleName}}”样式已激活",
+    "clear": "清除此样式",
+    "form_title": "样式设置",
+    "condition": "激活条件",
+    "condition_quote": "当一些笔记符合所预设的条件，就会自动地应用此Block样式"
+  },
+  "summary": {
+    "title": "思维导图概括",
+    "quote": "支持给思维导图添加概括节点",
+    "can_not_remove_start_and_end": "不能删除Summary起止节点",
+    "can_not_move_summary": "不能移动Summary节点",
+    "can_not_move_start_and_end": "不能移动Summary的起止节点",
+    "not_same_parent": "Summary的起止节点须是同级节点",
+    "not_in_mindmap": "Summary节点仅应在思维导图中创建",
+    "should_not_intersect": "多个Summary节点之间不应相交"
+  },
+  "sync": {
+    "title": "同步",
+    "quote": "在多个设备端之间同步数据",
+    "up": "正在上传",
+    "todo": "{{waitingCount}}个节点等待上传",
+    "done": "同步已完成",
+    "fetching": "正从服务服获取数据",
+    "offline": "网络已断开",
+    "fail": "某些数据同步失败"
+  },
+  "topicList": {
+    "title": "笔记主题列表",
+    "quote": "显示所有已创建的笔记主题",
+    "new_form_title": "添加笔记主题",
+    "topic_title": "主题的标题",
+    "nav_title": "主题",
+    "new_topic_button": "添加主题"
+  },
+  "typingMode": {
+    "title": "码字模式",
+    "quote": "当你正在输入文字的时候，会自动触发码字模式，它会自动给你隐藏页面一些元素，以便让你更专注，而当你鼠标发生移动时，则自动退出码字模式"
+  },
+  "hotkey": {
+    "title": "快捷键",
+    "browser_back": "浏览器后退",
+    "browser_forward": "浏览器前进",
+    "up": "光标上移",
+    "down": "光标下移",
+    "left": "光标左移",
+    "right": "光标右移",
+    "move_item_down": "向下移动节点",
+    "move_item_right": "向右移动节点",
+    "move_item_up": "向上移动节点",
+    "move_item_left": "向左移动节点",
+    "indent": "缩进",
+    "outdent": "缩回",
+    "fixed_outdent": "原地缩回",
+    "zoom_in": "Zoom in",
+    "insert_item": "插入新节点",
+    "soft_break": "软换行",
+    "insert_subitem": "插入子节点",
+    "delete_backward": "往左删除文字",
+    "delete_word_backward": "往左删除单词",
+    "delete_word_forward": "往右删除单词",
+    "delete_item_directly": "直接删除节点",
+    "collapse_children": "折叠子节点",
+    "expand_children": "展开子节点",
+    "delete_forward": "往右删除文字",
+    "select_all": "全选节点文字",
+    "expand_collapse_siblings": "展开或折叠同级节点",
+    "bold": "选中文字加粗",
+    "underline": "选中文字添加下划线",
+    "strikethrough": "选中文字添加删除线",
+    "code": "选中文字添加行内代码",
+    "highlight": "选中文字添加高亮",
+    "italic": "选中文字设为斜体"
+  },
+  "crumbs": {
+    "title": "节点路径",
+    "quote": "控制编辑器如何显示节点路径",
+    "document_crumbs_position": "文档路径的显示位置",
+    "top_bar": "顶栏",
+    "top_doc": "文档头部",
+    "block_ref_crumbs_visible": "在引用块中显示路径",
+    "top_bar_quote": "节点路径的文本如果太长，将会被截断，显示省略号",
+    "top_doc_quote": "节点路径的文本将会完整地显示，不会被截短，哪怕它很长"
+  },
+  "slash": {
+    "title": "斜杆菜单",
+    "quote": "通过输入斜杆来触发显示一个功能菜单，里面包含了最常用的功能",
+    "current_time": "当前时间"
+  },
+  "sorter": {
+    "default": "默认",
+    "reminder": "提醒时间",
+    "updated": "更新时间",
+    "created": "创建时间",
+    "word_count_self": "字数（自身）",
+    "word_count_sub": "字数（含子项）",
+    "mention_count": "提及数",
+    "items_count": "条目数",
+    "a_to_z": "字母排序",
+    "included_number": "包含的数字",
+    "char_repetition": "字符重复",
+    "comprehensive": "综合排序",
+    "customized_method": "自定义方法",
+    "asc": "升序",
+    "desc": "降序",
+    "input_repeat_char": "请输入要统计重复的字符",
+    "input_customized_sorter": "请输入自定义排序函数"
+  },
+  "sliderbar": {
+    "title": "滑动条",
+    "quote": "在你的笔记中插入滑动条",
+    "slash_menu_title": "滑动条"
+  },
+  "checkbox": {
+    "title": "复选框",
+    "quote": "在笔记中插入复选框",
+    "slash_menu_title": "复选框"
+  },
+  "rating": {
+    "title": "星级打分",
+    "quote": "在笔记中插入星级打分组件",
+    "slash_menu_title": "星级打分"
+  },
+  "switcher": {
+    "title": "开关器",
+    "quote": "在笔记中插入开关器",
+    "slash_menu_title": "开关器"
+  },
+  "searchDialog": {
+    "title": "搜索框",
+    "quote": "搜索你的笔记",
+    "create_topic": "创建主题",
+    "no_data": "没有匹配的笔记",
+    "empty_prompt": "输入关键词，查找主题和笔记内容",
+    "keyboard_help": "↑↓ 选择 · Enter 打开 · Esc 关闭",
+    "results_count": "找到 {{count}} 条笔记"
+  },
+  "customMark": {
+    "title": "自定义标记",
+    "quote": "创建你自己的文本标记，去设置选中文本的格式",
+    "red": "红色",
+    "green": "绿色",
+    "blue": "蓝色",
+    "yellow": "黄色",
+    "subscript": "下标",
+    "superscript": "上标",
+    "above": "顶标",
+    "normal": "无",
+    "custom_mark": "自定义标记",
+    "add_format": "添加标记",
+    "support_less": "支持使用 LESS 语法写 CSS",
+    "style": "样式",
+    "format_name": "标记名称",
+    "management": "管理自定义标记",
+    "note": "标记描述",
+    "trigger_pattern": "触发规则",
+    "trigger_quote": "当行内的一些字符合了指定的模式后，便自动触发当前的标记，假设指定的模式是 <<*>>，那么在笔记录入 <<Hello world>>，就会触发此标记，并将括号清除掉",
+    "text_color": "文字颜色"
+  },
+  "scroller": {
+    "title": "滚动到节点",
+    "quote": "当你点击块引用时，会先打开被引用节点所在的主题，然后滚动到节点所在的页面位置"
+  },
+  "sandbox": {
+    "title": "沙盒",
+    "back": "返回我的知识库"
+  },
+  "calendar": {
+    "month": "{{month}}月"
+  },
+  "heatmap": {
+    "title": "热力图",
+    "quote": "热力图(或称热图)是一种数据可视化技术，它以二维的色块来展示你在笔记上的努力程度",
+    "slash_menu_title": "热力图",
+    "start_month": "开始月份",
+    "end_month": "结束月份"
+  },
+  "dailyActivity": {
+    "title": "每日动态",
+    "quote": "在每日笔记的底部显示当天编辑过的笔记有哪些",
+    "created_references": "{{count}}个节点创建于当天",
+    "updated_references": "{{count}}个节点更新于当天"
+  },
+  "datePicker": {
+    "title": "日期选择器",
+    "quote": "在笔记中插入日期选择器",
+    "slash_menu_title": "日期选择器"
+  },
+  "dateTool": {
+    "title": "日期工具",
+    "quote": "提供一些与日期有关的功能",
+    "calendar": "日历"
+  },
+  "reminder": {
+    "title": "提醒",
+    "quote": "你可以给一条笔记设置提醒条件(例如“到期时间”），当条件符合时系统便会提醒你这条笔记",
+    "form_title": "提醒",
+    "repeat_interval": "每隔",
+    "repeat_plan": "提醒",
+    "repeat_once": "一次",
+    "repeat_daily": "每天",
+    "repeat_weekly": "每周",
+    "repeat_monthly": "每月",
+    "repeat_yearly": "每年",
+    "repeat_never": "不提醒",
+    "unit_hour": "小时",
+    "unit_day": "天",
+    "unit_week": "周",
+    "unit_month": "月",
+    "unit_year": "年",
+    "item_menu_title": "提醒",
+    "due_date": "到期日",
+    "due_time": "到期时",
+    "today": "今天",
+    "tomorrow": "明天",
+    "yesterday": "昨天",
+    "sun": "日",
+    "mon": "一",
+    "tue": "二",
+    "wed": "三",
+    "thu": "四",
+    "fri": "五",
+    "sat": "六",
+    "day_of_week": "每周",
+    "day_of_month": "每月",
+    "day_of_year_quote": "在每年的[{{mm}}-{{dd}}]重复",
+    "day_of_month_option": "第{{day}}天",
+    "last_day_of_month": "最后一天",
+    "someday": "{{days}}天后",
+    "somedayago": "{{days}}天前",
+    "remind_references": "{{count}}个到期的提醒",
+    "menu_never": "停止提醒",
+    "menu_restore": "恢复提醒",
+    "menu_clear": "清除提醒",
+    "menu_delay": "延期",
+    "delay_date": "延期到",
+    "menu_no_delay": "取消延期",
+    "done": "完成",
+    "discard": "废弃",
+    "todo": "待办",
+    "resolve": "处理",
+    "delay_days": "延期天数",
+    "delay_days_quote": "输入想推迟的天数",
+    "custom_delay": "手动输入",
+    "zoomin": "进入到期日",
+    "done_at": "完成于 {{fmtTime}}",
+    "done_today": "今天完成"
+  },
+  "moment": {
+    "title": "每刻",
+    "quote": "“每刻”是一种以时间顺序为依据去索引笔记的功能，它与 Daily notes 的不同之处在于，Daily notes 是以天为单位去索引笔记的，而“每刻”则将时间索引的粒度细化到每时每刻。它的价值是十分明显的：（1）能以时间先后为线索找到所创建过的所有笔记；（2）彻底摆脱在做笔记时“笔记保存到哪里”的烦恼，这点是比 Daily notes 更优秀的。",
+    "nav_title": "每刻",
+    "placeholder": "记录此刻"
+  },
+  "gpt3": {
+    "title": "GPT-3",
+    "quote": "基于 GPT-3 的 AI 能力，辅助你更好地做笔记",
+    "api_key_quote": "填写 GPT-3 的 API key 才能使用它",
+    "asking": "等待 GPT-3 响应"
+  },
+  "nav": {
+    "collapse": "收起",
+    "expand": "展开"
+  },
+  "inlinesBar": {
+    "title": "笔记组件工具条",
+    "clear_format": "转成普通文本",
+    "turn_into": "转换成:"
+  },
+  "embedweb": {
+    "title": "嵌入外部网页",
+    "quote": "你可以在笔记中嵌入一个外部网页资源",
+    "turn_into_embed": "嵌入此网址",
+    "slash_menu_title": "网页嵌入"
+  },
+  "topic": {
+    "turn_into_sub_topic": "设为子主题",
+    "turn_into_root_topic": "设为顶级主题",
+    "topicalize": "转换成主题",
+    "no_empty": "主题的标题不能为空",
+    "has_exist": "主题“{{topic}}”已存在"
+  },
+  "libAdmin": {
+    "title": "知识库管理",
+    "list": "知识库列表",
+    "form_title": "知识库信息",
+    "save_success": "保存成功",
+    "save_fail": "保存失败了",
+    "open_new_lib": "跳转到新知识库",
+    "delete_success": "删除知识库成功",
+    "opening_library": "正在加载数据, 请稍候…",
+    "library_id": "知识库 ID",
+    "library_title": "知识库标题",
+    "library_quote": "描述"
+  },
+  "prefer": {
+    "title": "偏好方案",
+    "quote": "此插件让你可以针对不同知识库的需求场景，创建多套不同方案的偏好设置，比如有些知识库，你只想使用最简单的功能，那么可以将多余的插件功能禁用掉；又比如一些知识库你不希望同步到服务器的，可以针对此库创建一个偏好方案，将同步插件禁用掉。",
+    "default_plan": "默认偏好方案",
+    "global_plan": "全局偏好设置",
+    "plan_list": "偏好方案列表",
+    "choose_plan": "选择偏好方案",
+    "manage_plan": "管理偏好方案",
+    "plan_quote": "一个库可以有自己独立的偏好方案，也可与其他知识库共用同一偏好方案。当在本库修改了具体的偏好设置后，这些设置将会被保存到此偏好方案中。",
+    "plan_title": "偏好方案的标题",
+    "plan_desc": "偏好方案的描述",
+    "new_plan_quote": "给新建的偏好方案起一个标题，以便日后管理",
+    "set_default_library": "设为默认知识库"
+  },
+  "placeholder": {
+    "title": "占位符",
+    "quote": "当我们在制作笔记模板的时候，希望在留白的输入框内预设一些输入提示，这个输入提示就是占位符"
+  },
+  "pathHighlight": {
+    "title": "大纲路径高亮",
+    "quote": "对正在编辑的节点，以高亮的方式显示它在当前大纲文档中的路径"
+  },
+  "slidebar": {
+    "title": "滑动条组件",
+    "quote": "在笔记中插入滑动条组件"
+  },
+  "client": {
+    "title": "客户端核心服务组件",
+    "backward": "后退",
+    "forward": "前进",
+    "save_all_and_exit": "将在保存所有数据后退出..."
+  },
+  "paste": {
+    "is_codeblock": "是否粘贴为代码块？"
+  },
+  "trash": {
+    "title": "回收站",
+    "restore": "恢复",
+    "deleted_at": "删除于",
+    "restore_item": "恢复这条笔记",
+    "restore_below_items": "恢复以下{{count}}条数据",
+    "trash_is_empty": "回收站是空的",
+    "clear": "清空"
+  },
+  "docver": {
+    "title": "历史记录",
+    "quote": "你可以追踪一个主题文档的历史变更记录，并且可以恢复到任意的一个历史版本",
+    "no_versions": "没有历史记录",
+    "revert_from": "恢复自",
+    "revert_to": "恢复到此版本",
+    "dialog_title": "历史记录 - {{topic}}",
+    "update_msg": "{{time}}编辑了{{count}}个节点：[[{{topic}}]]",
+    "choose_op": "请选择一个操作",
+    "show_history": "查看该主题历史版本",
+    "confirm_op": "确认操作",
+    "update_dialog_title": "编辑记录"
+  },
+  "srs": {
+    "title": "温习",
+    "quote": "现在可以通过这个SRS（间隔复习系统）来复习笔记了。平时做笔记的时候，你可以一些你希望在Flash card中考查自己的重点知识添加某种标记，例如：加粗、下划线、公式等等，然后在你复习的时候，将标记的内容隐藏起来，以达到考查记忆的效果",
+    "nav_title": "温习",
+    "rule_quote": "平时做笔记的时候，你可以给笔记添加某种标记，例如：加粗、下划线、公式等等，然后在你复习的时候，将所标记的内容隐藏起来，以考查记忆的效果",
+    "rule_title": "挖空哪些文本",
+    "keywords_title": "关键词",
+    "keywords_quote": "输入关键词以搜集待复习的笔记",
+    "regexp_title": "正则表达式",
+    "setup_notice": "此复习清单尚未设置，请输入关键词以找到待复习笔记",
+    "setup": "设置",
+    "quality1": "忘了",
+    "quality2": "部份记得",
+    "quality3": "记得但费力",
+    "quality5": "轻松地忆起",
+    "show_answer": "显示答案",
+    "tip_start_review": "点击复习{{count}}个卡片",
+    "tip_setup": "设置复习清单",
+    "deck_form_title": "设置复习清单",
+    "no_flashcards": "此刻没有卡片需要复习",
+    "soon": "稍后",
+    "days": "天",
+    "hours": "小时",
+    "no_more_flashcards": "很棒，本次复习计划已经成完了，请再接再励，定期复习以强化记忆效果",
+    "generate_log": "生成复习日志",
+    "generate_log_text": "到“每日”",
+    "finished": "完成一次复习：",
+    "reviewed": "总共复习了{{count}}个卡片",
+    "duration": "用时 {{duration}} 分钟",
+    "cloze_subitems": "下级节点",
+    "cloze_quote": "节点备注文字",
+    "cloze_bold": "加粗",
+    "cloze_underline": "下划线",
+    "cloze_code": "行内代码",
+    "cloze_italic": "斜体",
+    "cloze_codeblock": "代码块",
+    "cloze_latex": "Latex",
+    "cloze_refer": "引用块",
+    "cloze_bilink": "双向链接",
+    "cloze_tag": "标签",
+    "cloze_note": "标注文字",
+    "create_deck_from": "创建复习清单",
+    "confirm_create_collection_from": "将在{{srsTopic}}之下创建复习清单{{referTopic}}，当前的所有子节点都成为复习卡片",
+    "linked_references": "{{count}} 卡片被纳入到当前复习清单",
+    "located": "待复习的笔记位于"
+  },
+  "editorView": {
+    "tip_node_btn_fold": "点击折叠节点",
+    "tip_node_btn_unfold": "点击展开节点",
+    "tip_zoom_btn_shift_click": "Shift+点击在右侧打开",
+    "tip_zoom_btn_ctrl_click": "Ctrl+点缶在悬浮窗口打开",
+    "tip_zoom_btn_alt_click": "Alt+点击在 Andy 模式打开",
+    "tip_zoom_btn_click": "点击进入"
+  },
+  "keyClick": {
+    "title": "Key click",
+    "quote": "让你可以通过不同的键盘鼠标组合方式，控制节点的打开方式：shift+点击 右侧打开，ctrl+点击 悬浮窗口打开"
+  },
+  "share": {
+    "share": "分享",
+    "success_msg": "{{link}}",
+    "sharing": "正在分享..."
+  },
+  "fileManager": {
+    "empty": "暂无文件。上传的图片和附件会显示在这里。"
+  },
+  "File Manager": "文件管理",
+  "Manage your uploaded files here.": "在这里管理上传的文件。"
+}

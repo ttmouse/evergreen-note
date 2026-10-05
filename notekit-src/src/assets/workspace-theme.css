@@ -1,0 +1,1366 @@
+/* Reading-oriented backlink previews adapt to the note column, not the window. */
+.backlink-reading {
+  container-type: inline-size;
+  padding: 16px;
+  background: var(--nk-backlink-bg, var(--nk-sidebar));
+  border-radius: 16px;
+}
+html body:not(.night-mode) section.backlink-reading {
+  background-color: #f5f5f8 !important;
+}
+html body section.backlink-reading {
+  background-color: #f5f5f8 !important;
+}
+html body.night-mode section.backlink-reading {
+  background-color: #222d32 !important;
+}
+.backlink-reading h2 {
+  margin: 0;
+  color: var(--nk-backlink-heading, var(--nk-muted));
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.backlink-reading h2 span { margin-left: 8px; font-size: 13px; font-weight: 400; }
+.backlink-reading-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; margin: 0 -8px; }
+.backlink-reading-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  height: 118px;
+  overflow: hidden;
+  margin-top: 8px;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--nk-backlink-title, var(--nk-ink));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 100ms linear;
+}
+.backlink-reading-entry:hover { background: rgba(0, 0, 0, .05); transition-duration: 50ms; }
+.backlink-reading-entry:active { background: rgba(0, 0, 0, .1); }
+.backlink-reading-entry:focus-visible { outline: 2px solid var(--node-text-link); outline-offset: 2px; }
+.backlink-reading-title {
+  flex-shrink: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+}
+.backlink-reading-excerpt {
+  flex-shrink: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  margin-top: 12px;
+  color: var(--nk-muted);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ── Notekit workspace theme ───────────────────────────────────────────────
+   Read as: a calm, focused writing desk for long-form note work.
+   DESIGN_VARIANCE 3 · MOTION_INTENSITY 2 · VISUAL_DENSITY 4
+*/
+:root {
+  --nk-canvas: #fafafc;
+  --nk-sidebar: #fafafc;
+  --nk-surface: #ffffff;
+  --nk-ink: #333333;
+  --nk-muted: #666666;
+  --nk-line: #eeeeee;
+  --nk-line-strong: #dddddd;
+  --nk-accent: #0a84ff;
+  --nk-accent-soft: rgba(10, 132, 255, .10);
+  --nk-hover: rgba(0, 0, 0, .045);
+  --nk-backlink-bg: #fafafc;
+  --nk-backlink-heading: #888888;
+  --nk-backlink-title: #111111;
+  --nk-tab-hover: rgba(37, 51, 58, .07);
+  --nk-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+  --primary: #0a84ff;
+  --info: #0a84ff;
+  --bgrey: #888888;
+  --common-border: #eeeeee;
+  --table-border: rgba(0, 0, 0, .12);
+  --node-text-link: #0a84ff;
+  --node-text-link-hover: #006de0;
+  --node-child-border: #eeeeee;
+  --node-child-border-focus: #dddddd;
+  --search-node-bg: #fafafc;
+  --search-node-border: #eeeeee;
+  --suggest-item-hover-bg: rgba(0, 0, 0, .045);
+  --suggest-shadow: 0 10px 28px rgba(0, 0, 0, .10);
+  --popup-menu-input-border: #dddddd;
+  --node-btn-hover: #0a84ff;
+  --nk-hint: #a36a00;
+}
+body:not(.night-mode) {
+  background: var(--nk-canvas);
+  color: var(--nk-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body:not(.night-mode) .app-root-node {
+  color: var(--nk-ink);
+}
+body:not(.night-mode) nav.nav-area {
+  background: var(--nk-sidebar);
+  border-right: 1px solid var(--nk-line);
+  color: var(--nk-ink);
+}
+body:not(.night-mode) nav.nav-area .node-head,
+body:not(.night-mode) .extarea.node .node-head {
+  transition: background-color 140ms ease-out, color 140ms ease-out;
+}
+body:not(.night-mode) nav.nav-area .node-head:hover,
+body:not(.night-mode) .extarea.node .node-head:hover {
+  background: var(--nk-hover);
+  color: var(--nk-ink);
+}
+/* A navigation command has one hover surface for its icon, label and actions.
+   Keep nested content outside the row so it does not highlight its parent. */
+body nav.nav-area .nk-nav-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-basis: calc(100% + 7px);
+  min-width: 0;
+  margin-left: -12px;
+  margin-right: 5px;
+  padding-left: 12px;
+  border-radius: 6px;
+  transition: background-color 140ms ease-out;
+}
+body nav.nav-area .nk-nav-row:hover {
+  background: var(--nk-hover);
+}
+html body nav.nav-area .nk-nav-row > .node-head,
+html body nav.nav-area .nk-nav-row > .node-icon {
+  background: transparent !important;
+}
+body nav.nav-area .nk-nav-row > .node-icon {
+  flex-shrink: 0;
+}
+body nav.nav-area .nk-nav-row > .node-head {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* Actions share the label's flex alignment instead of a fixed top offset. */
+body nav.nav-area .nk-nav-row > .node-extra {
+  position: static;
+  order: 1;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 0 8px;
+}
+body nav.nav-area .nk-nav-row > .node-extra > .node,
+body nav.nav-area .nk-nav-row > .node-extra .node-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
+body nav.nav-area .nk-nav-row svg {
+  display: block;
+  flex-shrink: 0;
+}
+/* 圆点与文字水平对齐：星标条目外层 align-items: center，20px 圆点盒子对中的是
+   node-head 盒子中心，而文字行框中心因 head 的 4px 底部内边距等比盒子中心低约
+   2.8px。实测（Playwright 量圆点中心 vs 文字行框中心）需要 -3px 补偿。 */
+body nav.nav-area .node > .node-tools {
+  top: 0;
+  align-self: center;
+  transform: translateY(-3px);
+}
+body:not(.night-mode) .main-area {
+  background: var(--nk-canvas);
+  color: var(--nk-ink);
+}
+body:not(.night-mode) .main-area > .node-body {
+  background: var(--nk-canvas);
+}
+body:not(.night-mode) .main-area .editor-view {
+  color: var(--nk-ink);
+}
+body:not(.night-mode) .main-area .node-top {
+  border-color: var(--nk-line);
+}
+body:not(.night-mode) .main-area .node-text {
+  color: var(--nk-ink);
+  line-height: 1.62;
+}
+body:not(.night-mode) .main-area .node-crumbs {
+  color: var(--nk-muted);
+}
+body:not(.night-mode) .main-area .crumbs-item {
+  color: var(--nk-muted);
+}
+body:not(.night-mode) .main-area .crumbs-item:hover,
+body:not(.night-mode) .main-area .crumbs-item:focus-visible {
+  color: var(--nk-accent);
+}
+body:not(.night-mode) .node-icon {
+  border-radius: 6px;
+  transition: background-color 140ms ease-out, color 140ms ease-out;
+}
+/* Bullet 圆点按钮（折叠态实心圆、悬停底色）本身是圆，不套用上面图标按钮的 6px 圆角 */
+body:not(.night-mode) .node-btn.node-icon {
+  border-radius: 100px;
+}
+body:not(.night-mode) .node-icon:hover,
+body:not(.night-mode) .node-btn:hover {
+  background-color: var(--nk-hover);
+  color: var(--nk-accent);
+}
+/* 文本框（input/textarea）无论鼠标点击还是键盘聚焦都恒匹配 :focus-visible，
+   MUI 下划线输入框自带聚焦下划线，再套 outline 会叠出双重边框，故排除；
+   用 :where() 压低特异性：组件里显式声明 outline:none 的自管输入框
+   （搜索弹窗、插件中心、AutoGrowInput、TagsElComp 等）必须能赢回 */
+body:not(.night-mode) button:focus-visible,
+body:not(.night-mode) [role="button"]:focus-visible,
+body:not(.night-mode) a:focus-visible,
+body:not(.night-mode) input:where(:focus-visible):where(:not(.MuiInputBase-input, #search-dialog-input)),
+body:not(.night-mode) textarea:focus-visible:not(.MuiInputBase-input),
+body:not(.night-mode) [contenteditable="true"]:focus-visible {
+  outline: 2px solid #6c99a5;
+  outline-offset: 2px;
+}
+body:not(.night-mode) ::selection {
+  background: #c9dfe5;
+  color: #1d343c;
+}
+body:not(.night-mode) ::-webkit-scrollbar-thumb {
+  background: #c5d2d6;
+  border-radius: 8px;
+}
+body:not(.night-mode) ::-webkit-scrollbar-thumb:hover {
+  background: #9eafb5;
+}
+/* 浮层不用投影：投影会在浅色画布上叠出第二层边界，和面板自己的 1px 边线打架。
+   层级改由边线 + 圆角表达，面板底色比画布亮一档（浅色 #FFFFFF / 夜间 --nk-surface）。 */
+body:not(.night-mode) .nui-dialog,
+body:not(.night-mode) .MuiDialog-paper,
+body:not(.night-mode) .MuiPopover-paper,
+body:not(.night-mode) .MuiMenu-paper {
+  border: 1px solid var(--nk-line-strong);
+  border-radius: 10px;
+  box-shadow: none;
+}
+body:not(.night-mode) .search-node,
+body:not(.night-mode) .search-result {
+  border-color: var(--search-node-border);
+}
+
+/* Shared dialog chrome: keep MUI-backed panels inside the workspace visual system. */
+html body .dialog-outer .MuiDialog-paper {
+  overflow: hidden;
+  color: var(--nk-ink);
+  background: var(--nk-surface);
+}
+html body .dialog-outer .dialog-title.MuiDialogTitle-root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px 84px 10px 20px;
+  border-bottom: 1px solid var(--nk-line);
+  color: var(--nk-ink);
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 600;
+  opacity: 1;
+}
+html body .dialog-outer .dialog-title > span:last-child {
+  top: 50% !important;
+  right: 8px !important;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+html body .dialog-outer .dialog-title .MuiIconButton-root,
+html body .dialog-outer .dialog-floating-close .MuiIconButton-root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 6px;
+  border-radius: 6px;
+  color: var(--nk-muted);
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+html body .dialog-outer .dialog-title .MuiIconButton-root:hover,
+html body .dialog-outer .dialog-floating-close .MuiIconButton-root:hover {
+  background: var(--nk-hover);
+  color: var(--nk-ink);
+}
+html body .dialog-outer .dialog-title .MuiIconButton-root svg,
+html body .dialog-outer .dialog-floating-close .MuiIconButton-root svg {
+  width: 18px;
+  height: 18px;
+}
+html body .dialog-outer .dialog-body.MuiDialogContent-root {
+  padding: 16px 20px;
+  color: var(--nk-ink);
+  font-size: 14px;
+  line-height: 1.6;
+}
+html body .dialog-outer .dialog-buttons.MuiDialogActions-root {
+  gap: 8px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--nk-line);
+}
+html body .dialog-outer .dialog-buttons .MuiButton-root {
+  min-width: 64px;
+  min-height: 34px;
+  margin: 0 !important;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-transform: none;
+}
+html body .dialog-outer .dialog-buttons .MuiButton-text,
+html body .dialog-outer .dialog-buttons .MuiButton-outlined {
+  color: var(--nk-ink);
+}
+html body .dialog-outer .dialog-buttons .MuiButton-outlined {
+  border-color: var(--nk-line-strong);
+}
+html body .dialog-outer .dialog-buttons .MuiButton-text:hover,
+html body .dialog-outer .dialog-buttons .MuiButton-outlined:hover {
+  background: var(--nk-hover);
+}
+html body .dialog-outer .dialog-buttons .MuiButton-root:focus-visible,
+html body .dialog-outer .dialog-title .MuiIconButton-root:focus-visible,
+html body .dialog-outer .dialog-floating-close .MuiIconButton-root:focus-visible {
+  outline: 2px solid var(--nk-accent);
+  outline-offset: 2px;
+}
+
+/* Trash is a compact utility panel; its empty and loading states share one rhythm. */
+html body .trash-dialog .trash-box {
+  min-height: 96px;
+  max-height: min(62vh, 560px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+html body .trash-dialog .trash-state {
+  display: flex;
+  align-items: center;
+  min-height: 96px;
+  color: var(--nk-muted);
+}
+html body .trash-dialog .trash-group {
+  padding: 4px 0 12px;
+  border-bottom: 1px solid var(--nk-line);
+}
+html body .trash-dialog .trash-group + .trash-group {
+  padding-top: 12px;
+}
+html body .trash-dialog .trash-group .group-title {
+  color: var(--nk-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+html body .trash-dialog .trash-group .MuiChip-root {
+  border-color: var(--nk-line-strong);
+  border-radius: 6px;
+  background: var(--nk-surface);
+  color: var(--nk-ink);
+}
+html body .trash-dialog .trash-group .MuiChip-root:hover {
+  background: var(--nk-hover);
+}
+@media (prefers-reduced-motion: reduce) {
+  body *,
+  body *::before,
+  body *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Separate the reading paper from the unused canvas; retain the night palette. */
+html body .floatview-container[data-mode='andy'] {
+  --andy-canvas: var(--nk-canvas);
+  --andy-paper: var(--nk-canvas);
+  --andy-divider: var(--nk-line);
+  background-color: var(--andy-canvas);
+}
+html body:not(.night-mode) .floatview-container[data-mode='andy'] {
+  --andy-canvas: #fafafc;
+  --andy-paper: #fff;
+  --andy-divider: #dadada;
+}
+/* NavComp leaves a 2px hover strip when folded. The legacy Andy stylesheet
+   still reserves 40px for its former sidebar control; align with Main instead. */
+html body nav.nav-area.node-foldup ~ .floatview-container[data-mode='andy'] {
+  left: 2px !important;
+  right: 0 !important;
+  width: calc(100% - 2px);
+}
+@media (max-width: 992px) {
+  /* NavComp's atom.md folds visually even without the node-foldup class. */
+  html body nav.nav-area ~ .floatview-container[data-mode='andy'] {
+    left: 2px !important;
+    right: 0 !important;
+    width: calc(100% - 2px);
+  }
+}
+html body .floatview-container[data-mode='andy'] .floatview-container-subitems:not(:empty) {
+  column-gap: 0;
+  background-color: var(--andy-canvas) !important;
+}
+html body .floatview-container[data-mode='andy'] .floatview-container-subitems > .nui-dialog[dialog-list-mode='andy'] {
+  background-color: var(--andy-paper) !important;
+}
+html body .floatview-container[data-mode='andy'] .floatview-container-subitems > .nui-dialog[dialog-list-mode='andy'] ~ .nui-dialog[dialog-list-mode='andy'] {
+  border-left: 1px solid var(--nk-line) !important;
+}
+/* The full-width main body owns scrolling; the centered article only sets reading width. */
+html body .main-area .editor-view.editor-from-router {
+  overflow: visible;
+}
+
+/* Rounded tabs identify the active note without tinting its column. */
+/* Tabs navigate the reading path; pages scroll side by side without overlapping. */
+html body .floatview-container[data-mode='andy'] .floatview-container-subitems {
+  --andy-width: min(625px, 100%);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0;
+  position: relative;
+  isolation: isolate;
+  /* The full-width scroller overlaps the fixed titlebar controls. Leave its
+     empty area click-through; each note dialog keeps its own hit testing. */
+  pointer-events: none;
+}
+html body .floatview-container[data-mode='andy'] .floatview-container-subitems > .nui-dialog[dialog-list-mode='andy'] {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: 0 !important;
+  width: var(--andy-width) !important;
+  min-width: var(--andy-width) !important;
+  max-width: var(--andy-width) !important;
+  flex: 0 0 var(--andy-width);
+  height: 100% !important;
+  min-height: 0 !important;
+  z-index: auto !important;
+  transform: none !important;
+}
+html body .floatview-container[data-mode='andy'] .nui-dialog[dialog-list-mode='andy'] .editor-view {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding-top: 32px;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+/* The top tabs own note titles and closing in the side-by-side workspace. */
+html body .floatview-container[data-mode='andy'] .floatview-container-subitems > .nui-dialog[dialog-list-mode='andy'] > .nui-dialog-head {
+  display: none;
+}
+html body .floatview-container[data-mode='andy'] .floatview-container-subitems > .nui-dialog[dialog-list-mode='andy'] > .nui-dialog-body {
+  margin-top: 0;
+}
+@media (max-width: 800px) {
+  html body .floatview-container[data-mode='andy'] .floatview-container-subitems {
+    --andy-width: 100%;
+  }
+  html body .floatview-container[data-mode='andy'] .nui-dialog[dialog-list-mode='andy'] .editor-view {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  html body .floatview-container[data-mode='andy'] .nui-dialog[dialog-list-mode='andy']:not(.andy-note-active) {
+    display: none !important;
+  }
+  html body .floatview-container[data-mode='andy'] .nui-dialog[dialog-list-mode='andy'].andy-note-active {
+    left: 0 !important;
+    right: 0 !important;
+  }
+}
+html body .floatview-container[data-mode='andy'] > .floatview-container-head {
+  background-color: var(--nk-canvas);
+  width: 100%;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--andy-divider);
+}
+html body .floatview-container[data-mode='andy'] > .floatview-container-head > .floatview-container-title {
+  width: 100%;
+  min-width: 0;
+}
+html body .floatview-container[data-mode='andy'] > .floatview-container-head .tab-list > .node-body > .node-subitems > .tab {
+  background-color: transparent !important;
+  border-radius: 9px;
+  height: 32px;
+  padding: 0 4px 0 10px;
+  margin-left: 0;
+  margin-right: 4px;
+  position: relative;
+  border-bottom: 0;
+  flex-shrink: 0;
+  font-weight: 400;
+  color: var(--nk-ink) !important;
+  box-shadow: none;
+  outline: none;
+}
+html body .floatview-container[data-mode='andy'] > .floatview-container-head .tab:not(.is-active):not(:hover):not(:focus-within) + .tab:not(.is-active):not(:hover):not(:focus-within)::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  width: 1px;
+  height: 12px;
+  background: var(--nk-line-strong);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+html body .floatview-container[data-mode='andy'] > .floatview-container-head .tab-list > .node-body > .node-subitems > .tab:not(.is-active):hover {
+  background-color: var(--nk-tab-hover) !important;
+}
+html body .floatview-container[data-mode='andy'] > .floatview-container-head .tab-list > .node-body > .node-subitems > .tab.is-active {
+  background-color: var(--nk-tab-hover) !important;
+  box-shadow: none;
+}
+html body .floatview-container[data-mode='andy'] > .floatview-container-head .tab .tab-item-title,
+html body .floatview-container[data-mode='andy'] > .floatview-container-head .tab .node-icon,
+html body .floatview-container[data-mode='andy'] > .floatview-container-head .tab .floatviewer-tab-close {
+  color: inherit !important;
+}
+/* 浮窗模式下不需要容器底部的标签条：容器是 inset:0 的 column flex，head 会被推到
+   视口底部，既占地方又在视觉上和浮窗本身无关。Andy 模式仍用 head 作为顶部标签栏。 */
+html body .floatview-container:not([data-mode='andy']) > .floatview-container-head {
+  display: none !important;
+}
+
+/* 浮窗按内容自适应高度：.nui-dialog 的 max-height 是 calc(100vh - 2.5em)，body 又是
+   flex:1 1 auto，短笔记会被撑到满屏，底部留下一大片死空白。改为高度跟随内容，
+   同时用 max-height 保留超长笔记的滚动上限。 */
+html body .nui-dialog.dialog-item-float:not([dialog-list-mode='andy']) {
+  height: auto !important;
+  max-height: calc(100vh - 2.5em) !important;
+}
+html body .nui-dialog.dialog-item-float:not([dialog-list-mode='andy']) > .nui-dialog-body {
+  flex: 0 1 auto !important;
+  height: auto !important;
+  max-height: calc(100vh - 2.5em - 45px) !important;
+  overflow-y: auto !important;
+}
+
+/* 修复：浮窗折叠标签条的空容器以 pointer-events:all 拦截视口底部 2em 内的所有点击
+   （包括贴底 Dialog 的 resize 手柄、页面底部导航）。容器改为穿透，
+   真正的 .tab 仍保留自身 pointer-events:all 规则，点击不受影响。 */
+html body .floatview-container > .floatview-container-head .tab-list > .node-body,
+html body .floatview-container > .floatview-container-head .tab-list > .node-body > .node-subitems {
+  pointer-events: none;
+}
+body .floatview-container-head .tab-item-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+html body .floatview-container > .floatview-container-head .tab-list > .node-body > .node-subitems > .tab .tab-item-title {
+  height: 24px;
+  line-height: 24px;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+body .floatview-container-head .tab-item-extra {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+body .floatview-container-head .floatviewer-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  opacity: 0;
+  cursor: pointer;
+}
+body .floatview-container-head .tab.is-active .floatviewer-tab-close,
+body .floatview-container-head .tab:hover .floatviewer-tab-close,
+body .floatview-container-head .tab:focus-within .floatviewer-tab-close {
+  opacity: .6;
+}
+body .floatview-container-head .tab .floatviewer-tab-close:hover {
+  background: var(--nk-hover);
+  opacity: 1;
+}
+body .floatview-container-head .tab .floatviewer-tab-close:focus-visible {
+  outline: 2px solid var(--nk-accent);
+  outline-offset: -2px;
+  opacity: 1;
+}
+html body .floatview-container[data-mode='andy'] > .floatview-container-head .tab:focus-visible {
+  outline: 2px solid var(--nk-accent);
+  outline-offset: -2px;
+}
+
+/* Active night-mode palette: keep the same quiet writing-desk hierarchy. */
+body.night-mode {
+  --nk-canvas: #1c2529;
+  --nk-sidebar: #222d32;
+  --nk-backlink-bg: #222d32;
+  --nk-backlink-heading: #a4b4b9;
+  --nk-backlink-title: #e3ebed;
+  --nk-surface: #29353a;
+  --nk-ink: #e3ebed;
+  --nk-muted: #a4b4b9;
+  --nk-line: #3b4a50;
+  --nk-line-strong: #4a5b61;
+  --nk-accent: #9bc4ce;
+  --nk-accent-soft: #2e4148;
+  --nk-hover: #304148;
+  --nk-tab-hover: rgba(227, 235, 237, .09);
+  --nk-shadow: 0 12px 32px rgba(0, 0, 0, .34);
+  /* NightMode's own rules consume these variables with !important. */
+  --dark-bg-primary: #1c2529;
+  --dark-bg-secondary: #222d32;
+  --dark-important: #34464d;
+  --dark-very-important: #3d535b;
+  --dark-extremely-important: #58737c;
+  --dark-text: #e3ebed;
+  --dark-text-less-important: #a4b4b9;
+  --primary: #8fb9c4;
+  --info: #9bc4ce;
+  --bgrey: #9aadb3;
+  --common-border: #3b4a50;
+  --table-border: rgba(177, 204, 211, .2);
+  --node-text-link: #69adff;
+  --node-text-link-hover: #94c5ff;
+  --node-child-border: #34434a;
+  --node-child-border-focus: #5b737b;
+  --search-node-bg: #263238;
+  --search-node-border: #3b4a50;
+  --suggest-item-hover-bg: #304148;
+  --suggest-shadow: 0 12px 32px rgba(0, 0, 0, .4);
+  --popup-menu-input-border: #4a5d64;
+  --node-btn-hover: #a5d0da;
+  --nk-hint: #e0b25c;
+}
+html body.night-mode {
+  background: var(--nk-canvas) !important;
+  color: var(--nk-ink) !important;
+}
+html body.night-mode nav.nav-area {
+  background: var(--nk-sidebar) !important;
+  border-right: 1px solid var(--nk-line);
+  color: var(--nk-ink) !important;
+}
+html body.night-mode .main-area,
+html body.night-mode .main-area > .node-body {
+  background: var(--nk-canvas) !important;
+  color: var(--nk-ink) !important;
+}
+html body.night-mode .node-text,
+html body.night-mode .node-head,
+html body.night-mode .node-body,
+html body.night-mode .main-area .crumbs-item {
+  color: var(--nk-ink) !important;
+}
+html body.night-mode .main-area .crumbs-item {
+  color: var(--nk-muted) !important;
+}
+html body.night-mode .main-area .crumbs-item:hover,
+html body.night-mode .main-area .crumbs-item:focus-visible {
+  color: var(--nk-accent) !important;
+}
+html body.night-mode nav.nav-area .node-head:hover,
+html body.night-mode .extarea.node .node-head:hover,
+html body.night-mode .node-icon:hover,
+html body.night-mode .node-tools .node-btn:hover {
+  background: var(--nk-hover) !important;
+  color: var(--nk-ink) !important;
+}
+html body.night-mode .nui-dialog,
+html body.night-mode .MuiDialog-paper,
+html body.night-mode .MuiPopover-paper,
+html body.night-mode .MuiMenu-paper {
+  background: var(--nk-surface) !important;
+  border: 1px solid var(--nk-line-strong);
+  border-radius: 10px;
+  box-shadow: none;
+}
+html body.night-mode .dialog-outer .dialog-title,
+html body.night-mode .dialog-outer .dialog-title-inner,
+html body.night-mode .dialog-outer .dialog-body,
+html body.night-mode .dialog-outer .dialog-buttons .MuiButton-text,
+html body.night-mode .dialog-outer .dialog-buttons .MuiButton-outlined,
+html body.night-mode .trash-dialog .trash-state,
+html body.night-mode .trash-dialog .group-title,
+html body.night-mode .trash-dialog .MuiChip-root {
+  color: var(--nk-ink) !important;
+}
+html body.night-mode .dialog-outer .dialog-title .MuiIconButton-root,
+html body.night-mode .dialog-outer .dialog-floating-close .MuiIconButton-root {
+  color: var(--nk-muted) !important;
+}
+html body.night-mode .dialog-outer .dialog-title .MuiIconButton-root:hover,
+html body.night-mode .dialog-outer .dialog-floating-close .MuiIconButton-root:hover {
+  background: var(--nk-hover) !important;
+  color: var(--nk-ink) !important;
+}
+html body.night-mode .dialog-outer .dialog-title,
+html body.night-mode .dialog-outer .dialog-buttons {
+  border-color: var(--nk-line) !important;
+}
+html body.night-mode .dialog-outer .dialog-buttons .MuiButton-outlined,
+html body.night-mode .trash-dialog .MuiChip-root {
+  border-color: var(--nk-line-strong) !important;
+}
+html body.night-mode button:focus-visible,
+html body.night-mode [role="button"]:focus-visible,
+html body.night-mode a:focus-visible,
+html body.night-mode input:where(:focus-visible):where(:not(.MuiInputBase-input, #search-dialog-input)),
+html body.night-mode textarea:focus-visible:not(.MuiInputBase-input),
+html body.night-mode [contenteditable="true"]:focus-visible {
+  outline: 2px solid #8fb9c4;
+  outline-offset: 2px;
+}
+html body.night-mode ::selection {
+  background: #47636d;
+  color: #f0f6f7;
+}
+html body.night-mode ::-webkit-scrollbar-thumb {
+  background: #52656c;
+  border-radius: 8px;
+}
+html body.night-mode ::-webkit-scrollbar-thumb:hover {
+  background: #6b838c;
+}
+
+/* Win over NightMode's legacy !important sidebar and extension backgrounds. */
+html body.night-mode .app-container nav.nav-area.node {
+  background-color: #222d32 !important;
+  background-image: none !important;
+  color: #e3ebed !important;
+}
+html body.night-mode .app-container .extarea.node {
+  background-color: #222d32 !important;
+  background-image: none !important;
+}
+html body.night-mode #RoamEdit-nav {
+  background: #222d32 !important;
+  color: #e3ebed !important;
+}
+html body.night-mode #RoamEdit-nav .node-head,
+html body.night-mode #RoamEdit-nav .node-text {
+  color: #e3ebed !important;
+}
+html body.night-mode #RoamEdit-nav {
+  transition: none !important;
+  background-color: #222d32 !important;
+}
+
+/* Fine-line workspace divisions shared by the browser build and Electron. */
+body .app-root-node > nav.nav-area.node {
+  border-right: 1px solid var(--nk-line);
+}
+body .app-root-node > .main-area.node {
+  min-width: 0;
+}
+body .app-root-node > .main-area.node > div:first-child {
+  border-bottom: 1px solid var(--nk-line);
+}
+body .app-root-node > .ext-area.node {
+  border-left: 1px solid var(--nk-line);
+  background-color: var(--nk-canvas) !important;
+  padding: 12px 14px 12px 16px;
+}
+body .app-root-node > .ext-area.node ~ .ext-area.node {
+  border-top-color: var(--nk-line-strong);
+}
+body .ext-area.node > .node-head {
+  color: var(--nk-ink);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 0 10px;
+  border-bottom: 1px solid var(--nk-line);
+}
+body .ext-area.node > .node-body {
+  padding: 10px 0 0;
+}
+body .main-area .node-top {
+  border-bottom-color: var(--nk-line);
+}
+body .nui-panel > .node-head,
+body .nui-panel > .node-footer {
+  border-color: var(--nk-line);
+}
+/* 菜单浮层：面板底色与描边。
+   包在 MUI paper 里的菜单由 paper 描边；没有 paper 的独立浮层（自动完成、二级菜单）
+   由面板自己描边，两种路径都只有一条 1px 线。 */
+body:not(.night-mode) .re-menu,
+html body.night-mode .re-menu {
+  background-color: var(--nk-surface);
+}
+body .re-menu:not(.MuiPaper-root *) {
+  border: 1px solid var(--nk-line-strong);
+  border-radius: 10px;
+}
+html body.night-mode .app-root-node > .ext-area.node {
+  background-color: var(--nk-canvas) !important;
+}
+html body.night-mode .ext-area.node > .node-head {
+  color: var(--nk-ink) !important;
+}
+
+/* The editor spans the full note; don't draw a focus frame around the whole document. */
+html body .item-editor[contenteditable="true"]:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+body .main-area .node-top > .node-head .node-text {
+  line-height: 1.25;
+}
+body .main-area .node-crumbs {
+  line-height: 1.5;
+}
+
+/* Round 2: brand and library have different reading priority. */
+body nav.nav-area .nk-nav-brand {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 4px 0 12px;
+}
+body nav.nav-area .nk-nav-version,
+body nav.nav-area .nk-nav-library {
+  color: var(--nk-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+body nav.nav-area .nk-nav-version { margin-left: 4px; }
+body nav.nav-area .nk-nav-library {
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body nav.nav-area:focus-within { transition: none !important; }
+body [data-icon="foldup"][role="button"],
+body [data-icon="expand"][role="button"] { cursor: pointer; }
+
+body .SearchDialog .input-wrap { border-bottom: 1px solid var(--nk-line); }
+body .SearchDialog input { color: var(--nk-ink); background: var(--nk-surface); }
+body .SearchDialog input::placeholder { color: var(--nk-muted); opacity: 1; }
+body .SearchDialog .search-feedback,
+body .SearchDialog .search-keyboard-help {
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--nk-muted);
+}
+body .SearchDialog .search-keyboard-help { border-top: 1px solid var(--nk-line); }
+
+/* Round 4: results scroll while the query and keyboard help stay visible. */
+body .dialog-body:has(> .SearchDialog) { overflow: hidden; padding: 0; }
+body .SearchDialog {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 112px);
+  min-height: 180px;
+  color: var(--nk-ink);
+  background: var(--nk-surface);
+}
+body .SearchDialog .input-wrap { position: static; flex-shrink: 0; }
+body .SearchDialog > .search-results-scroll {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+body .SearchDialog .search-keyboard-help { flex-shrink: 0; }
+body .SearchDialog .search-result-item {
+  padding: 10px 16px;
+  border-color: var(--nk-line);
+  color: var(--nk-ink);
+}
+body .SearchDialog .search-result-item > .node-head {
+  line-height: 1.5;
+  gap: 12px;
+}
+body .SearchDialog .search-result-item .crumbs-item {
+  color: var(--nk-muted) !important;
+  line-height: 1.5;
+}
+body .SearchDialog .search-result-item:hover {
+  background: var(--nk-hover);
+  outline: none;
+}
+body .SearchDialog .search-result-item.active {
+  background: var(--nk-accent-soft);
+  box-shadow: inset 0 0 0 2px var(--nk-accent);
+}
+body .SearchDialog .word-highlight {
+  color: var(--nk-ink);
+  background: var(--nk-accent-soft);
+  font-size: inherit;
+  font-weight: 600;
+  border-radius: 2px;
+}
+
+/* Round 5: keep the search panel inside a narrow desktop window. */
+body .MuiDialog-paper:has(.SearchDialog) {
+  min-width: 0 !important;
+  width: min(700px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  left: max(16px, calc((100vw - 700px) / 2)) !important;
+}
+html body.night-mode .SearchDialog .search-result-item.active {
+  background: var(--nk-accent-soft) !important;
+  box-shadow: inset 0 0 0 2px var(--nk-accent);
+}
+html body.night-mode .SearchDialog .word-highlight {
+  color: var(--nk-ink) !important;
+  background: var(--nk-accent-soft) !important;
+}
+@media (max-width: 760px) {
+  body .SearchDialog .search-result-item { padding: 10px 12px; }
+  body .SearchDialog .search-keyboard-help { font-size: 12px; }
+}
+
+/* Inline code changes decoration, not text size/baseline. The legacy 85%
+   size moves glyphs down by 2px when code formatting is toggled. */
+body .node-text .mark-code {
+  font-size: inherit;
+}
+
+/* Andy-inspired vivid blue links; keyword hints keep their ochre tone. */
+body span.bilink,
+body span.bilink > span {
+  color: var(--node-text-link) !important;
+}
+body span.bilink:hover,
+body span.bilink:hover > span {
+  color: var(--node-text-link-hover) !important;
+}
+body .mark-hint:not(.element-bilink *, .node-topic > .node-head *) {
+  border-bottom-color: var(--nk-hint) !important;
+}
+
+/* Sidebar previews stay on the flat navigation surface.
+   User rule (2026-10-03): no rounded tinted block + left accent bar.
+   See notes/UI设计禁用规则.md. Keep type aligned with the navigation tree. */
+body nav.nav-area section.node.node-with-refer {
+  background: transparent !important;
+  box-shadow: none;
+  border-radius: 0;
+}
+/* Quotes keep their indentation without a rounded tinted panel or accent bar.
+   Override legacy runtime themes too; inline reference spacing stays intact. */
+html body .blockquote > .node-head {
+  background-color: transparent;
+  border-left: none;
+  border-radius: 0;
+}
+body nav.nav-area section.node.node-with-refer .node-head .node-text,
+body nav.nav-area section.node.node-with-refer > .node-body .node-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+/* Starred notes use the same single rounded hover surface as commands. */
+body nav.nav-area [data-name='stars'] .node-top > .node-body > .node-child > .note-block {
+  align-items: center;
+  border-radius: 6px;
+  transition: background-color 140ms ease-out;
+}
+body nav.nav-area [data-name='stars'] .node-top > .node-body > .node-child > .note-block:has(> .node-head:hover, > .node-tools:hover) {
+  background: var(--nk-hover) !important;
+}
+html body nav.nav-area [data-name='stars'] .node-head,
+html body nav.nav-area [data-name='stars'] .node-head:hover,
+html body nav.nav-area [data-name='stars'] .node-btn.node-icon:hover {
+  background: transparent !important;
+}
+body nav.nav-area [data-name='stars'] .node-top > .node-body > .node-child > .note-block > .node-head {
+  min-width: 0;
+}
+/* 星标条目圆点的对齐统一由上面的 nav.nav-area .node > .node-tools 规则处理。 */
+
+/* ── Iterate2 Round 3: quiet scrollbars, in-system link brackets ──────────
+   The stock scrollbar (wide, always-on track) is the loudest chrome on
+   screen; slim it, clear the track. The [[ ]] brackets inherit a legacy
+   slate token that ignores night mode — switch them to the themed line
+   color so they whisper instead of shout. */
+body ::-webkit-scrollbar { width: 9px; height: 9px; }
+body ::-webkit-scrollbar-track { background: transparent; }
+body ::-webkit-scrollbar-corner { background: transparent; }
+body span.bilink::before,
+body span.bilink::after {
+  color: var(--nk-line-strong) !important;
+}
+
+/* ── Iterate2 Round 4: tabs that say which note you are reading ───────────
+   FloatViewer tabs rendered with no active-state contrast: every tab looked
+   the same, so the pager didn't answer "where am I". Active gets the accent
+   word + underline, idle stays muted, hover warms up. Token-driven, so
+   night mode follows for free. */
+body .tab-list.tabs .tab {
+  color: var(--nk-muted);
+  border-bottom: 2px solid transparent;
+  transition: color 120ms ease-out, border-color 120ms ease-out;
+}
+body .tab-list.tabs .tab:hover { color: var(--nk-ink); }
+body .tab-list.tabs .tab.is-active {
+  color: var(--nk-accent);
+  font-weight: 600;
+  border-bottom-color: var(--nk-accent);
+}
+
+/* ── Iterate2 Round 4: toolbar icons stay visible at night ────────────────
+   The topic toolbar icons keep a fixed slate #475569: 7.5:1 on the light
+   canvas but ~1.6:1 on the night one — effectively invisible. Let night
+   resolve them through the muted token (7.3:1 on the night canvas). */
+html body.night-mode .main-area section[name],
+html body.night-mode .main-area section[name] .node-icon {
+  color: var(--nk-muted) !important;
+}
+/* Keep Electron's title bar hidden while macOS draws its native traffic lights. */
+html.mac-desktop {
+  --nk-titlebar-height: 44px;
+  /* 84px native-controls slot + 3 × 30px buttons + 2 × 4px gaps + 16px breathing room. */
+  --nk-titlebar-content-start: 198px;
+}
+html.mac-desktop nav.nav-area.node {
+  padding-top: var(--nk-titlebar-height) !important;
+  position: relative;
+}
+html.mac-desktop nav.nav-area.node::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--nk-titlebar-height);
+  -webkit-app-region: drag;
+}
+html.mac-desktop .main-area.node > div:first-child {
+  min-height: var(--nk-titlebar-height);
+  background: transparent;
+  -webkit-app-region: drag;
+}
+html.mac-desktop .main-area.node > div:first-child :is(.node-icon, .node-extra, .crumbs-item, button, input, a, [role="button"]) {
+  -webkit-app-region: no-drag;
+}
+html.mac-desktop .floatview-container[data-mode='andy'] > .floatview-container-head {
+  -webkit-app-region: drag;
+}
+html.mac-desktop .floatview-container[data-mode='andy'] > .floatview-container-head :is(.tab, button, input, a, [role="button"]) {
+  -webkit-app-region: no-drag;
+}
+/* Toolbar commands render as divs; exclude the entire group from window dragging. */
+html.mac-desktop .workspace-header-actions,
+html.mac-desktop .workspace-header-actions * {
+  -webkit-app-region: no-drag;
+}
+body .floatview-container[data-mode='andy'] > .floatview-container-head .andy-header-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+/* Andy has its own tab strip in the floating header. Keep the page navigation
+   from MainComp, but suppress its second copy of the title/tabs/actions. */
+body:has(.floatview-container[data-mode='andy']) .main-area.node > .workspace-header > :not(.workspace-navigation) {
+  display: none;
+}
+/* The collapsed nav no longer reserves the native macOS traffic-light area. */
+html.mac-desktop nav.nav-area.node-foldup ~ .floatview-container[data-mode='andy'] > .floatview-container-head .andy-header-content::before {
+  content: '';
+  display: block;
+  /* The fixed back/forward/sidebar group sits over the left edge of this
+     header when the nav collapses; reserve its full width before the tabs. */
+  flex: 0 0 calc(var(--nk-titlebar-content-start) - 16px);
+}
+@media (max-width: 992px) {
+  /* Match the sidebar's automatic fold so tabs stay after the native controls. */
+  html.mac-desktop nav.nav-area ~ .floatview-container[data-mode='andy'] > .floatview-container-head .andy-header-content::before {
+    content: '';
+    display: block;
+    flex: 0 0 calc(var(--nk-titlebar-content-start) - 16px);
+  }
+  html.mac-desktop nav.nav-area ~ .main-area.node > .workspace-header {
+    padding-left: var(--nk-titlebar-content-start);
+  }
+}
+body .floatview-container[data-mode='andy'] > .floatview-container-head .andy-header-content > :is(.tab-list, .workspace-tabs) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* One tab strip serves both the single-note and side-by-side layouts.
+   The strip never declared a size, so the titles inherited the 16px body
+   default and read a full step larger than the surrounding chrome (nav 14px,
+   crumbs 12px). Pin them to 13px — the tab is secondary chrome, not content. */
+body .workspace-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 32px;
+  font-size: 13px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  pointer-events: auto;
+}
+body .workspace-tabs::-webkit-scrollbar { display: none; }
+body .workspace-tab {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  height: 32px;
+  max-width: 220px;
+  padding: 0 4px 0 10px;
+  border-radius: 9px;
+  color: var(--nk-ink);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+body .workspace-tab.is-active,
+body .workspace-tab:hover { background: var(--nk-tab-hover); }
+body .workspace-tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body .workspace-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--nk-muted);
+  opacity: 0;
+  cursor: pointer;
+}
+body .workspace-tab:is(.is-active, :hover, :focus-within) .workspace-tab-close { opacity: .65; }
+body .workspace-tab-close:hover { background: var(--nk-hover); opacity: 1; }
+body .workspace-tab:focus-visible { outline: 2px solid var(--nk-muted); outline-offset: -2px; }
+body .floatview-container[data-mode='andy'] > .floatview-container-head .andy-header-actions {
+  flex: 0 0 auto;
+  padding-left: 12px;
+  margin-left: 8px;
+  border-left: 1px solid var(--nk-line);
+}
+body .floatview-container[data-mode='andy'] > .floatview-container-head .andy-header-actions > .node {
+  margin-top: 0;
+}
+
+/* The document title and tools form one compact, draggable workspace header. */
+body .main-area.node > .workspace-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 16px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--nk-line);
+}
+body .workspace-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  color: var(--nk-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+body .workspace-navigation {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  -webkit-app-region: no-drag;
+}
+html.mac-desktop body .workspace-navigation {
+  position: fixed;
+  top: calc((var(--nk-titlebar-height) - 30px) / 2);
+  left: 84px;
+  z-index: 60001;
+}
+html.mac-desktop nav.nav-area.node-foldup ~ .main-area.node > .workspace-header {
+  padding-left: var(--nk-titlebar-content-start);
+}
+body .workspace-navigation button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--nk-muted);
+  cursor: pointer;
+}
+body .workspace-navigation button:hover {
+  background: var(--nk-hover);
+  color: var(--nk-ink);
+}
+body .workspace-navigation button:focus-visible {
+  outline: 2px solid var(--nk-muted);
+  outline-offset: 2px;
+}
+body .workspace-header-title svg { flex-shrink: 0; }
+body .workspace-header-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body .workspace-header-actions {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  color: var(--nk-muted);
+}
+body .workspace-header-actions > .node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin: 0 !important;
+  border-radius: 6px;
+}
+body .workspace-header-actions > .node:hover {
+  background: var(--nk-hover);
+  color: var(--nk-ink);
+}
+body .workspace-header-actions > .andy-mode-toggle[aria-pressed='true'] {
+  background: var(--nk-tab-hover);
+}
+body .workspace-header-actions > button.andy-mode-toggle {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+body .workspace-header-actions .node-icon {
+  color: var(--nk-muted) !important;
+}
+body .workspace-header-actions > .node[id$='more-dropdown'] {
+  margin-left: 6px !important;
+  border-left: 1px solid var(--nk-line);
+  border-radius: 0;
+}
+body .workspace-header-crumbs { font-size: 12px; }
+
+/* ── 侧栏与顶部工具栏加入菜单项的图标语言 ─────────────────────────────────
+   菜单项已经把图标统一到 --nk-muted + 16px 图标槽；侧栏仍取旧的 slate-400
+   导航角色（浅色画布上约 2.6:1，比菜单图标明显弱），尺寸还按各自声明的
+   16/18px 漂移；顶部工具栏则是固定 slate-600。
+
+   必须连 fill 一起改：cls() 会把每条 color 声明展开成
+   `color: X; fill: X; svg { fill: X }`，实色 fill 直接钉在后代 svg 上，
+   只覆盖 color 时图标本体的颜色不会变——顶部工具栏此前「改了没生效」正是这个原因。
+   这里 color 与 fill 同改，并把两处图标统一到 16px（与菜单图标槽同宽）；
+   夜间跟随 token，不需要额外规则。 */
+body nav.nav-area .node-icon {
+  color: var(--nk-muted) !important;
+}
+body nav.nav-area .node-icon > svg,
+body .workspace-header-actions .node-icon > svg {
+  fill: currentColor !important;
+  width: 16px;
+  height: 16px;
+}
+body nav.nav-area .node-icon > svg path,
+body .workspace-header-actions .node-icon > svg path {
+  fill: currentColor !important;
+}
+
+/* Library switching sits below everyday navigation. */
+body nav.nav-area > .node-body { min-height: 0; }
+body nav.nav-area > .node-foot { flex-shrink: 0; margin-top: auto; }
+body nav.nav-area .nk-nav-footer { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--nk-line); }
+body nav.nav-area .nk-nav-footer button { display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; border: 0; background: transparent; color: var(--nk-muted); font: inherit; font-size: 12px; cursor: pointer; }
+body nav.nav-area .nk-library-switch { flex: 1; min-width: 0; text-align: left; }
+body nav.nav-area .nk-library-switch span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body nav.nav-area .nk-nav-footer svg { flex-shrink: 0; }
+body nav.nav-area .nk-nav-footer button:hover { color: var(--nk-ink); }
+body nav.nav-area .nk-nav-footer button:focus-visible { outline: 2px solid var(--nk-muted); outline-offset: 3px; }
+
+/* Keep navigation and toolbar glyphs consistent without changing hit areas. */
+body .workspace-navigation svg,
+body .workspace-header-title svg,
+body .workspace-header-actions .node-icon > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* Andy's floating container disables pointer events; restore toolbar hit testing. */
+body .floatview-container[data-mode='andy'] > .floatview-container-head .workspace-header-actions {
+  pointer-events: auto;
+}
+
+/* Backlink panels: keep the sorter/filter toolbar on the same line as the panel title. */
+body .reference-comp-extra {
+  align-items: center;
+  height: 34px;
+  margin-bottom: -34px;
+  /* More breathing room between the backlink panel and the module above it. */
+  margin-top: 24px;
+  /* Establish a stacking context so z-index:1 applies and the icons stay
+     clickable above the following backlinks block pulled up by the negative margin. */
+  position: relative;
+  z-index: 2;
+}
+
+/* Backlink panel titles fold/unfold on click anywhere in the title row. */
+body .head-click-to-fold {
+  cursor: pointer;
+  user-select: none;
+}
