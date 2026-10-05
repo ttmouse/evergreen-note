@@ -488,7 +488,7 @@ export const useWhiteboardTypingMode = (
 
     el.addEventListener('editorBlur', () => {
       // 之所以设一个延时，
-      // 是因为 RoamEdit 的编辑器的 focus 状态会被 Antv x6 的事件处理影响，
+      // 是因为编辑器的 focus 状态会被 Antv x6 的事件处理影响，
       // 从而导致失焦
       // const sel = window.getSelection()
       // if (!sel || el.contains(sel!.anchorNode as Node) === false) {

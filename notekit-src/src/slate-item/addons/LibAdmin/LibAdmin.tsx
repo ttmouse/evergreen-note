@@ -443,7 +443,7 @@ export function createLibAdminAddon({ app, $ }: NewAddonParams) {
       const result = t.exports($.dbMemory.list, infos)
       const content = JSON.stringify(result)
       const date = datekit().format('YYYYMMDDhhmmss')
-      return $.exports.download(content, t.ext, `${date}-roamedit`)
+      return $.exports.download(content, t.ext, `${date}-evergreen-note`)
     }
 
     /**

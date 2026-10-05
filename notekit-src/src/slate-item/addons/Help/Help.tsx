@@ -89,33 +89,6 @@ export function createHelpAddon({ $ }: NewAddonParams) {
         })
       }
       
-      // $.help.items = {
-      //   hotkey: {
-      //     title: $t`help.hotkeys`,
-      //     icon: icons.svg_hotkey,
-      //     onClick() {
-      //       $.hotkey.show()
-      //     },
-      //   },
-      //   // documentation: {
-      //   //   title: $t`help.documentation`,
-      //   //   icon: icons.svg_manual,
-      //   //   onClick() {
-      //   //     window.open(`https://roamedit.com/v2?db=docs`)
-      //   //   },
-      //   // },
-      //   // site: {
-      //   //   title: $t`help.official_site`,
-      //   //   icon: icons.svg_site,
-      //   //   onClick() {
-      //   //     window.open(`https://roamedit.com/site/`)
-      //   //   },
-      //   // },
-      //   // forum: {
-      //   //   title: $t`help.forum`,
-      //   //   icon: icons.svg_forum,
-      //   //   onClick() {
-      //   //     window.open(`https://club.roamedit.com/club/`)
       //   //   },
       //   // },
       // }

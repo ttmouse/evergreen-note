@@ -65,7 +65,7 @@ export function sortKeys(keys: string | string[]) {
 }
 
 /**
- * 将一些按键组合成 RoamEdit 所需要的快捷键表示格式
+ * 将一些按键组合成应用所需要的快捷键表示格式
  * @param array|string keys
  * @returns string
  */

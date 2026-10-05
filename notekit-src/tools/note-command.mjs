@@ -69,7 +69,7 @@ try {
         if (!alive) await fs.unlink(lockPath).catch(() => {})
       }
     } catch {}
-    const app = process.env.EVERGREEN_APP || path.join(os.homedir(), 'Projects/roamedit/notekit-src/build/Evergreen note.app')
+    const app = process.env.EVERGREEN_APP || path.join('/Applications', 'Evergreen note.app')
     // open 偶发竞态会静默失败：未就绪时每 15 秒重发一次 open，最多等 60 秒。
     const deadline = Date.now() + 60000
     let lastOpen = 0

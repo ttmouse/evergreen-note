@@ -166,7 +166,7 @@ export function createAttachmentAddon({ app, $ }: NewAddonParams) {
               try {
                 if (response.node && response.node.fileInfo.path) {
                   const realPath = `/v2/${response.node.fileInfo.path}`
-                  const cache = await caches.open('RoamEditv0-UserData')
+                  const cache = await caches.open('EvergreenNote-v0-UserData')
                   const file = postData['file0']
                   const headers = new Headers()
                   headers.append('Content-Type', file.type)

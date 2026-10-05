@@ -5,19 +5,19 @@ export const STEPS = {
   nav: {
     title: '左侧导航栏',
     content: '这是最重要的功能入口，你可以创建一篇笔记，或者查看已有的笔记',
-    selector: '#RoamEdit-nav',
+    selector: '#EvergreenNote-nav',
     p: 'e',
   },
   databaseID: {
     title: '数据库ID',
     content:
       '这是你当前所打开的数据库的ID，你的笔记都将被保存到数据库里，你可以创建多个数据库，并且随时切换你想打开的数据库',
-    selector: '#RoamEdit-nav > .node-head',
+    selector: '#EvergreenNote-nav > .node-head',
     p: 'e',
   },
   dailyNote: {
     title: '每日笔记',
-    selector: '#RoamEdit-dailynote',
+    selector: '#EvergreenNote-dailynote',
     content:
       '这是一个快速记录笔记的一个入口，你可以将每天你所学的知识、你的感悟、见闻都记录在这里',
     p: 'e',
@@ -25,7 +25,7 @@ export const STEPS = {
   topicList: {
     title: '主题列表',
     content: '这是你所有笔记的列表，你可以在这里查看所有你创建过的笔记主题',
-    selector: '#RoamEdit-topiclist',
+    selector: '#EvergreenNote-topiclist',
     to: '/topics',
     p: 'e',
   },
@@ -39,13 +39,13 @@ export const STEPS = {
   graphs: {
     title: '图谱',
     content:
-      'RoamEdit 会根据你笔记中存在的链接关系，为你可视化地展示你的知识网络，感受知识之间的联系',
-    selector: '#RoamEdit-graphs',
+      '本应用会根据你笔记中存在的链接关系，为你可视化地展示你的知识网络，感受知识之间的联系',
+    selector: '#EvergreenNote-graphs',
     p: 'e',
   },
   star: {
     title: '星标',
-    selector: '#RoamEdit-stars',
+    selector: '#EvergreenNote-stars',
     to: '/AppStars',
     content:
       '你可以将你认为重要的笔记标记为星标，这样你就可以在这里快速查看你的重要笔记',
@@ -59,7 +59,7 @@ export const STEPS = {
     p: 's',
   },
   recent: {
-    selector: '#RoamEdit-recent',
+    selector: '#EvergreenNote-recent',
     title: '最近打开的笔记',
     content: '这里会显示你最近打开过的笔记，你可以在这里快速打开它们',
     p: 'e',

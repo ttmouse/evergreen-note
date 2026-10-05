@@ -153,7 +153,7 @@ nav.nav-area .node-head:hover {
   background: var(--dark-very-important) !important
 }
 
-#RoamEdit-stars .node-head:hover {
+#EvergreenNote-stars .node-head:hover {
   background: inherit !important
 }
 
@@ -337,7 +337,7 @@ td {
   color: #33625a !important;
 }
 
-[data-route*="/AppTags"] #RoamEdit-router .node[data-ky=AppTags] .node-body .node-subitems .node.note-block {
+[data-route*="/AppTags"] #EvergreenNote-router .node[data-ky=AppTags] .node-body .node-subitems .node.note-block {
   border: 1px solid #bababa;
   background: var(--dark-kanban-secondary) !important;
 }

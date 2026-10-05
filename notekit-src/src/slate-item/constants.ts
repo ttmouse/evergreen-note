@@ -13,7 +13,7 @@ export type ClientUserInfo = {
 }
 
 export const APP_VERSION = '26w15b'
-export const DEFAULT_APP_NAME = 'RoamEdit'
+export const DEFAULT_APP_NAME = 'EvergreenNote'
 export const TRANSFER_BATCH_SIZE = 300
 export const PUBKEY_DBID = 'pub-dbid'
 export const PUBKEY_RESTART = 'pub-restart'

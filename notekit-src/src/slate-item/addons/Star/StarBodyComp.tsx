@@ -42,12 +42,12 @@ export const StarEditorComp = observer(() => {
   //   if (!isEmpty(star.staredList)) {
   //     appendStyle(
   //       `
-  //         #roamedit-stars {
+  //         #EvergreenNote-stars {
   //           margin-top: 4px;
   //           border-top: 1px solid ${getColor(colorBase.slate, 300)};
   //         }
   //       `,
-  //       'roamedit-stars-style'
+  //       'evergreen-stars-style'
   //     );
   //   }
   // }, [star.staredList]);

@@ -108,7 +108,7 @@ export function createSandboxAddon({ app, $ }: NewAddonParams) {
             if ('setAppBadge' in navigator) {
               const clearBadge = () => {
                 navigator.setAppBadge(0);
-                caches.open("RoamEditv0-swDB").then(e=>e.delete("/used_tags"));
+                caches.open("EvergreenNote-v0-swDB").then(e=>e.delete("/used_tags"));
               }
               document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {

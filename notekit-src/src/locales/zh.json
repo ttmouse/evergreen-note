@@ -158,7 +158,7 @@
     "updated": "更新于{{updated}}",
     "reload": "插件将在刷新页面后生效",
     "found": "找到{{count}}个插件",
-    "from_public": "注意：以下内容来自RoamEdit公开文档，同时它是一个沙盒，你可以做各种编辑尝试，所有修改都不会保存到服务器",
+    "from_public": "注意：以下内容来自公开文档，同时它是一个沙盒，你可以做各种编辑尝试，所有修改都不会保存到服务器",
     "doc_library": "docs"
   },
   "imghost": {
@@ -218,8 +218,7 @@
     "plain_text": "纯文本",
     "embed": "嵌入块",
     "block": "笔记块",
-    "web_url": "外部网址",
-    "roamedit_url": "roamedit:// 链接"
+    "web_url": "外部网址"
   },
   "counter": {
     "title": "节点统计器",

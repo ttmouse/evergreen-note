@@ -233,7 +233,7 @@ export function createMainAddon({ app, $ }: NewAddonParams) {
           title: "Update",
           icon: icons.svg_refresh,
           onClick: () => {
-            caches.delete("RoamEditv0-Main");
+            caches.delete("EvergreenNote-v0-Main");
             $.imports.reload()
           },
         },

@@ -47,7 +47,7 @@ export function FileManagerDeleteIcon(props: { ctxItem: ItemNode }) {
           'Are you sure you want to delete the local cache for this file?',
           async () => {
             try {
-              const cache = await caches.open('RoamEditv0-UserData');
+              const cache = await caches.open('EvergreenNote-v0-UserData');
               const path = '/v2/' + (ctxItem as any).fileInfo.path;
               const result = await cache.delete(path);
               if (result) {
@@ -82,7 +82,7 @@ export function FileManagerDeleteIcon(props: { ctxItem: ItemNode }) {
                 if (status === 'synced') {
                     const path = '/v2/' + (ctxItem as any).fileInfo.path;
                     try {
-                        const cache = await caches.open('RoamEditv0-UserData');
+                        const cache = await caches.open('EvergreenNote-v0-UserData');
                         await cache.delete(path)
                     } catch(err) {
                         console.error("Failed to delete cache after cloud deletion", err);

@@ -777,15 +777,15 @@ html body.night-mode .app-container .extarea.node {
   background-color: #222d32 !important;
   background-image: none !important;
 }
-html body.night-mode #RoamEdit-nav {
+html body.night-mode #EvergreenNote-nav {
   background: #222d32 !important;
   color: #e3ebed !important;
 }
-html body.night-mode #RoamEdit-nav .node-head,
-html body.night-mode #RoamEdit-nav .node-text {
+html body.night-mode #EvergreenNote-nav .node-head,
+html body.night-mode #EvergreenNote-nav .node-text {
   color: #e3ebed !important;
 }
-html body.night-mode #RoamEdit-nav {
+html body.night-mode #EvergreenNote-nav {
   transition: none !important;
   background-color: #222d32 !important;
 }

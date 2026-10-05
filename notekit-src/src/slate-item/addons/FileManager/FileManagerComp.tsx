@@ -53,7 +53,7 @@ export function FileManagerComp() {
           const key = `${$.libAdmin.HOME_DBID}-file`
           return (serverData[key] || []) as FileNode[]
         })(),
-        caches.open('RoamEditv0-UserData')
+        caches.open('EvergreenNote-v0-UserData')
       ])
 
       const requests = await cache.keys()

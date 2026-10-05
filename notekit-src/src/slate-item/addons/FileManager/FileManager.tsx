@@ -55,7 +55,7 @@ export function createFileManagerAddon({ app, $ }: NewAddonParams) {
 
     addonRun() {
       const freeUpStorage = async () => {
-        const cache = await caches.open('RoamEditv0-UserData')
+        const cache = await caches.open('EvergreenNote-v0-UserData')
         const keys = await cache.keys()
         const allFilesUsed: string[] = []
         const allNodes = await $.dbDisk.open(await $.libAdmin.getOpenId()).node.toArray();

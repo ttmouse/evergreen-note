@@ -277,7 +277,7 @@ export function SvgIcon(props: { name?: SvgIconName; path?: string; width?: numb
   }
   const PhosphorIcon = iconMap[name]
   const weight = name === 'svg_dot' ? 'fill' : 'regular'
-  // Bullet 圆点：原版 roamedit 为 6px 实心点（--node-btn-default）；16px 圆形图标 × 0.45 ≈ 6px 视觉直径。
+  // Bullet 圆点：原版为 6px 实心点（--node-btn-default）；16px 圆形图标 × 0.45 ≈ 6px 视觉直径。
   // 折叠态节点按钮整体 scale(0.75)，乘上它声明的 --scale 补偿，折叠后的圆点才与展开时等大
   const style =
     name === 'svg_dot'

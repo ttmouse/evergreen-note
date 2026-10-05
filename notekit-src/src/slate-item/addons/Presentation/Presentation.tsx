@@ -94,7 +94,7 @@ export function createPresentationAddon({ app, $ }: NewAddonParams) {
 
     addonRun() {
       appendStyle(`
-        /*#RoamEdit-router.presentation-mode *:not(.embed-container)>.editor-view>main>.item-editor>section:nth-child(1) > .node-head {
+        /*#EvergreenNote-router.presentation-mode *:not(.embed-container)>.editor-view>main>.item-editor>section:nth-child(1) > .node-head {
           font-size: 2em !important;
         }*/
 

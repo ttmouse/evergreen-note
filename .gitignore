@@ -36,6 +36,19 @@ notekit-src/backups/
 /scripts/
 /.project-knowledge.json
 
+# Local-only dev tools (process-specific, kept on disk, not published)
+/tools/build-app-safe.py
+/tools/compare_notebooks.py
+/tools/compare_v1_v2_format.py
+/tools/electron-cdp.py
+/tools/extract-plugin.mjs
+/tools/opt_board.mjs
+/tools/run-isolated.py
+/tools/scan_localstorage.py
+/tools/scan_workdir.py
+/tools/verify-persistence.py
+/tools/test-read-guards.cjs
+
 # ===== Local agent-tooling config =====
 .zcodeignore
 .claude/
@@ -50,3 +63,4 @@ __pycache__/
 .Trashes
 .vscode/
 .idea/
+/notekit-src/tools/refer-retarget-probe.mjs

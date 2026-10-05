@@ -62,7 +62,7 @@ export function createImghostAddon(params: NewAddonParams) {
             title: $t`imghost.host_name`,
             type: 'select',
             options: {
-              roamedit: `RoamEdit`,
+              evergreen: `Evergreen Note`,
               alioss: `AliOSS`,
             },
           },
@@ -132,7 +132,7 @@ export function createImghostAddon(params: NewAddonParams) {
         filename = `${dayjs().format('YYYYMMDDHHmmss')}`;
       }
 
-      const storeAs = `roamedit/${filename}.png`;
+      const storeAs = `evergreen/${filename}.png`;
       const type = 'image/png';
       return new Promise(async (resolve) => {
         const data = dataURLToBlob(dataURL, type);
@@ -162,7 +162,7 @@ export function createImghostAddon(params: NewAddonParams) {
       const file = Object.values(infos.payload)[0];
       const [name, suffix] = file.name.split('.');
       const d = dayjs().format('yyyyMMddhhmmss');
-      const storeAs = `roamedit/${d}.${suffix}`;
+      const storeAs = `evergreen/${d}.${suffix}`;
       return $.imghost.alioss
         .multipartUpload(storeAs, file)
         .then((response: any) => {

@@ -158,7 +158,7 @@
     "updated": "Updated:{{updated}}",
     "reload": "Reload the page to apply the changes",
     "found": "{{count}} addons found",
-    "from_public": "Notice: The below content is RoamEdit public documentation, it is also a sandbox for you to have any try on it, all of the modification won’t be posted to server.",
+    "from_public": "Notice: The below content is public documentation, it is also a sandbox for you to have any try on it, all of the modification won’t be posted to server.",
     "doc_library": "docs-en"
   },
   "imghost": {
@@ -218,8 +218,7 @@
     "plain_text": "Plain text",
     "embed": "Embed block",
     "block": "Block",
-    "web_url": "Web URL",
-    "roamedit_url": "roamedit:// Link"
+    "web_url": "Web URL"
   },
   "counter": {
     "title": "Item count",

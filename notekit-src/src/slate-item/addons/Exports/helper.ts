@@ -194,7 +194,7 @@ export function itemToOpml(item: UnitPersist) {
 <opml version="2.0">
 <head>
   <title>${text}</title>
-  <flavor>RoamEdit</flavor>
+  <flavor>EvergreenNote</flavor>
   <dateCreated>${created}</dateCreated>
   <dateModified>${updated}</dateModified>
 </head>

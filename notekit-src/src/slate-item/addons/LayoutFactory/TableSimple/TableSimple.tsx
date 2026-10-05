@@ -236,7 +236,7 @@ export function createTableSimpleAddon({ app, $ }: NewAddonParams) {
 
     /**
      * 将第一列和其他列对调
-     * 由于 RoamEdit 的表格是基于大纲的数据结构，
+     * 由于表格是基于大纲的数据结构，
      * 所以对于第一列的操作很多时候都要特殊处理
      * @param editor
      * @param tablePath

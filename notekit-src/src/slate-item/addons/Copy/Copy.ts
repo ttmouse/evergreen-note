@@ -70,14 +70,6 @@ export function createCopyAddon({ app, $ }: NewAddonParams) {
       )
     }
 
-    roameditUrl(item: UnitPersist) {
-      const dbid = item.$dbid ?? $.libAdmin.current.ky
-      $.copy.string(
-        // eslint-disable-next-line prettier/prettier
-        `roamedit://open/${composeId(dbid)}/${item.ky}`
-      )
-    }
-
     handleEvent(event: React.ClipboardEvent, editor: ItemEditor) {
       $.copy.exec(editor, (type, content) => {
         event.clipboardData.setData(`text/${type}`, content)
@@ -225,16 +217,6 @@ export function createCopyAddon({ app, $ }: NewAddonParams) {
                 $.copy.webUrl($.floatMenu.getContext().item)
               },
             },
-            copyRoamEditURL: {
-              title: $t`copy.roamedit_url`,
-              icon: icons.svg_copy,
-              hotkey: 'alt+f6',
-              order: 600,
-              cond: () => IS_CLIENT,
-              onClick: () => {
-                $.copy.roameditUrl($.floatMenu.getContext().item)
-              },
-            },
             copyMarkdown: {
               title: 'Markdown',
               icon: icons.svg_copy,
@@ -308,13 +290,6 @@ export function createCopyAddon({ app, $ }: NewAddonParams) {
       }
       if (IS_CLIENT) {
         data = Object.assign(data, {
-          copyRoamEditURL: {
-            title: $t`common.copy` + $t`copy.roamedit_url`,
-            hotkey: 'alt+f6',
-            handle: ({ editor }: { editor: ItemEditor }) => {
-              $.copy.roameditUrl(editor.item())
-            },
-          },
         })
       }
       return data
@@ -414,16 +389,6 @@ export function createCopyAddon({ app, $ }: NewAddonParams) {
               order: 500,
               onClick: (_: Event, { item }: { item: UnitPersist }) => {
                 $.copy.webUrl(item)
-              },
-            },
-            copyRoamEditURL: {
-              title: $t`copy.roamedit_url`,
-              icon: icons.svg_copy,
-              hotkey: 'alt+f6',
-              order: 600,
-              cond: () => IS_CLIENT,
-              onClick: (_: Event, { item }: { item: UnitPersist }) => {
-                $.copy.roameditUrl(item)
               },
             },
             copyMarkdown: {

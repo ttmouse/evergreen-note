@@ -10,7 +10,7 @@ import { App } from '../../engine/App'
 import { Indexkey } from '../../addons/DbMemory/DbMemory'
 
 /**
- * RoamEdit 用到的所有事件类型，以及这些事件处理函数的参数类型
+ * 应用用到的所有事件类型，以及这些事件处理函数的参数类型
  */
 export const evts = {
   uiMounted: (params: { app: App; container: HTMLElement }) => {},

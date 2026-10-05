@@ -151,7 +151,7 @@ export function createImgAddon({ app, $ }: NewAddonParams) {
         try {
           if (e.code) {
             const realPath = `/v2/${e.node.fileInfo.path}`
-            const cache = await caches.open('RoamEditv0-UserData');
+            const cache = await caches.open('EvergreenNote-v0-UserData');
             const resp = await fetch(dataURL);
             const blob = await resp.blob();
             const headers = new Headers();
