@@ -79,7 +79,9 @@ export const ItemHead = (
     if (!p.titleVisible) {
       return null
     }
-    if (!isInline && !isEmpty(item.topic)) {
+    // 草稿主题（⌘N 新建、标题为空、topic 身份未建立）也用大标题渲染，
+    // 否则未命名页面没有加粗标题样式；输入标题转正后自然走同一分支。
+    if (!isInline && (!isEmpty(item.topic) || (item as any).draft)) {
       return <TopHead {...props} />
     }
   }
