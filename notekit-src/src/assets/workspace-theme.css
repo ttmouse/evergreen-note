@@ -1359,7 +1359,9 @@ html body .nui-mask {
   opacity: 1 !important;
   -webkit-app-region: no-drag;
 }
-html body .MuiBackdrop-root {
+/* Dark backdrop only for real modal dialogs; Popover backdrops stay
+   invisible (menus must not dim the workspace). */
+html body .MuiDialog-root .MuiBackdrop-root {
   background-color: rgba(30, 41, 59, 0.42) !important;
   -webkit-app-region: no-drag;
 }

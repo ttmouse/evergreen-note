@@ -71,3 +71,9 @@
 
 ## 2026-10-05（统计口径勘误补充）：10px 计数修正
 - 上一条沿用表内"10px ×3"是 workspace 单文件口径，全项目实为 5 处（addon-center.css:2 在用，一处 MuiDialog-paper）。DESIGN.md §5.1 表已同步改口径。沿用教训：跨文件统计必须全部来源入数，不能以单文件代替全项目。
+
+## 2026-10-05（蒙层误伤 Popover 勘误）：MuiBackdrop 深色规则收窄到 MuiDialog
+- **事故**：统一蒙层批次把 `html body .MuiBackdrop-root { background-color: … !important }` 写成全局，命中了 MUI Popover 的 backdrop（`invisible: true`，本应透明、只负责点外关闭）。后果：顶部“更多”菜单、各类下拉/Select 一打开全屏变灰，轻量菜单被当成 modal。用户原话：“像这种菜单打开的时候就不应该有浮层了。这是属于低级错误。”
+- **修复**：规则选择器收窄为 `html body .MuiDialog-root .MuiBackdrop-root`——真 modal（MUI Dialog）才上深色蒙层，Popover（含菜单/Select）保持透明。`.nui-mask` 只由自研 Dialog 的 `mask` 开关渲染，不受影响。
+- **教训**：给共享组件类名（如 MuiBackdrop-root）加 `!important` 全局样式前，必须先枚举该类的全部使用方（Dialog、Popover、Select 都用 backdrop）；“不可见”也是样式，会被 `!important` 覆盖。
+
