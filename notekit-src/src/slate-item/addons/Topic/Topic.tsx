@@ -374,18 +374,17 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
                 return
               }
               head.focus()
-              const text = head.querySelector('[data-slate-string]')
+              // 光标必须落进 Slate 的文本节点内：有字用 data-slate-string；
+              // 空标题时 Slate 渲染的是 data-slate-zero-width（内含 \uFEFF），
+              // 折叠到节点开头会被 Slate 规范化到别的块（打字掉进正文小字节点）。
+              const text = (head.querySelector('[data-slate-string]') ??
+                head.querySelector('[data-slate-zero-width]'))
                 ?.firstChild as Text | undefined
               const sel = window.getSelection()
-              if (sel) {
+              if (sel && text) {
                 const range = document.createRange()
-                if (text) {
-                  range.setStart(text, 0)
-                  range.setEnd(text, text.length)
-                } else {
-                  range.selectNodeContents(head)
-                  range.collapse(true)
-                }
+                range.setStart(text, 0)
+                range.setEnd(text, text.length)
                 sel.removeAllRanges()
                 sel.addRange(range)
               }
