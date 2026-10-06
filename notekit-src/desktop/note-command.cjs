@@ -4,7 +4,7 @@ async function runNoteCommand(input) {
   if (!$?.dbDisk || !$?.dbMemory || !$?.libAdmin?.current) throw new Error('应用尚未就绪，请稍后重试')
   if (!input || typeof input !== 'object') throw new Error('笔记命令格式无效')
   if (input.action === 'status') return { ready: true, dbid: $.libAdmin.current.ky, mode: $.dbDisk.storageMode }
-  if (!['read', 'append', 'search', 'get', 'edit', 'delete', 'topic', 'tag'].includes(input.action)) throw new Error('不支持的笔记命令')
+  if (!['read', 'append', 'appendTree', 'search', 'get', 'edit', 'delete', 'topic', 'tag'].includes(input.action)) throw new Error('不支持的笔记命令')
   const isNormal = x => x.status === 1 || x.status == null
   // 输出清洗：复选框条目的 ori 带 "[ ] " 标记，text 给纯文字，raw 保留原始内容；附带时间戳。
   const shape = x => {
@@ -109,7 +109,11 @@ async function runNoteCommand(input) {
       if (!t?.ky) throw new Error('主题不存在：' + input.topicName + '（可先用 get --topic 确认）')
       parentKy = t.ky
     } else {
-      parentKy = $.daily.createTopic(date).ky
+      // 收敛 --date 爆栈面：不再走 $.daily.createTopic（其内部 format 换算/创建链路在 headless 下会递归爆栈），
+      // 改用与 read 相同的只读查询；日记不存在时明确报错，让用户先打开该日记或改用 --under。
+      const topic = $.topic.getTopic(date)
+      if (!topic?.ky) throw new Error('该日期日记不存在：' + date + '（请先在应用中打开该日记，或改用 --under/--topic）')
+      parentKy = topic.ky
     }
     const groupKey = 'auto-' + input.requestId
     const existing = $.dbMemory.getItem(groupKey)
@@ -136,6 +140,72 @@ async function runNoteCommand(input) {
     })
     await $.dbDisk.flush()
     return { dbid: input.dbid, ...(parentKy === date ? { date } : { parent: parentKy }), groupKey, blockKeys, created, reused: created === 0, saved: true }
+  }
+  if (input.action === 'appendTree') {
+    // 嵌套树一次事务写入：tree = {text, bold?, checkbox?, children?: [...]}
+    // 子节点 ky 按路径编号（root-0、root-0-1…），同 requestId 重放幂等；
+    // --date 只读已存在日记（$.topic.getTopic，只读路径已验证安全），不自动创建，绕开 daily.createTopic 的爆栈问题。
+    const MAX_NODES = 500, MAX_DEPTH = 5
+    if (!input.tree || typeof input.tree !== 'object' || Array.isArray(input.tree)) throw new Error('appendTree 需要 tree: {text, bold?, checkbox?, children?}')
+    if (!/^[a-f0-9]{64}$/.test(input.requestId)) throw new Error('请求标识无效')
+    let nodeCount = 0
+    const validateTree = (node, depth) => {
+      if (!node || typeof node !== 'object' || typeof node.text !== 'string' || !node.text.trim() || node.text.length > 10000) throw new Error('树节点需要 1-10000 字的 text')
+      if (node.bold !== undefined && typeof node.bold !== 'boolean') throw new Error('bold 需为布尔')
+      if (node.checkbox !== undefined && typeof node.checkbox !== 'boolean') throw new Error('checkbox 需为布尔')
+      if (node.children !== undefined && !Array.isArray(node.children)) throw new Error('children 需为数组')
+      if (++nodeCount > MAX_NODES) throw new Error('树节点总数超过 ' + MAX_NODES)
+      if (depth > MAX_DEPTH) throw new Error('树深度超过 ' + MAX_DEPTH)
+      for (const child of node.children || []) validateTree(child, depth + 1)
+    }
+    validateTree(input.tree, 1)
+    if (input.tree.checkbox && !$.checkbox?.createElement) throw new Error('当前未启用复选框功能')
+    await $.dbDisk.flush()
+    guardReady()
+    let parentKy
+    if (input.under) {
+      if (typeof input.under !== 'string' || input.under.length > 100) throw new Error('under 需为有效节点ID')
+      const parent = $.dbMemory.getItem(input.under)
+      if (!parent?.ky) throw new Error('父节点不存在：' + input.under)
+      if (!isNormal(parent)) throw new Error('父节点不在正常状态，拒绝追加：' + input.under)
+      parentKy = parent.ky
+    } else if (input.topicName) {
+      if (typeof input.topicName !== 'string' || !input.topicName.trim() || input.topicName.length > 200) throw new Error('topicName 需为有效主题名')
+      const t = $.dbMemory.getTopic(input.topicName)
+      if (!t?.ky) throw new Error('主题不存在：' + input.topicName)
+      parentKy = t.ky
+    } else {
+      if (typeof date !== 'string') throw new Error('appendTree 需要 under/topicName/date 之一')
+      const topic = $.topic.getTopic(date)
+      if (!topic?.ky) throw new Error('该日期日记不存在：' + date + '（请先在应用中打开该日记，或改用 --under）')
+      parentKy = topic.ky
+    }
+    const rootKey = 'auto-' + input.requestId
+    const existing = $.dbMemory.getItem(rootKey)
+    if (existing?.ky && (existing.automationRequestId !== input.requestId || existing.pky !== parentKy)) throw new Error('请求标识冲突，未覆盖现有笔记')
+    let created = 0
+    const keys = []
+    const addNode = (ky, pky, node, weight) => {
+      const old = $.dbMemory.getItem(ky)
+      if (old?.ky) {
+        if (old.automationRequestId !== input.requestId || old.pky !== pky) throw new Error('条目标识冲突，未覆盖现有内容')
+      } else {
+        const checkbox = node.checkbox === true
+        const bold = node.bold === true
+        const bodyLeaf = bold ? { text: node.text, bold: true } : { text: node.text }
+        const leaves = checkbox ? [{ text: '' }, $.checkbox.createElement({ value: false }), { text: ' ' + node.text, ...(bold ? { bold: true } : {}) }] : [bodyLeaf]
+        const saved = $.dbMemory.saveItem({ ky, pky, ori: checkbox ? '[ ] ' + node.text : node.text, leaves, weight, status: 1, automationRequestId: input.requestId })
+        if (!saved?.ky) throw new Error('当前笔记暂不可保存，请稍后重试')
+        created++
+      }
+      keys.push(ky)
+      ;(node.children || []).forEach((child, i) => addNode(ky + '-' + i, ky, child, (i + 1) * 1000))
+    }
+    const siblings = $.dbMemory.getSubitems(parentKy)
+    addNode(rootKey, parentKy, input.tree, Math.max(0, ...siblings.map(x => x.weight || 0)) + 1000)
+    await $.dbDisk.flush()
+    // groupKey/blockKeys 为兼容落库核对层（verifySaved 只认这三个字段名）；rootKey/keys 是全量节点。
+    return { dbid: input.dbid, ...(parentKy === date ? { date } : { parent: parentKy }), rootKey, groupKey: rootKey, blockKeys: keys, keys, created, reused: created === 0, saved: true }
   }
   if (input.action === 'edit') {
     if (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > 100 ||

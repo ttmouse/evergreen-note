@@ -75,6 +75,11 @@ test('invalid dates, payloads and database mismatch cannot mutate notes', async 
 test('a conflicting request key cannot overwrite another date', async () => {
   const { rows, input } = fixture()
   await runNoteCommand(input)
+  // 新行为：--date 只读写已存在日记（绕开 daily.createTopic 爆栈），不存在时明确报错
+  await assert.rejects(runNoteCommand({ ...input, date: '2026-10-05' }), /日记不存在/)
+  assert.equal(rows.get('auto-' + input.requestId).pky, '2026-10-04')
+  // 日记已存在时，同 requestId 换日期仍然报冲突而不是覆盖
+  rows.set('2026-10-05', { ky: '2026-10-05', status: 1, topic: '2026-10-05' })
   await assert.rejects(runNoteCommand({ ...input, date: '2026-10-05' }), /冲突/)
   assert.equal(rows.get('auto-' + input.requestId).pky, '2026-10-04')
 })
@@ -139,6 +144,55 @@ test('search finds matching text and get returns subtree', async () => {
   assert.equal(tree.item.subitems[0].checkbox, true)
   await assert.rejects(runNoteCommand({ action: 'get', dbid: 'test-db', ky: 'missing' }), /不存在/)
   await assert.rejects(runNoteCommand({ action: 'search', dbid: 'test-db', query: '' }), /搜索关键词/)
+})
+
+test('appendTree writes nested subtree in one call, idempotent on retry', async () => {
+  const { rows, input } = fixture()
+  const tree = {
+    text: '近24h 复盘', bold: true,
+    children: [
+      { text: '总览' },
+      { text: 'Bonsai-demo', bold: true, children: [
+        { text: 'MLX 编译失败 4 次' },
+        { text: '启停文档待办', checkbox: true },
+      ]},
+      { text: '复盘要点', children: [
+        { text: '子节', children: [{ text: '三级条目' }] },
+      ]},
+    ],
+  }
+  const inputTree = { action: 'appendTree', dbid: 'test-db', date: '2026-10-04', requestId: 'c'.repeat(64), tree }
+  const first = await runNoteCommand(inputTree)
+  assert.equal(first.saved, true)
+  assert.equal(first.created, 8)
+  assert.equal(first.rootKey, 'auto-' + inputTree.requestId)
+  // 层级：根 → 分节 → 子节
+  const root = rows.get(first.rootKey)
+  assert.equal(root.pky, '2026-10-04')
+  assert.ok(root.leaves[0].bold === true)
+  const section = rows.get(first.rootKey + '-1')
+  assert.ok(section.leaves[0].bold === true)
+  assert.equal(section.leaves.length, 1) // bold 非复选框单 leaf
+  const todo = rows.get(first.rootKey + '-1-1')
+  const todoRow = rows.get(first.rootKey + '-1-1')
+  assert.equal(todoRow.ori, '[ ] 启停文档待办')
+  const deep = rows.get(first.rootKey + '-2-0-0')
+  assert.equal(deep.ori, '三级条目')
+  // 重放：同 requestId 幂等，不重复创建
+  const second = await runNoteCommand(inputTree)
+  assert.equal(second.created, 0)
+  assert.equal(second.reused, true)
+  // 校验：超深/超量/坏字段拒绝且不落库
+  const sizeBefore = rows.size
+  const deepTree = { text: 'x' }
+  let cur = deepTree
+  for (let i = 0; i < 6; i++) { cur.children = [{ text: 'y' }]; cur = cur.children[0] }
+  await assert.rejects(runNoteCommand({ ...inputTree, tree: deepTree, requestId: 'd'.repeat(64) }), /深度/)
+  await assert.rejects(runNoteCommand({ ...inputTree, tree: { text: '' }, requestId: 'e'.repeat(64) }), /text/)
+  await assert.rejects(runNoteCommand({ ...inputTree, tree: { text: 'x', bold: 'yes' }, requestId: 'f'.repeat(64) }), /布尔/)
+  assert.equal(rows.size, sizeBefore)
+  // 不存在的日记报错而不是静默创建
+  await assert.rejects(runNoteCommand({ ...inputTree, date: '2099-01-01', requestId: 'a'.repeat(32) + '0'.repeat(32) }), /日记不存在/)
 })
 
 test('topic and tag lookups', async () => {

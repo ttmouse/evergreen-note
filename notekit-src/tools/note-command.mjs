@@ -9,7 +9,7 @@ import { spawn } from 'node:child_process'
 // 对外只暴露 4 个动词：get / add / set / del（外加 status）。
 // get 三合一：--date 读日记、--ky 读节点、--query 搜索。
 // 内部映射到服务端动作：read/get/search/append/edit/delete；旧命令名保留为别名。
-const VERBS = { get: 'get', add: 'append', set: 'edit', del: 'delete' }
+const VERBS = { get: 'get', add: 'append', set: 'edit', del: 'delete', addtree: 'appendTree' }
 const ALIASES = { read: 'get', append: 'add', edit: 'set', delete: 'del', search: 'get', rm: 'del', ls: 'get' }
 
 try {
@@ -33,6 +33,10 @@ try {
          --tag 标签名 [--limit 50]     列出带该标签的条目
   add    --date 2026-10-05 --title 标题 --input 条目.json [--key 防重标识]
          (--topic 主题名 或 --under 节点ID 可代替 --date，追加到任意页面)
+  addtree --under 节点ID --input 树.json [--key 防重标识]
+         (--topic/--date 可代替 --under) 嵌套树一次写入：
+         树.json = {"text":"标题","bold":true,"children":[{"text":"子节","children":[...]}]}
+         节点字段：text 必填，bold/checkbox 选填，children 选填（≤500 节点，≤5 层）
   start                      启动/唤起应用并等待就绪
   set    --input edits.json  条目：[{"ky":"节点ID","text":"新文字","checkbox":true?}]
   del    --ky 节点ID [--recurse]     也可 --input ["节点ID",...]
@@ -107,6 +111,15 @@ try {
     }
     if (action === 'append' && !values.topic && !values.under) {
       if (!values.date) throw new Error('add 需要 --date，或改用 --topic/--under 指定父页面')
+    }
+    if (action === 'appendTree') {
+      if (!values.input) throw new Error('addtree 需要 --input 树.json')
+      if (!values.under && !values.topic && !values.date) throw new Error('addtree 需要 --under/--topic/--date 之一')
+      if (values.under) input.under = values.under
+      if (values.topic) input.topicName = values.topic
+      if (values.date) input.date = values.date
+      input.tree = JSON.parse(await fs.readFile(values.input, 'utf8'))
+      input.requestId = createHash('sha256').update(values.key || JSON.stringify(input)).digest('hex')
     }
     if (['read', 'append'].includes(input.action) && values.date) {
       input.date = values.date
