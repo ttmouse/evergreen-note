@@ -334,9 +334,11 @@ export function createBilinkAddon({ $ }: NewAddonParams) {
       e: MouseEvent,
       params: { topicTitle: string; element: BilinkElement; editor: ItemEditor }
     ) {
-      // 如果存在选区，则不处理
+      // 如果存在选区，则不处理。例外：Shift+点击（新 Tab 打开）时浏览器会先
+      // 把选区从原光标扩展到点击点（实测 mousedown 时 collapsed、click 时非
+      // collapsed），这是修饰键副作用而不是用户拖选，不能据此拦截。
       const sel = window.getSelection()
-      if (!sel?.isCollapsed) {
+      if (!sel?.isCollapsed && !e.shiftKey) {
         return
       }
       const { topicTitle } = params
