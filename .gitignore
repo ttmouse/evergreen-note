@@ -65,3 +65,6 @@ __pycache__/
 .vscode/
 .idea/
 /notekit-src/tools/refer-retarget-probe.mjs
+
+# Probe output (local-only)
+notekit-src/test-runs/
