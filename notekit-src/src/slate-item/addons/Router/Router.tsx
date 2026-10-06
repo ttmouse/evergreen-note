@@ -311,13 +311,20 @@ export function createRouterAddon({ app, $ }: NewAddonParams) {
         ) {
           const ky = toPath.replace(/^item\//, '')
           if (app.states.floatViewerMode === 'andy' && (!keyState.hasPressed() || keyState.isPressed('shift'))) {
-            const sourceElement = itemEditor instanceof HTMLElement || itemEditor instanceof SVGElement
-              ? itemEditor
-              : itemEditor
-                ? document.querySelector(`article[editor-id="${itemEditor.editorId}"]`)
-                : null
-            const sourceId = sourceElement?.closest('.nui-dialog[dialog-list-mode="andy"]')?.id
-            $.andy.navigate(ky, sourceId)
+            // 注册页面（每日/主题/图谱等）是页面级导航：替换当前活动列，
+            // 而不是在右侧新增一列；笔记链接仍走 navigate 的阅读路径语义。
+            const pagePath = ky.replace(/^\/|\/$/g, '')
+            if (pagePath in $.router.routes) {
+              $.andy.navigatePage(ky)
+            } else {
+              const sourceElement = itemEditor instanceof HTMLElement || itemEditor instanceof SVGElement
+                ? itemEditor
+                : itemEditor
+                  ? document.querySelector(`article[editor-id="${itemEditor.editorId}"]`)
+                  : null
+              const sourceId = sourceElement?.closest('.nui-dialog[dialog-list-mode="andy"]')?.id
+              $.andy.navigate(ky, sourceId)
+            }
           } else {
             $.keyClick.openInAndyMode(ky, keyState.isPressed('alt') ? 0 : undefined)
           }
