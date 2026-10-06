@@ -13,7 +13,7 @@
 
 | 触发条件（任务里能识别） | 必须动作 |
 | --- | --- |
-| 让用户体验任何前端/产品改动（默认场景） | 改动必须经热更新到达正式 App：用户已跑 `pnpm dev:live` 时，源码保存即自动发布（确认终端出现「已发布」日志且窗口自动刷新）；未在跑时，先启动 `pnpm dev:live` 或做一次性发布——`pnpm build` 后把 `notekit-src/dist` 拷入 App 包内 Resources/app/dist，并写 `.live-update` 标记触发自动刷新。**只跑 `pnpm build` 不算交付**——打包 App 读的是包内副本，不读源码树 dist |
+| 让用户体验任何前端/产品改动（默认场景） | 改动必须经热更新到达正式 App：用户已跑 `pnpm dev:live` 时，源码保存即自动发布（确认终端出现「已发布」日志且窗口自动刷新）；未在跑时，先启动 `pnpm dev:live` 或做一次性发布——`pnpm build` 后把 `notekit-src/dist` 拷入 App 包内 Resources/app/dist，并写 `.live-update` 标记触发自动刷新。**只跑 `pnpm build` 不算交付**——打包 App 读的是包内副本，不读源码树 dist。发布后**先用 LCU（桌面 Computer Use，用法见全局记忆）对运行中的 App 截图自测**渲染与流程，标注「已自测」再交用户体验；LCU 受阻（审批/权限）时才请用户人工验证并说明原因 |
 | 改 UI 视觉、布局、交互样式（`notekit-src/src` 下样式与组件外观） | 必读 [notekit-src/docs/design-rules/DESIGN.md](notekit-src/docs/design-rules/DESIGN.md)；其中「UI 禁用清单」一节最高优先，偏离须登记 |
 | 改快捷键、按键处理（hotkey / keydown / is-hotkey 相关） | 改后跑 `node notekit-src/tools/hotkey-audit.mjs` 实测派发矩阵（需先 `pnpm build`，全程约 8 分钟）；新增 Alt+字母/数字组合快捷键必须依赖 `notekit-src/src/slate-item/addons/Hotkey/helper.ts` 中 `isMyHotkey` 的 `event.code` 兜底（macOS Option 会把 `event.key` 改写成 `ñ`/`Dead`，byKey 匹配必失效） |
 | 改 `notekit-src/server/`（存储、API、读写路径） | 改后跑 `pnpm test:storage`；涉及更新/查询语义的改动补等价性对照（见全局不变量 2） |
