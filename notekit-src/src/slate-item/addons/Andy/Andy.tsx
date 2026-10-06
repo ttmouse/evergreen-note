@@ -204,10 +204,10 @@ export function createAndyAddon({ app, $ }: NewAddonParams) {
 
     addonRun() {
       appendStyle(`
-        /* 仅 Andy 多栏模式去边线/投影：列要无缝拼接成一张纸。
-           浮层预览窗（fixed 模式）保留 workspace-theme 的边线+投影，
-           否则独立小窗在浅色纸面上没有可分辨边界。 */
-        .floatview-container[data-mode='andy'] .dialog-float-viewer.nui-dialog {
+        /* 仅 Andy 阅读列去边线/投影：列要无缝拼接成一张纸。
+           悬停/点击预览浮层（非 andy 列）保留 workspace-theme 的边线+投影，
+           否则独立小窗浮在浅色纸面上没有可分辨边界。 */
+        .floatview-container[data-mode='andy'] .floatview-container-subitems > .nui-dialog[dialog-list-mode='andy'].dialog-float-viewer.nui-dialog {
           border: 0 !important;
           outline: none !important;
           box-shadow: none !important;
@@ -233,6 +233,9 @@ export function createAndyAddon({ app, $ }: NewAddonParams) {
 
       const { showDialog } = $.floatViewer
       after(showDialog, (dialogId) => {
+        // 悬停/点击预览浮层不是阅读列：不滚动列条、不抢激活态，
+        // 否则鼠标一掠过链接整行列就会横向跳动。
+        if ($.floatViewer.previewDialogIds?.has(dialogId)) return dialogId
         $.andy.scrollIntoView(dialogId)
         return dialogId
       })

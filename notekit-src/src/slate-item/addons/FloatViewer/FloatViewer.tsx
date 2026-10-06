@@ -95,6 +95,8 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
     containerId = `${app.appName}-floatview-container`
     
     activeWindowStack: string[] = []
+    /** Andy 模式下的悬停/点击预览浮层（非阅读列）的 dialogId。 */
+    previewDialogIds = new Set<string>()
     handledCloseEvents = new WeakSet<Event>()
 
     animationDisabled = true
@@ -167,12 +169,23 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
 
       const { DialogProps: dialogProps = {} } = rest
       const { cssClass, ...dialogPropsWithoutCssClass } = dialogProps
-      const isAndyWindow =
-        app.states.floatViewerMode === 'andy' ||
+      // Andy 列 vs 悬停/点击预览浮层：只有显式标记 dialog-list-mode='andy'
+      // 的窗口才是阅读列。Andy 模式下的预览浮层是贴着内容的悬浮窗，
+      // 必须挂到容器根节点——列条 (.floatview-container-subitems) 是
+      // overflow 滚动容器，预览放进去会被裁剪，且没有 z-index 会被
+      // 后绘制的列（position:relative）盖住（用户截图中的遮挡 bug）。
+      const isAndyColumn =
         dialogProps.attributes?.['dialog-list-mode'] === 'andy'
+      const isAndyWindow =
+        app.states.floatViewerMode === 'andy' || isAndyColumn
+      if (app.states.floatViewerMode === 'andy' && !isAndyColumn) {
+        this.previewDialogIds.add(dialogId)
+      }
       const isModal = !isAndyWindow && (dialogProps.mask ?? true)
       const container = requestedContainer ?? document.querySelector(
-        `#${$.floatViewer.containerId} .floatview-container-subitems`
+        app.states.floatViewerMode === 'andy' && !isAndyColumn
+          ? `#${$.floatViewer.containerId}`
+          : `#${$.floatViewer.containerId} .floatview-container-subitems`
       ) as HTMLElement | null
       const classList = [
         ...(cssClass ?? []),
@@ -243,13 +256,19 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         canClose: true,
         canFold: true,
         onActive: () => {
-          $.floatViewer.setActiveKey(dialogId)
+          // Andy 模式下的预览浮层不抢列的激活态（会串掉 andy-note-active）。
+          if (!(app.states.floatViewerMode === 'andy' && this.previewDialogIds.has(dialogId))) {
+            $.floatViewer.setActiveKey(dialogId)
+          }
           $.dialog.store.bringToFront(dialogId)
         },
         onMoveEnd(_, { left, top }) {
           $.dialog.store.setPosition(dialogId, left, top)
         },
-        dialogZIndex: $.dialog.store.get(dialogId)?.zIndex,
+        // 新窗口要到 popup 内部才注册，这里 get 不到 entry；补发一个新 zIndex，
+        // 否则预览浮层没有 z-index，会被 Andy 列（position:relative）盖住。
+        dialogZIndex:
+          $.dialog.store.get(dialogId)?.zIndex ?? $.dialog.store.nextZIndex(),
         canClickWay: (ev) => {
           const target = ev.target as HTMLElement
           const exclude = [
@@ -326,7 +345,9 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         },
         ...dialogPropsWithoutCssClass,
       })
-      $.floatViewer.setActiveKey(dialogId)
+      if (!(app.states.floatViewerMode === 'andy' && this.previewDialogIds.has(dialogId))) {
+        $.floatViewer.setActiveKey(dialogId)
+      }
       return dialogId
     }
 
@@ -698,6 +719,7 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         // Finish removing the old entry before the last-column fallback can
         // open a new diary viewer with the same dialog ID.
         $.dialog.store.unregister(dialogId)
+        $.floatViewer.previewDialogIds.delete(dialogId)
         if ($.floatViewer.has(dialogId)) $.floatViewer.delete(dialogId);
       })
       after($.dialog.closeAll, () => {
