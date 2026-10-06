@@ -767,11 +767,33 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         targetBox = null
       }
 
-      // 鼠标移开链接后延迟关闭；关闭前实时检查鼠标是否真的停在浮窗上，
-      // 不用标记位（点 X/Esc 关闭时 DOM 直接移除，不会触发 mouseout，标记会卡死）
-      const scheduleClose = () => {
+      // 鼠标移开链接即关：用 mouseout 的 relatedTarget 同步判断去向——
+      // 去向是触发元素（链接/引用）之间或浮窗本身则保持打开，
+      // 否则立即关闭，零延迟。定时器只兜底「DOM 被重渲染移除导致
+      // mouseout 不触发」的异常场景（此时没有 event，退回 300ms 核对）。
+      const scheduleClose = (e?: MouseEvent) => {
         checkItem = null
-        if (closeTimer) clearTimeout(closeTimer)
+        if (closeTimer) {
+          clearTimeout(closeTimer)
+          closeTimer = null
+        }
+        const related = e?.relatedTarget as HTMLElement | null
+        if (related instanceof Element && currentKy) {
+          if (related.closest('.element-bilink, [item-ky]')) return
+          const openDlgId = ITEM_TO_DIALOG[currentKy]
+          if (openDlgId && related.closest(`#${openDlgId}`)) return
+          closeFloat(currentKy)
+          currentKy = null
+          return
+        }
+        if (e && (!related || !(related instanceof Element))) {
+          // 鼠标离开窗口：立即关闭
+          if (currentKy) {
+            closeFloat(currentKy)
+            currentKy = null
+          }
+          return
+        }
         closeTimer = setTimeout(() => {
           closeTimer = null
           if (!currentKy) return
@@ -796,8 +818,8 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         }
       })
 
-      on('mouseout', '.element-bilink [data-slate-string]', () => {
-        scheduleClose()
+      on('mouseout', '.element-bilink [data-slate-string]', (e) => {
+        scheduleClose(e)
       })
 
       on('mousedown', '.element-bilink *', () => {
@@ -821,15 +843,27 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
           clearTimeout(closeTimer)
           closeTimer = null
         }
+
+        // 兜底关闭：悬停预览开着时，鼠标落到任何「非触发元素、也非浮窗本身」
+        // 的位置都安排关闭。只靠链接的 mouseout 不够——Slate 重渲染会在鼠标
+        // 未离开始终移除/重建链接 DOM，mouseout 不触发，浮层就永远挂着
+        // （用户实测「移开链接浮层不消失」）。scheduleClose 关闭前会再核对
+        // 浮窗 :hover，所以鼠标移到浮窗上仍不会误关。
+        if (currentKy) {
+          const openDlgId = ITEM_TO_DIALOG[currentKy]
+          const onDialog = openDlgId ? !!target.closest(`#${openDlgId}`) : false
+          const onTrigger = !!target.closest('.element-bilink, [item-ky]')
+          if (!onDialog && !onTrigger) scheduleClose()
+        }
       })
       document.addEventListener('mouseout', (e) => {
         const el = e.target as HTMLElement
         if (el.matches('[item-ky], [item-ky] *')) {
-          scheduleClose()
+          scheduleClose(e)
         }
       })
-      on('mouseout', '.dialog-item-float', () => {
-        scheduleClose()
+      on('mouseout', '.dialog-item-float', (e) => {
+        scheduleClose(e)
       })
     }
   }
