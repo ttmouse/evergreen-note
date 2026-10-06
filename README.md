@@ -26,7 +26,21 @@ notekit-src/
 
 前端 ↔ 后端 ↔ SQLite 的完整数据流已端到端验证；构建产物与原版体量相当（约 2.8 MB）。
 
-## 快速开始
+## 下载安装（macOS）
+
+到 [Releases](https://github.com/ttmouse/evergreen-note/releases) 下载最新的 `.dmg`，打开后把
+**Evergreen note** 拖进「应用程序」即可。压缩包里有一份《安装说明.txt》，写清了首次打开、
+数据位置、备份与卸载。
+
+- 仅支持 **Apple Silicon**（M 系列）Mac。
+- 安装包**没有 Apple 开发者签名**，第一次打开要「右键 → 打开 → 再点打开」；
+  若系统仍拒绝，执行 `xattr -dr com.apple.quarantine "/Applications/Evergreen note.app"`。
+- 笔记全部存在本机 `~/Library/Application Support/Evergreen note/library/`，不联网、不上传。
+
+自己打包（开发者）：`cd notekit-src && node tools/build-dmg.mjs`，产物在
+`notekit-src/artifacts/release/`。
+
+## 从源码运行
 
 要求：Node 22+（需要内置 `node:sqlite`）、pnpm
 
