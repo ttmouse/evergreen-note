@@ -2,7 +2,7 @@
 
 本地优先的层级 Markdown 笔记应用：Electron + React 前端、零依赖 Node 后端（`node:sqlite`）、数据落 SQLite。
 
-本项目基于已停止维护的开源笔记应用 [Notekit](https://github.com/blackhole89/notekit)（GTK3 桌面版）的 Web 端代码重建：从其编译产物的 source map 无损还原出 TypeScript/React 源码，重建了 Vite 构建工程，并自研了后端与 Electron 外壳，使其重新成为可构建、可长期自行维护、可二次开发的完整应用。
+本项目从一个早期 Web 端笔记应用的编译产物重建：从其产物的 source map 无损还原出 TypeScript/React 源码，重建了 Vite 构建工程，并自研了后端与 Electron 外壳，使其重新成为可构建、可长期自行维护、可二次开发的完整应用。
 
 ## 功能特性
 
@@ -24,7 +24,7 @@ notekit-src/
 └── tools/      开发辅助脚本
 ```
 
-前端 ↔ 后端 ↔ SQLite 的完整数据流已端到端验证；构建产物与原版体量相当（约 2.8 MB）。
+前端 ↔ 后端 ↔ SQLite 的完整数据流已端到端验证；构建产物体量约 2.8 MB。
 
 ## 下载安装（macOS）
 
@@ -84,6 +84,5 @@ pnpm test:storage
 
 ## 许可证
 
-- 本项目为 Notekit 的衍生作品，继承其 [GPL-3.0](LICENSE) 许可证开源
-- 原版项目：<https://github.com/blackhole89/notekit> ，感谢原作者 blackhole89 的工作
+- 本项目继承 [GPL-3.0](LICENSE) 许可证开源
 - `notekit-src/public/assets/` 下内置的第三方库（CodeMirror、AntV G6 等）遵循其各自的开源许可证
