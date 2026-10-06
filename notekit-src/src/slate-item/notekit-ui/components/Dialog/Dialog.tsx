@@ -365,6 +365,8 @@ export const Dialog = (props: DialogProps) => {
     width: number
     height: number
   } | null>(null)
+  // 用户手动拖动过窗口后，不再因内容尺寸变化而自动重新居中
+  const userDraggedRef = React.useRef(false)
 
   React.useEffect(() => {
     const dlgDom = ref.current
@@ -456,6 +458,41 @@ export const Dialog = (props: DialogProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // 内容异步加载导致 dialog 尺寸变化时，自动重新居中（用户手动拖动过窗口后不再自动调整）
+  React.useEffect(() => {
+    const dlgDom = ref.current
+    if (!dlgDom || !ResizeObserver) return
+    let lastWidth = dlgDom.offsetWidth
+    let lastHeight = dlgDom.offsetHeight
+    const ro = new ResizeObserver(() => {
+      if (userDraggedRef.current) return
+      if (foldupRef.current) return
+      const w = dlgDom.offsetWidth
+      const h = dlgDom.offsetHeight
+      // 尺寸变化超过 1px 才重新 snap，避免抖动
+      if (Math.abs(w - lastWidth) > 1 || Math.abs(h - lastHeight) > 1) {
+        lastWidth = w
+        lastHeight = h
+        snap(
+          dlgDom,
+          SnapProps?.targetBox ?? window,
+          SnapProps?.place ?? ['center', 'top-in'],
+          {
+            onComplete({ left, top }) {
+              dispatch({
+                type: 'set_position',
+                payload: { left, top },
+              })
+            },
+          }
+        )
+      }
+    })
+    ro.observe(dlgDom)
+    return () => ro.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   React.useEffect(() => {
     if (states.foldup) {
       winChangedDuringFoldup.current = false
@@ -523,6 +560,7 @@ export const Dialog = (props: DialogProps) => {
         },
         onEnd(e, { left, top }) {
           rememberedSizeRef.current = null
+          userDraggedRef.current = true
           dispatch({
             type: 'set_position',
             payload: { left, top },
@@ -745,6 +783,7 @@ export const Dialog = (props: DialogProps) => {
               attributes={states.attributes}
               onResize={(_, { size: nextSize }) => {
                 rememberedSizeRef.current = null
+                userDraggedRef.current = true
                 dispatch({ type: 'set_size', payload: nextSize })
               }}
             />

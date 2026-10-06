@@ -160,13 +160,18 @@ check('S1 File Manager 浮窗已打开且有标题', s1.exists && !!(s1.title ||
 const modalInfo = await evalWithTimeout(`(() => {
   const dlg = document.querySelector('.filemanager-dialog')
   const mask = document.querySelector('.nui-mask')
+  const rect = dlg?.getBoundingClientRect()
   return {
     modal: dlg?.classList.contains('app-modal') ?? false,
     mask: !!mask,
     maskColor: mask ? getComputedStyle(mask).backgroundColor : null,
+    centered: !!rect && Math.abs(rect.left + rect.width / 2 - innerWidth / 2) < 3 && Math.abs(rect.top + rect.height / 2 - innerHeight / 2) < 3,
+    rect: rect ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null,
+    viewport: { width: innerWidth, height: innerHeight },
   }
 })()`)
 check('S1b File Manager 使用统一模态蒙层', modalInfo.modal && modalInfo.mask && modalInfo.maskColor === 'rgba(30, 41, 59, 0.42)', modalInfo)
+check('S1c File Manager 窗口位于视口中心', modalInfo.centered, modalInfo)
 
 // ---- S2: 空态提示（非空白），数据加载是异步的，轮询等待最多 10s ----
 let s2 = null

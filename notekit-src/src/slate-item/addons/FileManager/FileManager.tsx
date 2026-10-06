@@ -19,12 +19,15 @@ export function createFileManagerAddon({ app, $ }: NewAddonParams) {
     app!: App
 
     showFileManagerDialog() {
-      const rect = document.getElementById(`${app.appName}-outer`)?.getBoundingClientRect()
       $.floatViewer.showDialog({
         body: <FileManagerComp />,
         DialogProps: {
           width: 800,
           height: 500,
+          SnapProps: {
+            targetBox: window,
+            place: ['center', 'middle'],
+          },
           canPin: {
             pin: true,
           },
