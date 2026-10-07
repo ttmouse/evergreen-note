@@ -253,16 +253,15 @@ class EventHandler implements IAddon {
         const selection = (editor.selection ?? syncSelectionFromDom(editor)) as Range
         if (!selection) return
 
-        // A block reference can render with a different indentation from the
-        // following item. Native ArrowDown preserves the screen x coordinate,
-        // which can place the caret in the middle of that next item's text even
-        // when the current caret is at the start of the reference line. In this
-        // case, move to the start of the next rendered item instead.
+        // Native ArrowDown preserves the screen x coordinate. With nested
+        // items that have different indentation, this can resolve to the wrong
+        // visual line (including a preceding sibling) instead of the next
+        // item. At the start of a node, move to the next rendered item
+        // explicitly so repeated ArrowDown presses advance one node at a time.
         if (
           e.key === 'ArrowDown' &&
           Range.isCollapsed(selection) &&
-          editor.itemTextBeforeCaret() === '' &&
-          editor.itemLeaves().some((leaf) => (leaf as any).blockType === 'refer')
+          editor.itemTextBeforeCaret() === ''
         ) {
           const item = editor.item()
           const itemDom = item?.$id ? document.getElementById(item.$id) as ItemDOM | null : null
