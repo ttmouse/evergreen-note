@@ -9,6 +9,11 @@ contextBridge.exposeInMainWorld('notekitShell', {
   backupNow: () => ipcRenderer.invoke('backup-now'),
   requestQuit: () => ipcRenderer.send('request-quit'),
   setTheme: (theme) => ipcRenderer.send('set-theme', theme),
+  getWakeShortcut: () => ipcRenderer.invoke('wake-shortcut:get'),
+  setWakeShortcut: (accelerator) => ipcRenderer.invoke('wake-shortcut:set', accelerator),
+  captureWakeShortcut: (capturing) => ipcRenderer.invoke('wake-shortcut:capture', capturing),
+  getSettingsShortcut: () => ipcRenderer.invoke('settings-shortcut:get'),
+  setSettingsShortcut: (accelerator) => ipcRenderer.invoke('settings-shortcut:set', accelerator),
   version: process.versions.electron,
   platform: process.platform,
 })

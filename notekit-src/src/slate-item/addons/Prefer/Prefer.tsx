@@ -13,6 +13,8 @@ import { LoadedAddonName } from '../../../main'
 import { PreferStore } from './PreferStore'
 import { makeAutoObservable } from 'mobx'
 import { createPreferGlobalAddon } from './PreferGlobal'
+import { DesktopShortcutSetting } from './DesktopShortcutSetting'
+import { SettingsHotkeySetting } from './SettingsHotkeySetting'
 
 const DEFAULT_PLAN_KY = 'main' // df = default
 
@@ -248,6 +250,17 @@ export function createPreferAddon(addonParams: NewAddonParams) {
         }
       }
 
+      const shellBridge = (window as any).notekitShell
+      if ((!picks || picks.includes('desktop')) && shellBridge?.getWakeShortcut) {
+        subitems.desktop = {
+          type: 'fieldset', title: '快捷键', order: 0,
+          subitems: {
+            desktopWakeShortcut: { type: 'text', render: DesktopShortcutSetting },
+            ...(shellBridge?.getSettingsShortcut ? { settingsOpenHotkey: { type: 'text', render: SettingsHotkeySetting } } : {}),
+          },
+        }
+      }
+
       $.prefer.dialog = $.form.popup({
         title: hideDialogTitle ? undefined : $t`conf.title`,
         width: 400,
@@ -307,11 +320,17 @@ export function createPreferAddon(addonParams: NewAddonParams) {
     }
 
     addonRun() {
+      // Electron 下「打开设置」组合由主进程 before-input-event 执行（settings-shortcut.json，
+      // 面板内可改）；渲染层不再注册同键位热键，避免双路径与快捷键面板的过期显示。
+      // 浏览器/开发环境没有 notekitShell，保留 ⌘Esc 兑底。
+      const bridge = (window as any).notekitShell
+      const custom = !!bridge?.getSettingsShortcut
+
       $.main?.addMoreExtraCommands({
         preferences: {
           title: $t`conf.title`,
           icon: 'svg_settings',
-          hotkey: 'mod+esc',
+          ...(custom ? {} : { hotkey: 'mod+esc' }),
           order: 4000,
           onClick() {
             $.prefer.showCfgForm()
@@ -319,17 +338,25 @@ export function createPreferAddon(addonParams: NewAddonParams) {
         },
       })
 
-      $.hotkey?.register({
-        preferences: {
-          title: $t`conf.title`,
-          hotkey: 'mod+esc',
-          icon: 'svg_settings',
-          context: 'everywhere',
-          handle() {
-            $.prefer.showCfgForm()
+      if (custom) {
+        // 命令面板里的快捷键提示跟随用户配置
+        bridge.getSettingsShortcut().then((r: { accelerator?: string }) => {
+          const cmd = ($.main as any)?.moreExtraCommands?.preferences
+          if (cmd && r?.accelerator) cmd.hotkey = r.accelerator
+        }).catch(() => {})
+      } else {
+        $.hotkey?.register({
+          preferences: {
+            title: $t`conf.title`,
+            hotkey: 'mod+esc',
+            icon: 'svg_settings',
+            context: 'everywhere',
+            handle() {
+              $.prefer.showCfgForm()
+            },
           },
-        },
-      })
+        })
+      }
     }
   }
   return {

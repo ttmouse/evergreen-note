@@ -1,0 +1,9 @@
+.desktop-shortcut-setting { padding: 16px 8px; color: var(--nk-ink); }
+.desktop-shortcut-setting h3 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.desktop-shortcut-setting p { margin: 8px 0; font-size: 13px; line-height: 1.6; color: var(--nk-muted); }
+.desktop-shortcut-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.desktop-shortcut-controls button { min-height: 32px; padding: 4px 8px; border: 1px solid var(--nk-line-strong); border-radius: var(--radius, 4px); background: var(--nk-surface); color: var(--nk-ink); font: inherit; font-size: 13px; cursor: pointer; }
+.desktop-shortcut-controls button:first-child { min-width: 160px; }
+.desktop-shortcut-controls button:hover { background: var(--nk-hover); }
+.desktop-shortcut-controls button:focus-visible { outline: 2px solid var(--nk-accent); outline-offset: 2px; }
+.desktop-shortcut-controls button:disabled { opacity: .5; cursor: default; }

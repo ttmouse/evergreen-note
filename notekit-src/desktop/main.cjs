@@ -12,13 +12,15 @@
  *   首次启动要粘贴声明文本   -> 已移除（本实现无需该声明）
  *   备份/设置窗/状态页       -> 保留：菜单里可看日志、开数据目录、立即备份；自动备份按份数轮换
  */
-const { app, BrowserWindow, Menu, dialog, shell, ipcMain, nativeTheme } = require('electron')
+const { app, BrowserWindow, Menu, dialog, shell, ipcMain, nativeTheme, globalShortcut } = require('electron')
 const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 const net = require('node:net')
 const { randomBytes } = require('node:crypto')
 const { runNoteCommand } = require('./note-command.cjs')
+const { createWakeShortcut } = require('./wake-shortcut.cjs')
+const { createSettingsMenuItem, openSettingsInPage, createSettingsShortcut, matchesShortcutInput } = require('./settings-menu.cjs')
 
 const appConfig = require('../package.json')
 const APP_NAME = appConfig.productName || 'Evergreen note'
@@ -48,6 +50,56 @@ let serverLog = []
 let backupTimer = null
 let quitReady = false
 let preparingQuit = false
+// 设置面板快捷键录制中标志：录制新唤起快捷键时，⌘Esc 可能正是用户想设的新组合，
+// before-input-event 必须让路（isSettingsEscape 拦截器读这个标志）。
+let settingsShortcutRecording = false
+
+function showMainWindow() {
+  if (preparingQuit) return
+  if (!mainWindow || mainWindow.isDestroyed()) createWindow()
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  app.focus({ steal: true })
+  mainWindow.focus()
+}
+
+const wakeShortcut = createWakeShortcut({
+  globalShortcut,
+  configPath: path.join(USER_DATA_DIR, 'desktop-shortcut.json'),
+  showWindow: showMainWindow,
+})
+
+// 「打开设置」组合，用户可在设置面板改（SettingsHotkeySetting → settings-shortcut.json）
+const settingsShortcut = createSettingsShortcut({ configPath: path.join(USER_DATA_DIR, 'settings-shortcut.json') })
+
+function assertShellSender(event) {
+  if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) {
+    throw new Error('此操作仅允许应用主窗口调用')
+  }
+}
+
+ipcMain.handle('wake-shortcut:get', event => {
+  assertShellSender(event)
+  return wakeShortcut.get()
+})
+ipcMain.handle('wake-shortcut:set', (event, accelerator) => {
+  assertShellSender(event)
+  globalShortcut.setSuspended(false)
+  return wakeShortcut.set(accelerator)
+})
+ipcMain.handle('wake-shortcut:capture', (event, capturing) => {
+  assertShellSender(event)
+  settingsShortcutRecording = capturing === true
+  globalShortcut.setSuspended(settingsShortcutRecording)
+})
+ipcMain.handle('settings-shortcut:get', event => {
+  assertShellSender(event)
+  return settingsShortcut.get()
+})
+ipcMain.handle('settings-shortcut:set', (event, accelerator) => {
+  assertShellSender(event)
+  return settingsShortcut.set(accelerator)
+})
 
 // The page has its own theme preference. Keep AppKit's window buttons in the
 // same appearance instead of leaving them in the system theme over the page.
@@ -224,6 +276,18 @@ function createWindow() {
     mainWindow.webContents.executeJavaScript('window.close = () => window.notekitShell.requestQuit(); true')
       .catch(error => pushLog(`[shell] 关闭入口初始化失败: ${error}`))
   })
+  mainWindow.on('blur', () => { globalShortcut.setSuspended(false); settingsShortcutRecording = false })
+  mainWindow.webContents.on('did-start-loading', () => { globalShortcut.setSuspended(false); settingsShortcutRecording = false })
+  // ⌘Esc（或用户自定义组合）打开设置面板。不依赖菜单 accelerator：AppKit 会在按键
+  // 派发层吞掉 Escape 等价键（2026-10-07 真机实测），before-input-event 在渲染层之前
+  // 拦截，与焦点状态无关；命中后 preventDefault，渲染层不再重复注册同键位热键。
+  // 快捷键录制中让路：用户可能正想把该组合录成新的唤起/设置快捷键。
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (settingsShortcutRecording) return
+    if (!matchesShortcutInput(settingsShortcut.get().accelerator, input)) return
+    event.preventDefault()
+    openSettingsInPage(() => mainWindow, pushLog)
+  })
   mainWindow.loadURL(APP_URL)
   mainWindow.on('close', (event) => {
     pushLog(`[shell] close event, quitReady=${quitReady}`)
@@ -264,6 +328,8 @@ function buildMenu() {
       label: app.name,
       submenu: [
         { role: 'about' },
+        { type: 'separator' },
+        createSettingsMenuItem(() => mainWindow, pushLog),
         { type: 'separator' },
         {
           label: '打开数据目录',
@@ -361,11 +427,7 @@ if (!gotSingleInstanceLock) {
 } else {
   // 重复启动时，把已有窗口唤到前台
   app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore()
-      mainWindow.show()
-      mainWindow.focus()
-    }
+    showMainWindow()
   })
 }
 
@@ -391,6 +453,8 @@ app.whenReady().then(async () => {
   pushLog('[shell] 服务就绪')
   buildMenu()
   createWindow()
+  const shortcutState = wakeShortcut.start()
+  if (shortcutState.error) pushLog(`[wake-shortcut] ${shortcutState.error}`)
   backupTimer = setInterval(backupNow, BACKUP_INTERVAL_MS)
 })
 
@@ -439,3 +503,4 @@ app.on('before-quit', (event) => {
 
 ipcMain.handle('backup-now', () => backupNow())
 ipcMain.on('request-quit', () => app.quit())
+app.on('will-quit', () => wakeShortcut.stop())
