@@ -279,7 +279,9 @@ export function createRefreshAddon({ app, $ }: NewAddonParams) {
                 }
 
                 // 此处需判断谁的范围更大，防止重复更新
-                const pathNew = newer.path
+                // newer.path 可能缺失（部分保存载荷不带 path），与上方 pathOri 同法兜底，
+                // 否则 pathOri.length < pathNew.length 直接抛 TypeError，整次刷新被 catch 吞掉
+                const pathNew = Array.isArray(newer.path) ? newer.path : []
                 if (
                   deepEqual(pathOri, pathNew) &&
                   originalItem.weight === newer.weight
