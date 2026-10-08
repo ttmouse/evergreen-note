@@ -153,3 +153,10 @@ echo done
 - **图标通道盘点（双模式处理矩阵）**：Phosphor svg-icon（主图标集）= 日间 defaults #333 扁平策略 / 夜间 currentColor 跟随 + NightMode stroke 兜底；MuiSvgIcon = 日间主题板 / 夜间 --dark-text 全局兜底；内联无类 svg（分页箭头、放大镜）= 夜间块逐个已补；svg_dot 内容图标走 svg-icon 通道。
 - **验证**：终扫 2×3 矩阵全绿——夜间 0 图标 0 过亮线（/topics 仅剩有意禁用色 1.69，WCAG 豁免），日间 0/0。已热更发布（03:10）。
 - **过程教训**：线条检测器首版把「border-width:3px + style:none」的幽灵轮廓全部误报（所有元素都带 3px 幽灵 outline），补 style!=='none' 判据后归零——computed width 不为 0 不代表画了线，检测器必须查完整样式三元组；日间曾出现一次未复现的近白图标命中（#e2e8f0，1.18），两轮诊断均未再现身，疑为滚动位置相关的浮动按钮，清扫工具在库可随时复查。
+
+## 2026-10-09（夜间四处用户实测缺陷批）：删除按钮墨色 / 折叠圆点亮环 / 悬停竖线 / 收藏图标复检
+- **起因**：用户实测夜间报四处：①主题列表勾选后的批量删除图标看不见；②主题详情页右上角收藏星与三点菜单图标淡；③大纲笔记折叠后前置圆点多一圈额外边缘线；④大纲笔记悬停时前置出现一条竖线。
+- **根因**：①该删除按钮是裸 MUI IconButton（svg 无任何类），吃 MUI 默认墨 rgba(0,0,0,0.54)，既不进 svg-icon 通道也不进 MuiSvgIcon 兜底，隔离实例实测 fill=rgba(0,0,0,0.54) 对夜底 1.07——第三条图标通道之外的第 4 条漏网通道（currentColor 型裸 svg）；②折叠芯片在 default.style.ts:35 写死 `outline: 1px solid colors.bg200`（日间调色板近白），日间与芯片底同色隐形，夜间 NightMode 只压了 background 没压 outline，近白描边绕深色圆点一圈即「额外的边缘线」——源码级定位，非运行时猜测；③悬停竖线在 default.style.ts:177 `border-left-color: var(--cl-slate-300)`（日间浅灰 hover 提示），夜间原样渲染成刺眼亮线；④星/三点图标隔离实例实测对夜底对比度 14.22（墨色 #e6e8eb，正常可见）——与用户观感矛盾，疑似用户窗口停在旧构建状态，待发布后请用户重启复核，不排除另有状态态（如收藏后的着色态）未覆盖。
+- **拍了**（仅夜间块，日间零改动）：①裸 IconButton 归 `--nk-muted`、hover 归 `--nk-ink`，用 `:not([class*='MuiIconButton-color'])` 守卫彩色变体（dialog/分页栏的更深层作用域既有规则不受影响）；②`.node-foldup>.node-tools .node-btn` 的 outline-color 归 `var(--dark-important)`（与 NightMode 压的芯片底同色，描边溶回芯片，恢复日间隐形语义）；③`.node-body:hover` 的 border-left-color 归 `--nk-line-strong`（悬停竖线入细线系统，保留可感知的 hover 反馈，亮度对齐日间 slate-300-on-white 的克制程度）。
+- **同族发现（只入账不动手）**：item-group 布局子卡片描边 `var(--cl-slate-200)`（item-group.style.ts:42,77）夜间无覆盖，已入 backlog OP-049——用户未报、未实测，按全局不变量 3 不擅自扩scope。
+- **教训**：折叠芯片的 outline 是「与底同色即隐形」的设计手法，NightMode 收编时只压 background 就漏了这条隐形的腿——同一视觉元素的多条同色声明必须一起清点；「日间隐形」不等于「可以不管」，主题切换会让隐形声明现形。
