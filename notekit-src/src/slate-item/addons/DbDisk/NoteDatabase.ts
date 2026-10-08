@@ -2,6 +2,8 @@ import type { KyString, TimeMilliSecond } from '../../interfaces/unit'
 import type { PreferPersist } from '../Prefer/Prefer'
 import type { ItemMap } from '../DbMemory/DbMemory'
 import { flushLater } from '../../utils/atLater'
+import { showSnack } from '../../utils/msg/showSnack'
+import type { SnackHanlder } from '../../utils/msg/showSnack'
 import type { DiffResult } from '../Track/helper'
 
 export interface TrackPersist extends UnitPersist { tid: number; tracked: number; topicKy: string }
@@ -78,6 +80,22 @@ async function migrateLegacyDatabases() {
 
 const pendingWrites = new Set<Promise<unknown>>()
 let writeError: unknown
+
+// 写库失败必须让用户看见（OP-013）：编辑器是内存态，静默失败等于重启丢稿。
+// 单条持久错误条（autoClose 0）承载全部失败提示，恢复后原地转为成功并自动收起，
+// 避免连续失败每键弹一条。文案沿用存储层既有中文硬编码惯例。
+let storageAlert: SnackHanlder | undefined
+function notifyWriteFailure(error: unknown) {
+  const detail = error instanceof Error ? error.message : String(error)
+  const content = `笔记保存失败，改动尚未保存：${detail}`
+  if (storageAlert) storageAlert.update({ open: true, severity: 'error', content, autoClose: 0 })
+  else storageAlert = showSnack({ content, severity: 'error', autoClose: 0, vertical: 'bottom', horizontal: 'center', clickAway: false })
+}
+function notifyWriteRecovered() {
+  storageAlert?.update({ open: true, severity: 'success', content: '笔记保存已恢复', autoClose: 4000 })
+  storageAlert = undefined
+}
+
 export async function flushSqlite() {
   await ensureSqliteReady()
   await flushLater(['checkSave-', 'editor-save-item-', 'save-item-'])
@@ -129,7 +147,18 @@ export class SqlTable<T extends Row> {
   mutate<R>(init: RequestInit, op = ''): Promise<R> {
     const promise = this.db.ready.then(() => request<R>(api(this.db.name, this.name) + op, init))
     pendingWrites.add(promise)
-    promise.then(() => pendingWrites.delete(promise), error => { pendingWrites.delete(promise); writeError = error })
+    promise.then(
+      () => {
+        pendingWrites.delete(promise)
+        writeError = undefined
+        if (storageAlert) notifyWriteRecovered()
+      },
+      error => {
+        pendingWrites.delete(promise)
+        writeError = error
+        notifyWriteFailure(error)
+      },
+    )
     return promise
   }
   toArray(): Promise<T[]> { return this.query('all') }
