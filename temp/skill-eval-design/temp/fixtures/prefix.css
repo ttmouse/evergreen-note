@@ -1,0 +1,79 @@
+/* ==== 每日动态板块样式（走查对象片段） ==== */
+.backlink-reading {
+  container-type: inline-size;
+  padding: 16px;
+  background: var(--nk-backlink-bg, var(--nk-canvas));
+  border: 1px solid var(--nk-line);
+  border-radius: 8px;
+}
+.backlink-reading h2 {
+  margin: 0;
+  color: var(--nk-backlink-heading, var(--nk-muted));
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.backlink-reading h2 span {
+  margin-left: 8px;
+  color: var(--nk-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.backlink-reading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0 16px;
+  margin: 0 -8px;
+}
+.backlink-reading-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  min-height: 64px;
+  overflow: hidden;
+  margin-top: 8px;
+  padding: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--nk-backlink-title, var(--nk-ink));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 100ms linear;
+}
+.backlink-reading-title {
+  flex-shrink: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+}
+.backlink-reading-excerpt {
+  flex-shrink: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  margin-top: 8px;
+  color: var(--nk-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+.backlink-reading-toggle {
+  display: block;
+  margin: 10px 0 0;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: var(--nk-muted, #666);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+}

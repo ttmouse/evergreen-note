@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto'
 import { parseArgs } from 'node:util'
 import { spawn } from 'node:child_process'
 
-// 对外只暴露 4 个动词：get / add / set / del（外加 status）。
+// 对外暴露 get / add / set / del / topic（外加 status）。
 // get 三合一：--date 读日记、--ky 读节点、--query 搜索。
 // 内部映射到服务端动作：read/get/search/append/edit/delete；旧命令名保留为别名。
 const VERBS = { get: 'get', add: 'append', set: 'edit', del: 'delete', addtree: 'appendTree' }
@@ -14,17 +14,18 @@ const ALIASES = { read: 'get', append: 'add', edit: 'set', delete: 'del', search
 
 try {
   const { values, positionals } = parseArgs({ allowPositionals: true, options: {
-    profile: { type: 'string' }, date: { type: 'string' }, db: { type: 'string' },
+    profile: { type: 'string' }, date: { type: 'string' }, db: { type: 'string' }, name: { type: 'string' },
     title: { type: 'string' }, input: { type: 'string' }, key: { type: 'string' }, help: { type: 'boolean' },
     query: { type: 'string' }, limit: { type: 'string' }, ky: { type: 'string' },
     topic: { type: 'string' }, tag: { type: 'string' }, under: { type: 'string' },
     depth: { type: 'string' }, recurse: { type: 'boolean' }, h: { type: 'boolean', short: 'h' },
   } })
   const verb = positionals[0]
+  const subcommand = positionals[1]
   if (values.help || values.h || !verb || verb === 'help' || verb === '--help') {
     console.log(`用法：node tools/note-command.mjs <命令> [参数]
 
-命令（4 个动词 + status/start）：
+命令（get/add/set/del/topic + status/start）：
   status                     当前知识库与保存模式
   get    --date 2026-10-05   读日记
          --ky 节点ID [--depth 0-5]   读任意节点及子树
@@ -32,11 +33,12 @@ try {
          --topic 主题名 [--depth 0-5]  读主题页及其内容
          --tag 标签名 [--limit 50]     列出带该标签的条目
   add    --date 2026-10-05 --title 标题 --input 条目.json [--key 防重标识]
-         (--topic 主题名 或 --under 节点ID 可代替 --date，追加到任意页面)
+         (--topic 主题名 或 --under 节点ID 可代替 --date；文本支持 [[主题名]] 双链)
   addtree --under 节点ID --input 树.json [--key 防重标识]
          (--topic/--date 可代替 --under) 嵌套树一次写入：
          树.json = {"text":"标题","bold":true,"children":[{"text":"子节","children":[...]}]}
-         节点字段：text 必填，bold/checkbox 选填，children 选填（≤500 节点，≤5 层）
+         节点字段：text 必填，bold/checkbox 选填，children 选填（≤500 节点，≤5 层）；[[主题名]] 写成双向链接
+  topic create --name 主题名  创建主题；同名主题已存在时返回现有节点
   start                      启动/唤起应用并等待就绪
   set    --input edits.json  条目：[{"ky":"节点ID","text":"新文字","checkbox":true?}]
   del    --ky 节点ID [--recurse]     也可 --input ["节点ID",...]
@@ -45,8 +47,11 @@ try {
 条目.json 格式：[{"text":"内容","checkbox":true}]，1-100 条。旧名 read/append/search/edit/delete 可用。`)
     process.exit(0)
   }
-  const action = verb === 'status' ? 'status' : verb === 'start' ? 'start' : verb in VERBS ? VERBS[verb] : ALIASES[verb]
-  if (!action) throw new Error('仅支持 status/get/add/set/del')
+  const action = verb === 'status' ? 'status' : verb === 'start' ? 'start'
+    : verb === 'topic' && subcommand === 'create' ? 'createTopic'
+    : verb in VERBS ? VERBS[verb] : ALIASES[verb]
+  if (!action) throw new Error('仅支持 status/get/add/set/del/topic create')
+  if (verb === 'topic' && subcommand !== 'create') throw new Error('topic 目前仅支持 create 子命令：ev topic create --name <主题名>')
   const profile = values.profile || path.join(os.homedir(), 'Library/Application Support/NotekitDev')
 
   // start：启动/唤起应用并等待就绪（status 失败时清理残留 SingletonLock 再拉起）
@@ -120,6 +125,10 @@ try {
       if (values.date) input.date = values.date
       input.tree = JSON.parse(await fs.readFile(values.input, 'utf8'))
       input.requestId = createHash('sha256').update(values.key || JSON.stringify(input)).digest('hex')
+    }
+    if (action === 'createTopic') {
+      if (!values.name?.trim()) throw new Error('topic create 需要 --name 主题名')
+      input.name = values.name.trim()
     }
     if (['read', 'append'].includes(input.action) && values.date) {
       input.date = values.date

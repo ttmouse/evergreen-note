@@ -26,6 +26,9 @@ import {
   PUBKEY_RESTART,
 } from './slate-item/constants'
 import { reactRender } from './slate-item/utils/common'
+import { showSnack } from './slate-item/utils/msg/showSnack'
+import { isEmpty } from './slate-item/utils/isEmpty'
+import { getUrlParams } from './slate-item/utils/string/url'
 
 export type LoadedAddons = ReturnType<typeof createAddons>
 export type LoadedAddonName = keyof LoadedAddons
@@ -133,5 +136,49 @@ export const unstable_GlobalApp = app
  * 源码本身没有这个入口——这是为验证与排障加的；不需要时删掉本段即可。
  */
 ;(window as any).__notekitApp = app
+
+/**
+ * 外部唤起入口：壳层收到 evergreen://note/<ky> 后转调这里，在主视图打开该笔记。
+ * 导航复用 Router 的 item/:ky 路由（$.router.to），与主题列表点击同一链路；
+ * zoomIn 事件只作用于悬浮窗（.floatview-zoomer），主视图不适用。
+ */
+;(window as any).__evergreenOpenNote = (ky: unknown): boolean => {
+  const $ = (app as any).addons
+  if (typeof ky !== 'string' || isEmpty(ky)) {
+    console.warn('[evergreen] __evergreenOpenNote: ky 必须是非空字符串，收到：', ky)
+    return false
+  }
+  if (!$?.router || !$?.dbMemory) {
+    console.warn('[evergreen] 应用尚未就绪，无法打开笔记：', ky)
+    return false
+  }
+  const item = $.dbMemory.getItem(ky)
+  if (isEmpty(item) || item.ky !== ky) {
+    showSnack({ content: `未找到笔记：${ky}`, severity: 'warning' })
+    console.warn('[evergreen] 未找到笔记：', ky)
+    return false
+  }
+  $.router.to(`item/${ky}`)
+  return true
+}
+
+// 浏览器直开场景：URL 带 ?open=<ky> 时，待应用挂载且数据库加载完成后打开对应笔记
+const evergreenOpenKy = getUrlParams().open
+if (!isEmpty(evergreenOpenKy)) {
+  pub.on(pub.evt.uiMounted, () => {
+    // dbMemory 异步初始化，initFinished 之前 getItem 拿不到数据，轮询等它就绪
+    let tries = 0
+    const tryOpen = () => {
+      const dbMemory = (app as any).addons?.dbMemory
+      if (dbMemory?.initFinished) {
+        ;(window as any).__evergreenOpenNote?.(evergreenOpenKy)
+        return
+      }
+      if (tries++ < 20) setTimeout(tryOpen, 500)
+      else console.warn('[evergreen] 等待数据库就绪超时，放弃打开：', evergreenOpenKy)
+    }
+    tryOpen()
+  })
+}
 
 reactRender(appContainer, <AppEntry application={app} />)

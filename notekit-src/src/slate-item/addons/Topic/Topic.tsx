@@ -282,7 +282,10 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
         })
         return false
       }
-      if ($.topic.isExist(topicTitle)) {
+      // 排除自身：该 item 本身就是这条主题时不算重名，
+      // 否则在主题页里按 ⌘M/⇧⌘M（转成子主题/根主题）会弹出「已存在」误报并空操作。
+      const existed = $.topic.getTopic(topicTitle)
+      if (existed && existed.ky !== item.ky) {
         showSnack({
           content: $t(`topic.has_exist`, { topic: topicTitle }),
           severity: 'error',
@@ -418,15 +421,36 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
       topic.lockHead((props) => /^app\/.+/i.test(props.item.topic ?? ''))
 
       cover(saveItem, (item, ...args) => {
+        // 身份以库里已持久化的副本为准（单一真相源）。
+        // 发起保存的编辑器被 Refresh 排除（Refresh.ts 的 addExcludeEditors），
+        // 所以本钩子对 item 做的身份变更（草稿转正、主题改名）不会回写到编辑器内存节点，
+        // 该节点会一直停在「转正前的草稿态」（draft:true、无 topic）。
+        // 若信任内存节点的身份，每次保存都会重放“第一次保存”的前置分支：
+        // 草稿分支查重撞上自己（回车进正文报「已存在」）、
+        // 以及空标题时把陈旧整份写回，抹掉库里的 topic/isTopic（主题凭空消失）。
+        const stored = dbMemory.getItem(item.ky) as UnitPersist | undefined
+        if ((item as any).draft && stored?.topic) {
+          item = omit(
+            { ...item, isTopic: true, topic: stored.topic },
+            ['draft']
+          ) as any
+        }
+
         // 草稿主题转正：标题仍是空 → 原样放行（草稿允许空标题，界面显示占位符）；
         // 用户输入了标题 → 查重后建立 topic 身份（isTopic + topic），摘掉 draft 标记。
         if ((item as any).draft) {
           const title = Item.headString(item)
-          if (isEmpty(trim(title))) {
+          const refined = topic.refine(title)
+          // 净化后为空（如标题只由 `==`/`**`/`[]` 等被 refine 抹掉的符号组成）也不能转正：
+          // 否则会建出一个 isTopic:true 但 topic 为空的主题，页面连大标题都不再渲染。
+          if (isEmpty(trim(title)) || isEmpty(refined)) {
             return saveItem.call(dbMemory, item, ...args)
           }
-          const refined = topic.refine(title)
-          if (topic.isExist(refined)) {
+          // 查重再排除一次自身（与下方改名分支、Head.tsx 实时标红一致）：
+          // 正常情况下已被上面的「以库为准」拦掉，这里是兜底——万一内存节点与库不一致，
+          // 也不能把「索引里的自己」判成重名而拦住保存。
+          const existed = topic.getTopic(refined)
+          if (existed && existed.ky !== item.ky) {
             showSnack({
               content: $t(`topic.has_exist`, { topic: refined }),
               severity: 'error',
@@ -441,7 +465,9 @@ export function createTopicAddon({ app, $ }: NewAddonParams) {
         }
 
         // Stop saving empty topic
-        if (item.topic && Item.headString(item).length < 1) {
+        // 判空必须用 refine 后的标题：只有空白的标题（如 ' '）raw length > 0 会溜过这里，
+        // 再经 updateTopicProp 写成空 topic，等于把主题身份悄悄抹掉且不报错。
+        if (item.topic && isEmpty(topic.refine(Item.headString(item)))) {
           showSnack('The topic title should not be empty')
           return dbMemory.getItem(item.ky)
         }

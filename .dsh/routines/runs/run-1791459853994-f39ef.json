@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791459853994-f39ef",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791459853994,
+  "sessionId": "claim-d125f26f-15385e64",
+  "finishedAt": 1791460102323,
+  "durationMs": 248329,
+  "exitCode": 0,
+  "digest": "本轮完成，议题已回 in_review。\n\n**问题根因**：截图里夜间模式下刺眼的白色横块，是主题列表的粘性表头——它用了 MUI 的 `background.paper`（恒为白色；这个 App 的夜间模式靠 CSS 注入实现，不改 MUI 调色板），表头文字、日期、分隔线用的 `--cl-slate-*` 也都是浅色主题专用值。\n\n**修复**（按 [DESIGN.md §4](notekit-src/docs/design-rules/DESIGN.md#L52)「工作区界面颜色一律走 `--nk-*` 语义 token」）：\n- [TopicListSortableComp.tsx](notekit-src/src/slate-item/addons/TopicList/TopicListSortableComp.tsx#L231)：表头底色 → `var(--nk-surface)`、底线 → `var(--nk-line)`、表头文字 → `var(--nk-muted)`；行 hover → `var(--nk-hover)`、选中行 → `var(--nk-accent-soft)`；日期等次要文字全部 token 化\n- [TopicList.tsx](notekit-src/src/slate-item/addons/TopicList/TopicList.t"
+}

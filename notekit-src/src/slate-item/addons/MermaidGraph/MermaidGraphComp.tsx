@@ -1,52 +1,73 @@
 import React from 'react';
 import { mkid } from '../../utils/string/mkid';
 import { isEmpty } from '../../utils/isEmpty';
-import { loadScript } from '../../utils/dom/loadScript';
-import { useAwait } from '../../hooks/useAwait';
 import { errorMsgStyle } from '../../components/ErrorMsg/ErrorMsg';
-import { cls, colorBase } from '../../styles';
-// import mermaid from 'mermaid';
+import { cls } from '../../styles';
+import { useMermaidTheme } from './useMermaidTheme';
+
+// Let Vite package the engine and its diagram chunks with the offline app.
+let mermaidModule: Promise<typeof import('mermaid')> | undefined;
 
 export type MermaidGraphNeededProps = {
   value: string;
+  keepLastValid?: boolean;
+  onStatus?: (error: string | null) => void;
 };
 
 function trimMarkdown(value: string) {
-  return value.replace(/^```mermaid/, '').replace(/```$/, '');
+  return value.trim().replace(/^```mermaid\s*\n/, '').replace(/\n```$/, '').trim();
 }
 
 export async function mermaidParse(
   id: string,
   content: string,
-  el: HTMLElement
+  el: HTMLElement,
+  isCurrent = () => true,
+  keepLastValid = false
 ) {
   if (isEmpty(content)) {
-    return;
+    el.replaceChildren();
+    return null;
   }
-  await loadScript('js/mermaid.min.js');
-  const { mermaid } = window as any;
-
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: 'default',
-    securityLevel: 'loose',
-  })
-  const insertSvg = (parsedSvgContent: string) => {
-    el.innerHTML = parsedSvgContent;
-    const svg = el.querySelector('svg');
-    if (svg) {
-      const viewBox = svg.getAttribute('viewBox');
+  try {
+    const { default: mermaid } = await (mermaidModule ??= import('mermaid'));
+    if (!isCurrent()) return;
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: document.body.classList.contains('night-mode') ? 'dark' : 'default',
+      securityLevel: 'loose',
+      suppressErrorRendering: true,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif',
+    });
+    const { svg, bindFunctions } = await mermaid.render(id, trimMarkdown(content));
+    if (!isCurrent()) return;
+    el.innerHTML = svg;
+    const svgElement = el.querySelector('svg');
+    if (svgElement) {
+      const viewBox = svgElement.getAttribute('viewBox');
       if (viewBox) {
-        const [x, y, width, height] = viewBox.split(' ');
-        svg.style.height = `${height + 20}px`;
+        const [, , width, height] = viewBox.trim().split(/[\s,]+/).map(Number);
+        if (width > 0 && height > 0) {
+          // The pan/zoom content needs an intrinsic size, not width: 100%.
+          svgElement.style.width = `${width}px`;
+          svgElement.style.height = `${height}px`;
+          svgElement.style.maxWidth = 'none';
+        }
       }
     }
-  };
-  try {
-    mermaid.render(id, trimMarkdown(content), insertSvg);
+    bindFunctions?.(el);
+    return null;
   } catch (e: any) {
-    el.innerHTML = `<div style='height:max-content;overflow: auto;' class='${errorMsgStyle}'>Mermaid syntax error:<br /><pre>${e.str}</pre></div>`;
+    if (!isCurrent()) return;
+    const message = `Mermaid 渲染失败：\n${e?.message ?? e?.str ?? String(e)}`;
+    if (keepLastValid) return message;
+    const error = document.createElement('div');
+    error.className = errorMsgStyle;
+    error.style.whiteSpace = 'pre-wrap';
+    error.textContent = message;
+    el.replaceChildren(error);
     console.error(e);
+    return message;
   }
 }
 
@@ -65,10 +86,17 @@ const mermaidWrapStyle = cls`
 
 export function MermaidGraphComp(props: MermaidGraphNeededProps) {
   const ref = React.useRef<HTMLDivElement>(null);
-  const [id] = React.useState(mkid());
-  const { value } = props;
-  useAwait(async () => {
-    mermaidParse(id, value, ref.current!);
-  }, [value]);
+  const { value, keepLastValid, onStatus } = props;
+  const nightMode = useMermaidTheme();
+  React.useEffect(() => {
+    const el = ref.current!;
+    let generation = 0;
+    const current = ++generation;
+    void mermaidParse(`mermaid-${mkid()}`, value, el, () => current === generation, keepLastValid)
+      .then(error => { if (current === generation) onStatus?.(error ?? null); });
+    return () => {
+      ++generation;
+    };
+  }, [value, nightMode, keepLastValid, onStatus]);
   return <div className={mermaidWrapStyle} ref={ref} />;
 }

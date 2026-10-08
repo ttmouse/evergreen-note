@@ -16,7 +16,7 @@
  *   C 按键落在 .editor-view 内、但目标不可编辑（笔记图标/空白等）
  */
 import { spawn } from 'node:child_process'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import net from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -33,9 +33,8 @@ async function freePort() {
   return port
 }
 const PORT = await freePort(), DEBUG_PORT = await freePort()
-const profile = path.join(outDir, 'profile')
-await rm(profile, { recursive: true, force: true })
-await mkdir(profile, { recursive: true })
+await mkdir(outDir, { recursive: true })
+const profile = await mkdtemp(path.join(outDir, 'profile-'))
 
 const child = spawn(path.join(root, 'node_modules', '.bin', 'electron'), ['desktop/main.cjs', `--remote-debugging-port=${DEBUG_PORT}`], {
   cwd: root, env: { ...process.env, ELECTRON_RUN_AS_NODE: '', NOTEKIT_PORT: String(PORT), NOTEKIT_USER_DATA: profile }, stdio: ['ignore', 'pipe', 'pipe'],

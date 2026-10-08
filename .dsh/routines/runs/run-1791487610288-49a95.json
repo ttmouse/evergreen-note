@@ -1,0 +1,12 @@
+{
+  "runId": "run-1791487610288-49a95",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "interrupted",
+  "startedAt": 1791487610288,
+  "sessionId": "claim-d125f26f-689d7d80",
+  "finishedAt": 1791488551976,
+  "durationMs": 941688,
+  "error": "interrupted: host restarted before the run finished"
+}

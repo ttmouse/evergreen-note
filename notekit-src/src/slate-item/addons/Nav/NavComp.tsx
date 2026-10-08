@@ -5,14 +5,9 @@ import { cls, atom, px, colorBase, preset } from '../../styles'
 import { useAddons } from '../../hooks/useAddons'
 import { observer } from 'mobx-react'
 import { useAppStates } from '../../hooks/useAppStates'
-import { browser } from '@/slate-item/utils/browser'
 
 const leftWidth = 240
 const hideIconHeight = 44
-
-const foldupHover = `
-  transform: translateX(${px(leftWidth - 3)});
-`
 
 const foldupStyle = `
   margin-left: -${px(leftWidth - 2)};
@@ -27,10 +22,6 @@ const foldupStyle = `
 
   & ~ .node[data-icon='expand'] {
     display: flex;
-  }
-
-  &:hover {
-    ${browser.isMobile?'':foldupHover};
   }
 
   & ~ .main-area .node-crumbs {
@@ -73,12 +64,6 @@ const editNavStyle = [
       &.node-foldup {
         ${foldupStyle};
       }
-      &[foldup=true].trigger-hover {
-        ${foldupHover};
-      }
-      
-      ${atom.md("&.trigger-hover {"+foldupHover+";}")}
-
       > .node-body > .node-child > .node {
         > .node-body > .node-child > .node {
           .node-head {

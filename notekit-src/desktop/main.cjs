@@ -220,6 +220,77 @@ function stopServer() {
   serverProc = null
 }
 
+/* --------------------------- evergreen:// 深度链接 --------------------------- */
+
+/**
+ * 解析 evergreen://note/<ky> 链接，返回节点 ky；非 evergreen 协议或格式不符返回 null。
+ * open-url（macOS）与 second-instance 的 argv（Windows 等）共用这一个解析函数。
+ */
+function parseEvergreenUrl(raw) {
+  if (typeof raw !== 'string') return null
+  let url
+  try { url = new URL(raw) } catch { return null }
+  if (url.protocol !== 'evergreen:') return null
+  // URL 构造器会把 host 与路径分开：evergreen://note/xxx → host=note, pathname=/xxx
+  const ky = url.hostname === 'note'
+    ? decodeURIComponent(url.pathname.replace(/^\/+/, ''))
+    : ''
+  return ky || null
+}
+
+/** 待派发的 ky 队列：协议事件可能早于服务/窗口就绪（冷启动），先存这里 */
+let pendingNoteKeys = []
+let pendingRetry = false
+
+async function dispatchNoteKey(ky) {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isLoading()) {
+    pendingNoteKeys.push(ky)
+    return
+  }
+  try {
+    const result = await mainWindow.webContents.executeJavaScript(
+      `(window.__evergreenOpenNote ? (window.__evergreenOpenNote(${JSON.stringify(ky)}), 'ok') : 'missing')`,
+    )
+    if (result !== 'ok') throw new Error('window.__evergreenOpenNote 未就绪')
+    pushLog(`[deep-link] 已打开笔记 ky=${ky}`)
+  } catch (error) {
+    if (pendingRetry) {
+      pendingRetry = false
+      pushLog(`[deep-link] 打开笔记失败 ky=${ky}: ${error}`)
+      return
+    }
+    // 页面侧全局函数还没就绪：静默记日志，稍后重试一次
+    pendingRetry = true
+    pendingNoteKeys.push(ky)
+    pushLog(`[deep-link] 页面未就绪，稍后重试 ky=${ky}`)
+    setTimeout(() => flushPendingNoteKeys(), 2000)
+  }
+}
+
+function flushPendingNoteKeys() {
+  const queue = pendingNoteKeys
+  pendingNoteKeys = []
+  for (const ky of queue) void dispatchNoteKey(ky)
+}
+
+// 必须在 app.whenReady 前注册。macOS 打包 App 直接生效；
+// dev 模式（process.defaultApp）要显式传 execPath + argv，Electron 标准写法。
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('evergreen', process.execPath, [path.resolve(process.argv[1])])
+  }
+} else {
+  app.setAsDefaultProtocolClient('evergreen')
+}
+
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  const ky = parseEvergreenUrl(url)
+  if (!ky) { pushLog(`[deep-link] 无法解析链接: ${url}`); return }
+  showMainWindow()
+  void dispatchNoteKey(ky)
+})
+
 /* ------------------------------- 备份 ------------------------------- */
 
 async function backupNow() {
@@ -275,6 +346,8 @@ function createWindow() {
     // 让页面存活到 before-quit 的 SQLite 保存队列排空。
     mainWindow.webContents.executeJavaScript('window.close = () => window.notekitShell.requestQuit(); true')
       .catch(error => pushLog(`[shell] 关闭入口初始化失败: ${error}`))
+    // 冷启动时协议事件早于窗口就绪：此时统一派发积压的深度链接
+    setTimeout(() => flushPendingNoteKeys(), 300)
   })
   mainWindow.on('blur', () => { globalShortcut.setSuspended(false); settingsShortcutRecording = false })
   mainWindow.webContents.on('did-start-loading', () => { globalShortcut.setSuspended(false); settingsShortcutRecording = false })
@@ -425,9 +498,13 @@ if (!gotSingleInstanceLock) {
   // 已有实例在跑：把窗口交给它，本进程直接退出（不强杀，避免写坏 profile）
   app.quit()
 } else {
-  // 重复启动时，把已有窗口唤到前台
-  app.on('second-instance', () => {
+  // 重复启动时，把已有窗口唤到前台；Windows 等平台深度链接会出现在 argv 里
+  app.on('second-instance', (_event, argv) => {
     showMainWindow()
+    for (const arg of argv) {
+      const ky = parseEvergreenUrl(arg)
+      if (ky) void dispatchNoteKey(ky)
+    }
   })
 }
 

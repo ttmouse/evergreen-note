@@ -16,6 +16,7 @@ process.on('message', message => {
 export function verifySaved(result, get) {
   if (!result?.saved) return
   const keys = result.groupKey != null ? [result.groupKey, ...(result.blockKeys || [])]
+    : result.topicKey != null ? [result.topicKey]
     : Array.isArray(result.itemKeys) ? result.itemKeys
     : Array.isArray(result.deleted) ? result.deleted
     : null

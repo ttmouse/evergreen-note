@@ -1,160 +1,64 @@
 import React from 'react'
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
-import { cls, colorBase } from '../../styles'
+import svgPanZoom from 'svg-pan-zoom'
+import { Button, IconButton, Tooltip } from '@mui/material'
+import { PlusIcon, MinusIcon, ArrowsOutIcon, CornersOutIcon, PencilSimpleIcon } from '@phosphor-icons/react'
+import './mermaid-graph.css'
 
 export type MermaidGraphViewerProps = {
   children: React.ReactNode
-  className?: string
-  freePanning?: boolean
   isFullscreen?: boolean
   onToggleFullscreen?: () => void
+  onEdit?: () => void
 }
 
-const viewerStyle = cls`
-  position: relative;
-  border-radius: 6px;
-  overflow: hidden;
-  min-height: 100px;
-`
+// The same SVG navigation engine used by Mermaid Live Editor.
+export function MermaidGraphViewer({ children, isFullscreen, onToggleFullscreen, onEdit }: MermaidGraphViewerProps) {
+  const canvas = React.useRef<HTMLDivElement>(null)
+  const instance = React.useRef<ReturnType<typeof svgPanZoom>>()
+  React.useEffect(() => {
+    const el = canvas.current!
+    let current: SVGSVGElement | null = null
+    const attach = () => {
+      const svg = el.querySelector('svg')
+      if (svg === current) return
+      instance.current?.destroy()
+      instance.current = undefined
+      current = svg
+      if (!svg) return
+      svg.style.width = '100%'
+      svg.style.height = '100%'
+      instance.current = svgPanZoom(svg, {
+        fit: true, center: true, minZoom: 0.1, maxZoom: 20,
+        zoomScaleSensitivity: 0.25, dblClickZoomEnabled: false,
+        // Scrolling a note must continue scrolling the note.
+        mouseWheelZoomEnabled: Boolean(isFullscreen),
+      })
+    }
+    const mutation = new MutationObserver(attach)
+    mutation.observe(el, { childList: true, subtree: true })
+    const resize = new ResizeObserver(() => {
+      instance.current?.resize()
+      instance.current?.fit()
+      instance.current?.center()
+    })
+    resize.observe(el)
+    attach()
+    return () => {
+      mutation.disconnect()
+      resize.disconnect()
+      instance.current?.destroy()
+      instance.current = undefined
+    }
+  }, [isFullscreen])
 
-const viewerFullscreenStyle = cls`
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-`
-
-const viewerWrapStyle = cls`
-  width: 100% !important;
-  height: 100% !important;
-  cursor: grab;
-
-  &:active {
-    cursor: grabbing;
-  }
-`
-
-const viewerWrapDocStyle = cls`
-  width: 100% !important;
-  cursor: grab;
-
-  &:active {
-    cursor: grabbing;
-  }
-`
-
-const toolbarStyle = cls`
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  gap: 4px;
-  z-index: 10;
-  background: ${[colorBase.slate, 0]};
-  border: 1px solid ${[colorBase.slate, 200]};
-  border-radius: 6px;
-  padding: 2px;
-`
-
-const toolbarBtnStyle = cls`
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  color: ${[colorBase.slate, 700]};
-  
-  &:hover {
-    background: ${[colorBase.slate, 100]};
-    color: ${[colorBase.slate, 900]};
-  }
-
-  @media (pointer: coarse) {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-  }
-`
-
-const separatorStyle = cls`
-  width: 1px;
-  background: ${[colorBase.slate, 200]};
-  margin: 4px 2px;
-`
-
-export function MermaidGraphViewer(props: MermaidGraphViewerProps) {
-  const { children, className, freePanning, isFullscreen, onToggleFullscreen } =
-    props
-
-  return (
-    <TransformWrapper
-      initialScale={1}
-      minScale={0.1}
-      maxScale={5}
-      centerOnInit
-      doubleClick={{ mode: 'reset', step: 0.5 }}
-      wheel={
-        freePanning
-          ? { step: 0.1 }
-          : { step: 0.1, activationKeys: ['Control', 'Meta'] }
-      }
-      panning={{ allowLeftClickPan: true }}
-    >
-      {({ zoomIn, zoomOut, resetTransform, centerView }) => (
-        <div
-          className={`${isFullscreen ? viewerFullscreenStyle : viewerStyle} ${className || ''}`}
-        >
-          <div className={toolbarStyle}>
-            <button
-              className={toolbarBtnStyle}
-              onClick={() => zoomIn(0.2)}
-              title="放大"
-            >
-              +
-            </button>
-            <button
-              className={toolbarBtnStyle}
-              onClick={() => zoomOut(0.2)}
-              title="缩小"
-            >
-              −
-            </button>
-            <div className={separatorStyle} />
-            <button
-              className={toolbarBtnStyle}
-              onClick={() => {
-                resetTransform()
-                centerView(1)
-              }}
-              title="重置"
-            >
-              ⟳
-            </button>
-            {onToggleFullscreen && (
-              <>
-                <div className={separatorStyle} />
-                <button
-                  className={toolbarBtnStyle}
-                  onClick={onToggleFullscreen}
-                  title={isFullscreen ? '退出全屏' : '全屏查看'}
-                >
-                  {isFullscreen ? 'x' : '⤢'}
-                </button>
-              </>
-            )}
-          </div>
-          <TransformComponent
-            wrapperClass={isFullscreen ? viewerWrapStyle : viewerWrapDocStyle}
-          >
-            {children}
-          </TransformComponent>
-        </div>
-      )}
-    </TransformWrapper>
-  )
+  return <div className={`mermaid-viewer ${isFullscreen ? 'mermaid-viewer-expanded' : ''}`}>
+    <div className="mermaid-viewer-toolbar">
+      {onEdit && <Button size="small" startIcon={<PencilSimpleIcon size={16} />} onClick={onEdit}>编辑源码</Button>}
+      <Tooltip title="放大"><IconButton size="small" aria-label="放大" onClick={() => instance.current?.zoomIn()}><PlusIcon size={18} /></IconButton></Tooltip>
+      <Tooltip title="缩小"><IconButton size="small" aria-label="缩小" onClick={() => instance.current?.zoomOut()}><MinusIcon size={18} /></IconButton></Tooltip>
+      <Tooltip title="适应窗口"><IconButton size="small" aria-label="适应窗口" onClick={() => { instance.current?.fit(); instance.current?.center() }}><CornersOutIcon size={18} /></IconButton></Tooltip>
+      {onToggleFullscreen && <Tooltip title="展开查看"><IconButton size="small" aria-label="展开查看" onClick={onToggleFullscreen}><ArrowsOutIcon size={18} /></IconButton></Tooltip>}
+    </div>
+    <div ref={canvas} className="mermaid-canvas">{children}</div>
+  </div>
 }

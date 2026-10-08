@@ -1,0 +1,8 @@
+{
+  "scenario-daily-activity": {
+    "version_a": "web-design-guidelines",
+    "version_b": "echo-ux",
+    "version_c": "ux-principles",
+    "version_d": "design-review"
+  }
+}

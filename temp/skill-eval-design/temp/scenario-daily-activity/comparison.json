@@ -1,0 +1,244 @@
+{
+  "ranking": [
+    "D",
+    "C",
+    "A",
+    "B"
+  ],
+  "winner": "D",
+  "per_version": {
+    "version_a": {
+      "runs": [
+        7.0,
+        7.5,
+        7.5
+      ],
+      "avg": 7.3,
+      "E1": "部分",
+      "E2": "部分",
+      "E3": "部分",
+      "E4": "发现",
+      "issues_total": 48,
+      "fabricated": 1,
+      "detail": "run1: E2✓E4✓(无E1/E3); run2: E3✓E4✓; run3: E1✓E3✓E4✓(无E2)。三条运行各自漏不同项，E1-E3 无一稳定命中；证据全部带行号，虚构少（run1 #10 日期硬编码展示为推测性条目）。"
+    },
+    "version_b": {
+      "runs": [
+        5.5,
+        7.0,
+        6.5
+      ],
+      "avg": 6.3,
+      "E1": "未发现",
+      "E2": "部分",
+      "E3": "发现",
+      "E4": "部分",
+      "issues_total": 42,
+      "fabricated": 2,
+      "detail": "run1 仅命中 E3（E1/E2/E4 全漏）；run2/3 命中 E2+E3+E4。三-run 均未发现相邻板块零间距。run2 #2 索引守卫、run3 #2「计数与正文矛盾」为过度推断（板块折叠即可解释截图空白），属弱论证/疑似虚构。"
+    },
+    "version_c": {
+      "runs": [
+        7.5,
+        7.5,
+        7.5
+      ],
+      "avg": 7.5,
+      "E1": "部分",
+      "E2": "部分",
+      "E3": "发现",
+      "E4": "发现",
+      "issues_total": 39,
+      "fabricated": 1,
+      "detail": "run1: E2✓E3✓E4✓(E1 仅沾边)；run2: E2✓E3✓E4✓(E1 漏)；run3: E1✓E3✓E4✓(E2 漏)。E3/E4 三-run 全中，结构最规范（原则排除表），但 E1/E2 无一次同时命中，稳定性好、覆盖不满。run1 #9「last 从未使用」为未核实断言。"
+    },
+    "version_d": {
+      "runs": [
+        9.0,
+        8.5,
+        8.5
+      ],
+      "avg": 8.7,
+      "E1": "发现",
+      "E2": "部分",
+      "E3": "发现",
+      "E4": "发现",
+      "issues_total": 42,
+      "fabricated": 0,
+      "detail": "run1: E1✓E2✓E3✓E4✓ 四项全中（唯一满分配置）；run2: E1✓E3✓E4✓（E2 漏）；run3: E2✓E3✓E4✓（E1 部分，报为 8-10px 间距不当而非零贴合）。三条运行均命中 E3+E4，证据全部带行号+截图坐标，Top 3 Fixes 优先级排序合理，无虚构。"
+    }
+  },
+  "method": "n_way",
+  "versions_compared": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "ties": [],
+  "reasoning": "共同基准：12 份报告质量普遍较高（证据均带代码行号、有严重度分级、有通过项对照），差异集中在四个植入缺陷的命中稳定性。version_d 是唯一在单次运行中同时命中全部四个期望的版本（run1 四项全中），且三-run 均稳定命中 E3（Hooks 条件调用）与 E4（white-space:pre-line），E1 命中 2.5/3，报告结构（七维走查+Top 3 Fixes+What Looks Good）可用性最好、无虚构条目，排第一。version_c 三-run 输出最一致（均分方差最小、有原则排除表），E3/E4 全中，但 E1 与 E2 从未在同一次运行中同时出现，覆盖面次于 d，排第二。version_a 单份报告最详尽（run1 达 18 条）但四项期望的命中在三次运行间漂移最大（E1/E2/E3 各只中 1-2 次），一致性差，排第三。version_b 最弱：E1 三-run 全漏，run1 一次只中 E3，且有两处过度推断（截图折叠态被解读为状态矛盾、索引守卫不对称），排第四。无平手。",
+  "per_report_detail": {
+    "version_a": {
+      "run1": {
+        "E1": "未发现",
+        "E2": "发现",
+        "E3": "未发现",
+        "E4": "发现",
+        "issues": 18,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 1
+      },
+      "run2": {
+        "E1": "未发现",
+        "E2": "未发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 15,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 0
+      },
+      "run3": {
+        "E1": "发现",
+        "E2": "未发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 15,
+        "severity_ordering": "基本合理（状态不进URL列高危偏高）",
+        "line_numbers": true,
+        "fabricated": 0
+      }
+    },
+    "version_b": {
+      "run1": {
+        "E1": "未发现",
+        "E2": "未发现",
+        "E3": "发现",
+        "E4": "未发现",
+        "issues": 14,
+        "severity_ordering": "偏严（P0-3 溢出定级过高）",
+        "line_numbers": true,
+        "fabricated": 0
+      },
+      "run2": {
+        "E1": "未发现",
+        "E2": "发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 16,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 1
+      },
+      "run3": {
+        "E1": "未发现",
+        "E2": "发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 12,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 1
+      }
+    },
+    "version_c": {
+      "run1": {
+        "E1": "部分（仅在 #6 提及同类问题，未指向板块贴合）",
+        "E2": "发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 14,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 1
+      },
+      "run2": {
+        "E1": "未发现",
+        "E2": "发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 14,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 0
+      },
+      "run3": {
+        "E1": "发现",
+        "E2": "未发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 11,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 0
+      }
+    },
+    "version_d": {
+      "run1": {
+        "E1": "发现",
+        "E2": "发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 14,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 0
+      },
+      "run2": {
+        "E1": "发现",
+        "E2": "未发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 14,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 0
+      },
+      "run3": {
+        "E1": "部分（报为 8-10px 间距过小而非零贴合）",
+        "E2": "发现",
+        "E3": "发现",
+        "E4": "发现",
+        "issues": 14,
+        "severity_ordering": "合理",
+        "line_numbers": true,
+        "fabricated": 0
+      }
+    }
+  },
+  "limitations": [
+    "仅依据 12 份 report.md 静态评判，未核验源码 fixtures 以确认各条目真实性",
+    "fabricated 计数为『疑似无依据/过度推断』条目数，非经源码证伪"
+  ],
+  "rubric": {
+    "version_a": {
+      "E1": "部分",
+      "E2": "部分",
+      "E3": "部分",
+      "E4": "发现",
+      "avg": 7.3
+    },
+    "version_b": {
+      "E1": "未发现",
+      "E2": "部分",
+      "E3": "发现",
+      "E4": "部分",
+      "avg": 6.3
+    },
+    "version_c": {
+      "E1": "部分",
+      "E2": "部分",
+      "E3": "发现",
+      "E4": "发现",
+      "avg": 7.5
+    },
+    "version_d": {
+      "E1": "发现",
+      "E2": "部分",
+      "E3": "发现",
+      "E4": "发现",
+      "avg": 8.7
+    }
+  }
+}

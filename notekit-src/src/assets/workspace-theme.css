@@ -7,9 +7,14 @@
 .backlink-reading {
   container-type: inline-size;
   padding: 16px;
+  /* OP-047 走查（2026-10-08）：相邻模块间距走 §5.2 的 16px 档，杜绝板块贴合 */
+  margin-bottom: 16px;
   background: var(--nk-backlink-bg, var(--nk-canvas));
   border: 1px solid var(--nk-line);
   border-radius: 8px;
+}
+.backlink-reading:last-child {
+  margin-bottom: 0;
 }
 .backlink-reading h2 {
   margin: 0;
@@ -27,8 +32,9 @@
 .backlink-reading-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0 16px;
-  margin: 0 -8px;
+  /* OP-047 走查：行向间距从「条目 margin-top:8px 模拟」改为显式 12px 档 */
+  gap: 12px 16px;
+  margin: 4px -8px 0;
 }
 .backlink-reading-entry {
   display: flex;
@@ -39,7 +45,6 @@
   min-width: 0;
   min-height: 64px;
   overflow: hidden;
-  margin-top: 8px;
   padding: 8px;
   border: 0;
   border-radius: 6px;
@@ -65,6 +70,7 @@
 }
 .backlink-reading-excerpt {
   flex-shrink: 0;
+  white-space: pre-line;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
@@ -410,10 +416,12 @@ html body .trash-dialog .trash-group .MuiChip-root:hover {
   }
 }
 
-/* Separate the reading paper from the unused canvas; retain the night palette. */
+/* Separate the reading paper from the unused canvas; retain the night palette.
+   D-006 two-color system: at night the note paper is the surface on the canvas,
+   mirroring the day theme's #fff paper on #fafafc canvas. */
 html body .floatview-container[data-mode='andy'] {
   --andy-canvas: var(--nk-canvas);
-  --andy-paper: var(--nk-canvas);
+  --andy-paper: var(--nk-surface);
   --andy-divider: var(--nk-line);
   background-color: var(--andy-canvas);
 }
@@ -757,47 +765,59 @@ html body .floatview-container[data-mode='andy'] > .floatview-container-head .ta
   outline-offset: -2px;
 }
 
-/* Active night-mode palette: keep the same quiet writing-desk hierarchy. */
+/* Active night-mode palette (2026-10-08 re-plate, user-directed): deep neutral
+   charcoal instead of teal-tinted slate — immersive canvas, subtler hairlines,
+   crisper ink. Accent stays in the day theme's blue family (§4: one semantic,
+   one hue). Chrome accents (ring/selection/child-focus) keep the teal family. */
 body.night-mode {
-  --nk-canvas: #1c2529;
-  --nk-sidebar: #222d32;
-  --nk-backlink-bg: #222d32;
-  --nk-backlink-heading: #a4b4b9;
-  --nk-backlink-title: #e3ebed;
-  --nk-surface: #29353a;
-  --nk-ink: #e3ebed;
-  --nk-muted: #a4b4b9;
-  --nk-line: #3b4a50;
-  --nk-line-strong: #4a5b61;
-  --nk-accent: #9bc4ce;
-  --nk-accent-soft: #2e4148;
-  --nk-hover: #304148;
-  --nk-tab-hover: rgba(227, 235, 237, .09);
-  --nk-shadow: 0 12px 32px rgba(0, 0, 0, .34);
+  --nk-canvas: #171a1e;
+  --nk-sidebar: #1d2126;
+  --nk-backlink-bg: #1d2126;
+  --nk-backlink-heading: #9ba4ad;
+  --nk-backlink-title: #e6e8eb;
+  --nk-surface: #24282e;
+  --nk-ink: #e6e8eb;
+  --nk-muted: #9ba4ad;
+  --nk-line: #2c3238;
+  --nk-line-strong: #3a4149;
+  --nk-accent: #69adff;
+  --nk-accent-soft: rgba(105, 173, 255, .16);
+  --nk-hover: #2a2f36;
+  --nk-tab-hover: rgba(230, 232, 235, .08);
+  --nk-shadow: 0 12px 32px rgba(0, 0, 0, .5);
   /* NightMode's own rules consume these variables with !important. */
-  --dark-bg-primary: #1c2529;
-  --dark-bg-secondary: #222d32;
-  --dark-important: #34464d;
-  --dark-very-important: #3d535b;
-  --dark-extremely-important: #58737c;
-  --dark-text: #e3ebed;
-  --dark-text-less-important: #a4b4b9;
-  --primary: #8fb9c4;
-  --info: #9bc4ce;
-  --bgrey: #9aadb3;
-  --common-border: #3b4a50;
-  --table-border: rgba(177, 204, 211, .2);
+  --dark-bg-primary: #171a1e;
+  --dark-bg-secondary: #1d2126;
+  --dark-important: #333a41;
+  --dark-very-important: #3d444c;
+  --dark-extremely-important: #4d565f;
+  --dark-kanban-secondary: #1f2429;
+  --dark-text: #e6e8eb;
+  --dark-text-less-important: #9ba4ad;
+  --primary: #69adff;
+  --info: #69adff;
+  --bgrey: #9ba4ad;
+  --common-border: #2c3238;
+  --table-border: rgba(230, 232, 235, .14);
   --node-text-link: #69adff;
   --node-text-link-hover: #94c5ff;
-  --node-child-border: #34434a;
+  --node-child-border: #2c3238;
   --node-child-border-focus: #5b737b;
-  --search-node-bg: #263238;
-  --search-node-border: #3b4a50;
-  --suggest-item-hover-bg: #304148;
-  --suggest-shadow: 0 12px 32px rgba(0, 0, 0, .4);
-  --popup-menu-input-border: #4a5d64;
-  --node-btn-hover: #a5d0da;
+  --search-node-bg: #1f2429;
+  --search-node-border: #2c3238;
+  --suggest-item-hover-bg: #2a2f36;
+  --suggest-shadow: 0 12px 32px rgba(0, 0, 0, .5);
+  --popup-menu-input-border: #3a4149;
+  --node-btn-hover: #69adff;
   --nk-hint: #e0b25c;
+  /* Legacy surface aliases: NightMode injects a maroon --body-bg-color at
+     :root that FloatBar/StatusBar/TagsEl still read. Route them to the
+     note surface instead (same role as the day theme's #fff). */
+  --bg-color: var(--nk-surface);
+  --body-bg-color: var(--nk-surface);
+  /* NightMode's layout-result outlines read this maroon-tinted alpha; make it
+     a neutral muted alpha so container tints stop carrying a red cast. */
+  --dark-text-no-important: rgba(155, 164, 173, .28);
 }
 html body.night-mode {
   background: var(--nk-canvas) !important;
@@ -883,34 +903,114 @@ html body.night-mode ::selection {
   color: #f0f6f7;
 }
 html body.night-mode ::-webkit-scrollbar-thumb {
-  background: #52656c;
+  background: #333a41;
   border-radius: 8px;
 }
 html body.night-mode ::-webkit-scrollbar-thumb:hover {
-  background: #6b838c;
+  background: #3d444c;
+}
+/* MUI's default cell divider is light-theme gray (rgba(224,224,224,1)) and
+   glares on dark surfaces; NightMode recolors table text but never borders.
+   Row lines join the hairline system instead. */
+html body.night-mode .MuiTableCell-root {
+  border-bottom: 1px solid var(--nk-line);
+}
+html body.night-mode .MuiTableCell-head {
+  border-bottom: 1px solid var(--nk-line-strong);
+}
+/* NightMode's legacy rule paints the underline input at full ink brightness;
+   keep it a quiet hairline until focused (focus keeps the accent after). */
+html body.night-mode .MuiInput-underline::before {
+  border-color: var(--nk-line-strong) !important;
+}
+/* TablePagination inherits the light theme's ink: the per-page select value
+   and the paging arrows vanish on dark. Labels keep their own muted color.
+   The arrows live in a plain box in this MUI version, so scope to the
+   toolbar rather than .MuiTablePagination-actions. */
+html body.night-mode .MuiTablePagination-root {
+  color: var(--nk-ink);
+}
+html body.night-mode .MuiTablePagination-toolbar .MuiIconButton-root {
+  color: var(--nk-muted);
+}
+html body.night-mode .MuiTablePagination-toolbar .MuiIconButton-root:hover {
+  color: var(--nk-ink);
+}
+html body.night-mode .MuiTablePagination-toolbar .MuiIconButton-root.Mui-disabled {
+  color: var(--nk-line-strong);
+}
+/* Inline svgs that ride currentColor keep the day ink (#333) at night.
+   Override color only, never fill, so explicitly colored icons survive.
+   Hover already flips to #fff via NightMode's color rule. */
+html body.night-mode .node-icon {
+  color: var(--nk-ink);
+}
+/* Input adornments (search magnifiers etc.) inherit the light theme's
+   near-black; they are secondary UI, so muted matches the day parallel. */
+html body.night-mode .MuiInputAdornment-root {
+  color: var(--nk-muted);
+}
+/* The editor's emotion defaults wrapper paints svg fills with the day ink
+   (rgb(51,51,51)) and does not follow the theme switch. Restore currentColor
+   for the whole svg-icon class so every Phosphor icon tracks its context
+   color at night (NightMode's white hover on .node-icon keeps working). */
+html body.night-mode svg.svg-icon {
+  fill: currentColor;
+}
+/* Day palette dividers that never recolor: the daily-page diary separator
+   rides --cl-slate-300 and glares at night. */
+html body.night-mode .previous-diary-wrap {
+  border-top-color: var(--nk-line);
+}
+/* NightMode outlines layout groups with full muted brightness (day's quiet
+   divider becomes a bright frame on dark). Pull it into the hairline system. */
+html body.night-mode .node-layout-item-group-1 {
+  outline: 1px solid var(--nk-line-strong) !important;
+}
+/* Bare MuiIconButtons (topic-list row delete etc.) keep MUI's light default
+   ink rgba(0,0,0,0.54) and vanish on dark. Colored variants keep their own
+   color; the pagination toolbar and dialog rules above already scope deeper. */
+html body.night-mode .MuiIconButton-root:not([class*='MuiIconButton-color']) {
+  color: var(--nk-muted);
+}
+html body.night-mode .MuiIconButton-root:not([class*='MuiIconButton-color']):hover {
+  color: var(--nk-ink);
+}
+/* The folded-node chip outlines itself with the day palette (colors.bg200,
+   near-white): on dark that is a bright ring around the dot. Match the chip
+   fill so the ring blends back into the chip, as in day. */
+html body.night-mode .node-foldup>.node-tools .node-btn {
+  outline-color: var(--dark-important);
+}
+/* The editor's hover rail rides --cl-slate-300 and glares on dark; join the
+   hairline system so the affordance keeps the day-level subtlety. */
+html body.night-mode .node-body:hover {
+  border-left-color: var(--nk-line-strong);
 }
 
-/* Win over NightMode's legacy !important sidebar and extension backgrounds. */
+/* Win over NightMode's legacy !important sidebar and extension backgrounds.
+   Tokens, not literals, so palette changes cannot drift between here and the
+   night block. */
 html body.night-mode .app-container nav.nav-area.node {
-  background-color: #222d32 !important;
+  background-color: var(--nk-sidebar) !important;
   background-image: none !important;
-  color: #e3ebed !important;
+  color: var(--nk-ink) !important;
 }
 html body.night-mode .app-container .extarea.node {
-  background-color: #222d32 !important;
+  background-color: var(--nk-sidebar) !important;
   background-image: none !important;
 }
 html body.night-mode #EvergreenNote-nav {
-  background: #222d32 !important;
-  color: #e3ebed !important;
+  background: var(--nk-sidebar) !important;
+  color: var(--nk-ink) !important;
 }
 html body.night-mode #EvergreenNote-nav .node-head,
 html body.night-mode #EvergreenNote-nav .node-text {
-  color: #e3ebed !important;
+  color: var(--nk-ink) !important;
 }
 html body.night-mode #EvergreenNote-nav {
   transition: none !important;
-  background-color: #222d32 !important;
+  background-color: var(--nk-sidebar) !important;
 }
 
 /* Fine-line workspace divisions shared by the browser build and Electron. */
@@ -1253,7 +1353,8 @@ html.mac-desktop nav.nav-area.node-foldup ~ .floatview-container[data-mode='andy
 body .floatview-container[data-mode='andy'] > .floatview-container-head .andy-header-content > :is(.tab-list, .workspace-tabs) {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* One tab strip serves both the single-note and side-by-side layouts.
@@ -1321,6 +1422,10 @@ body .floatview-container[data-mode='andy'] > .floatview-container-head .andy-he
 }
 
 /* The document title and tools form one compact, draggable workspace header. */
+/* The main area is a flex item; the browser default min-width:auto let a wide
+   tab strip push the whole workspace (toolbar icons included) out of the
+   window. Let it shrink so .workspace-tabs scrolls instead (D125F26FCF5E-1). */
+body .main-area.node { min-width: 0; }
 body .main-area.node > .workspace-header {
   display: flex;
   align-items: center;
@@ -1509,10 +1614,69 @@ body .reference-comp-extra {
      clickable above the following backlinks block pulled up by the negative margin. */
   position: relative;
   z-index: 2;
+  /* OP-046（2026-10-08）：负 margin 让工具条整行叠在面板标题/折叠箭头上，
+     整行的盒子的点击事件会把折叠箭头全部吃掉（实测 elementFromPoint 命中工具条）。
+     容器放行点击，只保留右侧图标按钮可点，布局不变。 */
+  pointer-events: none;
+}
+body .reference-comp-extra .node,
+body .reference-comp-extra .node-icon,
+body .reference-comp-extra svg {
+  pointer-events: auto;
 }
 
 /* Backlink panel titles fold/unfold on click anywhere in the title row. */
 body .head-click-to-fold {
   cursor: pointer;
   user-select: none;
+}
+
+/* OP-047（2026-10-08）：每日动态卡片默认折叠后的展开/收起按钮。
+   12px 微注脚档（§3a），hover 走 token（§4.5），不与卡片抢视觉重量。 */
+body .backlink-reading-toggle {
+  display: block;
+  margin: 12px auto 0;
+  padding: 6px 14px;
+  border: 1px solid var(--nk-line, rgba(0,0,0,.12));
+  background: transparent;
+  color: var(--nk-ink, inherit);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 100ms linear;
+}
+body .backlink-reading-toggle:hover {
+  background: var(--nk-hover);
+}
+body .backlink-reading-toggle:hover {
+  background: var(--nk-hover);
+  color: var(--nk-accent);
+}
+
+/* OP-047（2026-10-08 追加）：阅读式板块的标题行可点击折叠/展开整个模块。
+   14px 分组标题档（§3a），折叠指示符用轻量几何字符，hover 走 token（§4.5）。 */
+body .backlink-reading-head {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+body .backlink-reading-head:hover {
+  color: var(--nk-accent);
+}
+body .backlink-reading-caret {
+  display: inline-block;
+  flex-shrink: 0;
+  color: var(--nk-muted, var(--node-crumbs-link, #666));
+  transition: transform 120ms ease;
+}
+body .backlink-reading-head[aria-expanded='true'] .backlink-reading-caret {
+  transform: rotate(90deg);
+}
+/* OP-047 走查：折叠头可键盘聚焦，焦点环与卡片一致 */
+body .backlink-reading-head:focus-visible {
+  outline: 2px solid var(--nk-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

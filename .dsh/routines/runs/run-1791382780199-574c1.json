@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791382780199-574c1",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791382780199,
+  "sessionId": "claim-d125f26f-e9aa0b58",
+  "finishedAt": 1791382920558,
+  "durationMs": 140359,
+  "exitCode": 0,
+  "digest": "本轮完成，议题已移回 in_review。\n\n**做了什么**\n- 查明神秘数字：搜索结果右侧数字 = 引用数（引用该笔记的来源篇数，refer+embed 反链合计）。\n- 改 [SearchDialogComp.tsx](notekit-src/src/slate-item/addons/Search/SearchDialog/SearchDialogComp.tsx#L248-L289)：主题类条目右侧新增「N 节点 · M 字」（子节点总数 + 主题树全文字数）；引用数改标为「引用 N」，悬停提示改中文；非主题条目不变，0 时不显示。\n\n**验证与交付**\n- `pnpm build` 通过；已发布到正在运行的 App 包内并写 `.live-update` 标记，窗口会自动刷新。\n- 本轮无桌面截图工具，未能截图自测——请在 App 里按 Cmd+F 搜「菜花」目测确认，满意后在看板点通过。\n\n**遗留**：超大主题首次搜索会现算全树字数，若卡顿再加缓存。"
+}

@@ -1,0 +1,44 @@
+.mermaid-viewer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 320px;
+  max-height: 55vh;
+  background: var(--nk-surface);
+  color: var(--nk-ink);
+}
+.mermaid-inline-block { width: 100%; }
+.mermaid-inline-source { color: var(--nk-ink); background: var(--nk-surface); }
+.mermaid-inline-source-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; border-bottom: 1px solid var(--nk-line); font-size: 12px; color: var(--nk-muted); }
+.mermaid-inline-source-hint { padding: 4px 8px; font-size: 12px; color: var(--nk-muted); }
+.mermaid-inline-preview { border-top: 1px solid var(--nk-line); }
+.mermaid-inline-preview .mermaid-preview-error { max-height: 120px; }
+.mermaid-viewer-expanded { flex: 1; height: 100%; min-height: 0; max-height: none; }
+.mermaid-viewer-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 4px 8px; flex: none; }
+.mermaid-viewer-toolbar .MuiButton-root, .mermaid-viewer-toolbar .MuiIconButton-root { color: var(--nk-ink); }
+.mermaid-viewer-toolbar .MuiButton-root:hover, .mermaid-viewer-toolbar .MuiIconButton-root:hover { background: var(--nk-hover); }
+.mermaid-canvas { flex: 1; min-height: 0; overflow: hidden; cursor: grab; padding: 12px; }
+.mermaid-canvas:active { cursor: grabbing; }
+.mermaid-canvas > div { height: 100%; width: 100%; overflow: auto; }
+.mermaid-canvas svg { display: block; }
+.mermaid-dialog .MuiDialog-paper { width: calc(100vw - 64px); max-width: 1440px; height: calc(100vh - 80px); max-height: none; margin: 32px; background: var(--nk-surface); color: var(--nk-ink); border-radius: var(--radius-lg); }
+.mermaid-dialog .mermaid-dialog-title { display: flex; align-items: center; justify-content: space-between; flex: none; padding: 12px 16px; font-size: 18px; border-bottom: 1px solid var(--nk-line); }
+.mermaid-dialog-title-actions { display: flex; align-items: center; gap: 8px; }
+.mermaid-dialog-title-actions .MuiIconButton-root { color: var(--nk-ink); }
+.mermaid-workspace { display: grid; grid-template-columns: minmax(0, 1fr); flex: 1; min-height: 0; }
+.mermaid-workspace-split { grid-template-columns: minmax(280px, 2fr) minmax(0, 3fr); }
+.mermaid-source-pane, .mermaid-preview-pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+.mermaid-source-pane { border-right: 1px solid var(--nk-line); }
+.mermaid-pane-label { padding: 8px 16px; font-size: 12px; color: var(--nk-muted); flex: none; }
+.mermaid-editor-host { flex: 1; min-height: 0; }
+.mermaid-preview-error { white-space: pre-wrap; font-size: 12px; padding: 8px 16px; max-height: 25%; overflow: auto; border-top: 1px solid var(--nk-line); flex: none; }
+.mermaid-loading { padding: 16px; color: var(--nk-muted); }
+.mermaid-dialog .mermaid-dialog-actions { flex: none; border-top: 1px solid var(--nk-line); padding: 8px 16px; }
+.mermaid-dialog .MuiButton-root.Mui-disabled { color: var(--nk-muted); background: var(--nk-hover); }
+.mermaid-dialog-hint { flex: 1; font-size: 12px; color: var(--nk-muted); }
+@media (max-width: 700px) {
+  .mermaid-dialog .MuiDialog-paper { width: calc(100vw - 16px); height: calc(100vh - 32px); margin: 8px; }
+  .mermaid-workspace-split { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  .mermaid-source-pane { border-right: none; border-bottom: 1px solid var(--nk-line); }
+  .mermaid-dialog-hint { display: none; }
+}

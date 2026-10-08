@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { verifySaved } from '../note-command.mjs'
 
-const makeGet = (present = ['k1', 'k2', 'group']) => {
+const makeGet = (present = ['k1', 'k2', 'group', 'topic-root']) => {
   const calls = []
   return { calls, get: (dbid, store, key) => { calls.push(key); return dbid === 'db' && store === 'node' && present.includes(key) ? { ky: key } : undefined } }
 }
@@ -11,6 +11,11 @@ test('append result verifies group key and every block key', () => {
   const { get } = makeGet()
   verifySaved({ dbid: 'db', saved: true, groupKey: 'group', blockKeys: ['k1', 'k2'] }, get)
   verifySaved({ dbid: 'db', saved: true, groupKey: 'group', blockKeys: [] }, get)
+})
+
+test('topic creation result verifies the persisted root key', () => {
+  const { get } = makeGet()
+  verifySaved({ dbid: 'db', saved: true, topicKey: 'topic-root', created: true }, get)
 })
 
 test('edit and delete results verify their own key lists', () => {
@@ -24,6 +29,7 @@ test('a missing key in any shape fails verification', () => {
     { dbid: 'db', saved: true, groupKey: 'group', blockKeys: ['k1', 'gone'] },
     { dbid: 'db', saved: true, groupKey: 'gone', blockKeys: [] },
     { dbid: 'db', saved: true, itemKeys: ['gone'] },
+    { dbid: 'db', saved: true, topicKey: 'gone' },
     { dbid: 'db', saved: true, deleted: ['k1', 'gone'] },
   ]) assert.throws(() => verifySaved(result, makeGet().get), /落库核对失败/)
 })

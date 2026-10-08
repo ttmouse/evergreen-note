@@ -1,0 +1,25 @@
+{
+  "skill_name": "web-design-guidelines",
+  "skill_path": "/Users/douba/Projects/Evergreen-Note/temp/skill-eval-design/temp/target-skills/vercel-agent-skills/skills/web-design-guidelines",
+  "description": "Review UI code for Web Interface Guidelines compliance. Use when asked to \"review my UI\", \"check accessibility\", \"audit design\", \"review UX\", or \"check my site against best practices\".",
+  "domain_hint": "Review UI code for Web Interface Guidelines compliance. Use when asked to \"review my UI\", \"check accessibility\", \"audit design\", \"review UX\", or \"check my site against best practices\".",
+  "body_line_count": 40,
+  "bundled_resources": {
+    "scripts": [],
+    "references": [],
+    "assets": []
+  },
+  "has_bundled_scripts": false,
+  "candidate_steps_detected": [
+    "Fetch the latest guidelines from the source URL below",
+    "Read the specified files (or prompt user for files/pattern)",
+    "Check against all rules in the fetched guidelines",
+    "Output findings in the terse `file:line` format",
+    "Fetch guidelines from the source URL above",
+    "Read the specified files",
+    "Apply all rules from the fetched guidelines",
+    "Output findings using the format specified in the guidelines"
+  ],
+  "suggested_type": "procedural",
+  "note": "suggested_type is a heuristic based on numbered headers/lists and the presence of scripts/. The evaluator MUST read SKILL.md directly and confirm or override this before generating prompts -- e.g. a skill with 5 numbered 'tips' is not the same as 5 sequential pipeline steps."
+}

@@ -639,7 +639,11 @@
     "title": "每日动态",
     "quote": "在每日笔记的底部显示当天编辑过的笔记有哪些",
     "created_references": "{{count}}个节点创建于当天",
-    "updated_references": "{{count}}个节点更新于当天"
+    "updated_references": "{{count}}个节点更新于当天",
+    "created_section": "当天创建",
+    "updated_section": "当天更新",
+    "expand_all": "展开全部（还有 {{count}} 条）",
+    "collapse": "收起"
   },
   "datePicker": {
     "title": "日期选择器",
@@ -873,7 +877,9 @@
   "share": {
     "share": "分享",
     "success_msg": "{{link}}",
-    "sharing": "正在分享..."
+    "sharing": "正在分享...",
+    "copy_link": "复制链接",
+    "copy_link_done": "链接已复制"
   },
   "fileManager": {
     "empty": "暂无文件。上传的图片和附件会显示在这里。"

@@ -131,7 +131,11 @@ def main():
         CFBundleIdentifier=prior_plist.get('CFBundleIdentifier',
                                          'com.local.notekit.clean' if name == 'Notekit' else f'com.local.{name.lower().replace(" ", "")}'),
     )
-    if prior_icon:
+    source_icon = os.path.join(SRC, 'desktop', 'assets', 'app-icon.icns')
+    if os.path.isfile(source_icon):
+        shutil.copy2(source_icon, os.path.join(c, 'Resources', 'electron.icns'))
+        patch_plist(os.path.join(c, 'Info.plist'), CFBundleIconFile='electron.icns')
+    elif prior_icon:
         with open(os.path.join(c, 'Resources', prior_icon_name), 'wb') as f:
             f.write(prior_icon)
         patch_plist(os.path.join(c, 'Info.plist'), CFBundleIconFile=prior_icon_value)

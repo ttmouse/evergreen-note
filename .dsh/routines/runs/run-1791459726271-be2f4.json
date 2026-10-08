@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791459726271-be2f4",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791459726271,
+  "sessionId": "claim-d125f26f-fe798938",
+  "finishedAt": 1791459806413,
+  "durationMs": 80142,
+  "exitCode": 0,
+  "digest": "已完成本轮（D125F26FCF5E-2），议题已回评论并移回 in_review。\n\n**结论**：不是某些关键词「不触发」，而是只有命中**主题节点本身**的搜索结果才会显示「N 节点 · M 字」和「引用 N」。你截图搜的「你好」命中的全是普通笔记里的段落/标题（下面跟着日期路径的就是笔记），它们没有子树可数，所以不显示；引用为 0 也不显示。搜「菜花」这类词时第一条恰好是主题节点，才看得到这些信息。代码依据：SearchDialogComp.tsx:250-252 只对 `Item.isTopic(item)` 的条目计算节点/字数（item.ts:793 的判断标准是节点带 `topic` 字段）。\n\n已在评论里给了三个选项（维持现状 / 普通笔记也显示所属主题信息 / 给主题行加图标），等你选了再改。"
+}

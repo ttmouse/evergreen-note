@@ -4,23 +4,44 @@ async function runNoteCommand(input) {
   if (!$?.dbDisk || !$?.dbMemory || !$?.libAdmin?.current) throw new Error('应用尚未就绪，请稍后重试')
   if (!input || typeof input !== 'object') throw new Error('笔记命令格式无效')
   if (input.action === 'status') return { ready: true, dbid: $.libAdmin.current.ky, mode: $.dbDisk.storageMode }
-  if (!['read', 'append', 'appendTree', 'search', 'get', 'edit', 'delete', 'topic', 'tag'].includes(input.action)) throw new Error('不支持的笔记命令')
+  if (!['read', 'append', 'appendTree', 'createTopic', 'search', 'get', 'edit', 'delete', 'topic', 'tag'].includes(input.action)) throw new Error('不支持的笔记命令')
   const isNormal = x => x.status === 1 || x.status == null
   // 输出清洗：复选框条目的 ori 带 "[ ] " 标记，text 给纯文字，raw 保留原始内容；附带时间戳。
   const shape = x => {
     const box = (x.leaves || []).some(leaf => $.checkbox?.verify?.(leaf) === true)
     const text = box ? String(x.ori || '').replace(/^\s*\[[ xX]\]\s*/, '').trim() : x.ori
+    const bilinks = (x.leaves || []).filter(leaf => $.bilink?.verify?.(leaf)).map(leaf => $.bilink.string(leaf))
     return {
       ky: x.ky, pky: x.pky, text,
       ...(text !== x.ori ? { raw: x.ori } : {}),
       checkbox: box,
       bold: (x.leaves || []).some(leaf => leaf?.bold === true),
+      ...(bilinks.length ? { bilinks } : {}),
       ...(x.created != null ? { created: x.created } : {}),
       ...(x.updated != null ? { updated: x.updated } : {}),
       ...(x.subitems ? { subitems: x.subitems.map(shape) } : {}),
     }
   }
   const tree = (ky, depth) => $.dbMemory.getSubitems(ky, { isRecur: true, maxDepth: depth })
+  const displayText = text => text.replace(/\[\[([^\[\]]+)\]\]/g, (raw, target) => target.trim() ? target.trim() : raw)
+  const richLeaves = (text, bold = false, prefix = '') => {
+    const source = prefix + text
+    const pattern = /\[\[([^\[\]]+)\]\]/g
+    const leaves = []
+    let cursor = 0
+    let match
+    while ((match = pattern.exec(source))) {
+      const target = match[1].trim()
+      if (!target) continue
+      if (!$.bilink?.createElement) throw new Error('当前未启用双向链接功能，无法保存 [[主题名]]')
+      if (match.index > cursor) leaves.push({ text: source.slice(cursor, match.index), ...(bold ? { bold: true } : {}) })
+      leaves.push($.bilink.createElement({ topic: target }))
+      cursor = pattern.lastIndex
+    }
+    if (cursor < source.length || leaves.length === 0) leaves.push({ text: source.slice(cursor), ...(bold ? { bold: true } : {}) })
+    return leaves
+  }
+  const bilinkMentions = leaves => leaves.filter(leaf => $.bilink?.verify?.(leaf)).map(leaf => $.bilink.string(leaf))
   if (input.dbid !== $.libAdmin.current.ky) throw new Error('当前知识库与指定知识库不一致，未执行操作')
   const guardReady = () => {
     if (input.dbid !== $.libAdmin.current.ky || ($.dbMemory.canSave && !$.dbMemory.canSave())) throw new Error('知识库正在切换或加载，未执行操作，请稍后重试')
@@ -56,6 +77,21 @@ async function runNoteCommand(input) {
     const topic = $.dbMemory.getTopic(input.name)
     if (!topic?.ky) return { dbid: input.dbid, name: input.name, exists: false }
     return { dbid: input.dbid, exists: true, item: shape({ ...topic, subitems: tree(topic.ky, depth) }) }
+  }
+  if (input.action === 'createTopic') {
+    if (typeof input.name !== 'string' || !input.name.trim() || input.name.trim().length > 200) throw new Error('需要 1-200 字的主题名')
+    await $.dbDisk.flush()
+    guardReady()
+    const name = input.name.trim()
+    const existing = $.dbMemory.getTopic(name)
+    if (existing?.ky) return { dbid: input.dbid, name, topicKey: existing.ky, exists: true, created: false, reused: true, saved: true }
+    const topic = $.topic.createTopic(name)
+    if (!topic?.ky) throw new Error('主题创建失败：' + name)
+    await $.dbDisk.flush()
+    guardReady()
+    const persisted = $.dbMemory.getItem(topic.ky)
+    if (!persisted?.ky || !persisted.isTopic) throw new Error('主题落库核对失败：' + name)
+    return { dbid: input.dbid, name, topicKey: topic.ky, exists: true, created: true, reused: false, saved: true }
   }
   if (input.action === 'tag') {
     if (typeof input.tag !== 'string' || !input.tag.trim() || input.tag.length > 100) throw new Error('需要有效的标签名')
@@ -125,9 +161,9 @@ async function runNoteCommand(input) {
         if (old.automationRequestId !== input.requestId || old.pky !== pky) throw new Error('条目标识冲突，未覆盖现有内容')
         return
       }
-      const bodyLeaf = bold ? { text, bold: true } : { text }
-      const leaves = checkbox ? [{ text: '' }, $.checkbox.createElement({ value: false }), { text: ' ' + text, ...(bold ? { bold: true } : {}) }] : [bodyLeaf]
-      const saved = $.dbMemory.saveItem({ ky, pky, ori: checkbox ? '[ ] ' + text : text, leaves, weight, status: 1, automationRequestId: input.requestId })
+      const leaves = checkbox ? [{ text: '' }, $.checkbox.createElement({ value: false }), ...richLeaves(text, bold, ' ')] : richLeaves(text, bold)
+      const mentions = bilinkMentions(leaves)
+      const saved = $.dbMemory.saveItem({ ky, pky, ori: checkbox ? '[ ] ' + displayText(text) : displayText(text), leaves, ...(mentions.length ? { mentions } : {}), weight, status: 1, automationRequestId: input.requestId })
       if (!saved?.ky) throw new Error('当前笔记暂不可保存，请稍后重试')
       created++
     }
@@ -192,9 +228,9 @@ async function runNoteCommand(input) {
       } else {
         const checkbox = node.checkbox === true
         const bold = node.bold === true
-        const bodyLeaf = bold ? { text: node.text, bold: true } : { text: node.text }
-        const leaves = checkbox ? [{ text: '' }, $.checkbox.createElement({ value: false }), { text: ' ' + node.text, ...(bold ? { bold: true } : {}) }] : [bodyLeaf]
-        const saved = $.dbMemory.saveItem({ ky, pky, ori: checkbox ? '[ ] ' + node.text : node.text, leaves, weight, status: 1, automationRequestId: input.requestId })
+        const leaves = checkbox ? [{ text: '' }, $.checkbox.createElement({ value: false }), ...richLeaves(node.text, bold, ' ')] : richLeaves(node.text, bold)
+        const mentions = bilinkMentions(leaves)
+        const saved = $.dbMemory.saveItem({ ky, pky, ori: checkbox ? '[ ] ' + displayText(node.text) : displayText(node.text), leaves, ...(mentions.length ? { mentions } : {}), weight, status: 1, automationRequestId: input.requestId })
         if (!saved?.ky) throw new Error('当前笔记暂不可保存，请稍后重试')
         created++
       }

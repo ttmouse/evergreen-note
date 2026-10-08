@@ -1,0 +1,594 @@
+{
+  "metadata": {
+    "skill_name": "design-skills-comparison",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-08T10:21:30Z",
+    "evals_run": [
+      1
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "web-design-guidelines",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 10859
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": true,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": true,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "web-design-guidelines",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 10465
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": false,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": false,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "web-design-guidelines",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 10493
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": true,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": false,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "echo-ux",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 10413
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": false,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": false,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": false,
+          "evidence": "\u547d\u4e2d False"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "echo-ux",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 10285
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": false,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": true,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "echo-ux",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 8948
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": true,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": true,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "ux-principles",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 12054
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": false,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": true,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "ux-principles",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 11580
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": false,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": true,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "ux-principles",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 8881
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": true,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": false,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "design-review",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 9804
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": true,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": true,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "design-review",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 10521
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": true,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": false,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd False"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "design-review",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": null,
+        "tool_calls": 4,
+        "errors": 0,
+        "output_chars": 10542
+      },
+      "expectations": [
+        {
+          "text": "\u8bc6\u522b\u76f8\u90bb\u677f\u5757\u96f6\u95f4\u8ddd\u8d34\u5408",
+          "passed": true,
+          "evidence": "\u62a5\u544a\u547d\u4e2d\u95f4\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u8bc6\u522b\u7f51\u683c\u884c\u5411\u95f4\u8ddd\u4e3a0",
+          "passed": true,
+          "evidence": "\u547d\u4e2d\u884c\u8ddd\u5173\u952e\u8bcd True"
+        },
+        {
+          "text": "\u53d1\u73b0 Hooks \u6761\u4ef6\u8c03\u7528\u4ee3\u7801\u7f3a\u9677",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        },
+        {
+          "text": "\u53d1\u73b0\u6458\u5f55\u6362\u884c\u5931\u6548",
+          "passed": true,
+          "evidence": "\u547d\u4e2d True"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "web-design-guidelines": {
+      "pass_rate": {
+        "mean": 0.75,
+        "stddev": 0.25,
+        "min": 0.5,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": null,
+      "errors": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "output_chars": {
+        "mean": 10605.6667,
+        "stddev": 219.8393,
+        "min": 10465,
+        "max": 10859
+      }
+    },
+    "echo-ux": {
+      "pass_rate": {
+        "mean": 0.6667,
+        "stddev": 0.3819,
+        "min": 0.25,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": null,
+      "errors": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "output_chars": {
+        "mean": 9882.0,
+        "stddev": 811.3957,
+        "min": 8948,
+        "max": 10413
+      }
+    },
+    "ux-principles": {
+      "pass_rate": {
+        "mean": 0.75,
+        "stddev": 0.0,
+        "min": 0.75,
+        "max": 0.75
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": null,
+      "errors": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "output_chars": {
+        "mean": 10838.3333,
+        "stddev": 1711.5882,
+        "min": 8881,
+        "max": 12054
+      }
+    },
+    "design-review": {
+      "pass_rate": {
+        "mean": 0.9167,
+        "stddev": 0.1443,
+        "min": 0.75,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": null,
+      "errors": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "output_chars": {
+        "mean": 10289.0,
+        "stddev": 420.1535,
+        "min": 9804,
+        "max": 10542
+      }
+    }
+  },
+  "notes": []
+}

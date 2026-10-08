@@ -99,7 +99,7 @@ export function createTopicListAddon({ app, $ }: NewAddonParams) {
         .topic-list-footer .MuiTablePagination-selectLabel,
         .topic-list-footer .MuiTablePagination-displayedRows {
           font-size: 13px;
-          color: var(--cl-slate-600);
+          color: var(--nk-muted);
         }
         .topic-list-footer .MuiTablePagination-toolbar .MuiIconButton-root {
           width: 32px;

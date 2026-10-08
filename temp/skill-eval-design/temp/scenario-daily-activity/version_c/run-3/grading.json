@@ -1,0 +1,29 @@
+{
+  "expectations": [
+    {
+      "text": "识别相邻板块零间距贴合",
+      "passed": true,
+      "evidence": "报告命中间距关键词 True"
+    },
+    {
+      "text": "识别网格行向间距为0",
+      "passed": false,
+      "evidence": "命中行距关键词 False"
+    },
+    {
+      "text": "发现 Hooks 条件调用代码缺陷",
+      "passed": true,
+      "evidence": "命中 True"
+    },
+    {
+      "text": "发现摘录换行失效",
+      "passed": true,
+      "evidence": "命中 True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "total": 4,
+    "pass_rate": 0.75
+  }
+}

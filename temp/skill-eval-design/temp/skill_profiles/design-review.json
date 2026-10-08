@@ -1,0 +1,24 @@
+{
+  "skill_name": "design-review",
+  "skill_path": "/Users/douba/Projects/Evergreen-Note/temp/skill-eval-design/temp/target-skills/jezweb-claude-skills/plugins/frontend/skills/design-review",
+  "description": "Review a web app or page for visual design quality — layout, typography, spacing, colour, hierarchy, consistency, interaction patterns, and responsive behaviour. Not a UX audit (that checks usability) — this checks whether it looks professional and polished. Produces a design findings report with screenshots. Triggers: 'design review', 'does this look good', 'review the design', 'check the layout', 'is this polished', 'visual review', 'design audit', 'make it look better', 'it looks off'.",
+  "domain_hint": "Review a web app or page for visual design quality — layout, typography, spacing, colour, hierarchy, consistency, interaction patterns, and responsive behaviour. Not a UX audit (that checks usability) — this checks whether it looks professional and polished. Produces a design findings report with screenshots. Triggers: 'design review', 'does this look good', 'review the design', 'check the layout', 'is this polished', 'visual review', 'design audit', 'make it look better', 'it looks off'.",
+  "body_line_count": 155,
+  "bundled_resources": {
+    "scripts": [],
+    "references": [],
+    "assets": []
+  },
+  "has_bundled_scripts": false,
+  "candidate_steps_detected": [
+    "1. Layout and Spacing",
+    "2. Typography",
+    "3. Colour and Contrast",
+    "4. Visual Hierarchy",
+    "5. Component Consistency",
+    "6. Interaction Design",
+    "7. Responsive Quality"
+  ],
+  "suggested_type": "procedural",
+  "note": "suggested_type is a heuristic based on numbered headers/lists and the presence of scripts/. The evaluator MUST read SKILL.md directly and confirm or override this before generating prompts -- e.g. a skill with 5 numbered 'tips' is not the same as 5 sequential pipeline steps."
+}

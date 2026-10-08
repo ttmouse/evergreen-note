@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791378874754-2deb6",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791378874754,
+  "sessionId": "claim-d125f26f-923295d5",
+  "finishedAt": 1791379703661,
+  "durationMs": 828907,
+  "exitCode": 0,
+  "digest": "完成，议题已回 **in_review**。\n\n**结论**：顶部 Tab 展示不下时不再挤跑图标，改为滚动收纳。\n\n**根因**（隔离实例 CDP 实测，未碰用户数据）\n- 主区模式：`.main-area.node` 作为 flex 子项缺 `min-width:0`，Tab 一多整块主区被撑得比窗口宽（窗口 1280px 时实测 1921px），右上角 5 个功能图标被整体推出窗外。\n- Andy 模式：头部 Tab 区是 `overflow:hidden`，溢出 Tab 被静默裁掉且滚不了。\n\n**改动**（共 2 个源码文件，另加 3 个回归探针工具）\n1. [workspace-theme.css](/Users/douba/Projects/Evergreen-Note/notekit-src/src/assets/workspace-theme.css#L1324-L1329)：主区补 `min-width:0`；Andy 头部 Tab 区改 `overflow-x:auto`（滚动条保持隐藏的既有视觉）。\n2. [WorkspaceTabsComp.tsx](/Users/douba/Projects/Evergreen-Note/notekit-src/src/slate-item/addons/Main/WorkspaceTabsComp.tsx#L29-L3"
+}

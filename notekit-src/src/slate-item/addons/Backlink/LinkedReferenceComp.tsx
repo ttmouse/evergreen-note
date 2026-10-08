@@ -312,12 +312,19 @@ export function withReference(params: Omit<UseReferenceParams, 'item'>) {
  * @param props
  * @returns
  */
+/** Plain text of an item for reading-style excerpts. */
+export const readingPlainText = (item: UnitPersist): string =>
+  (item.leaves?.length ? nodeString({ children: item.leaves } as any) : item.ori || '')
+    .replace(/\[\[([^\]]+)\]\]/g, '$1').trim()
+
 /** Reading previews keep the source and the actual citation together. */
 export const LinkedReferenceComp = observer((props: { item: UnitPersist }) => {
   const $ = useAddons()
   const editorProps = useEditorProps()
   const isReferContext = useIsReferContext()
   const ctxBacklink = React.useContext(ContextBacklink)
+  // 板块级折叠：点标题行收起/展开整个模块（OP-047 追加，2026-10-08）。
+  const [sectionOpen, setSectionOpen] = React.useState(true)
   if (!editorProps.backlink || isReferContext || ctxBacklink) return null
 
   const citations = uniqBy($.backlink.getLinkedItems(props.item.ky), one => one.ky)
@@ -330,12 +337,13 @@ export const LinkedReferenceComp = observer((props: { item: UnitPersist }) => {
     groups.set(source.ky, group)
   }
   if (!groups.size) return null
-  const plainText = (item: UnitPersist): string =>
-    (item.leaves?.length ? nodeString({ children: item.leaves } as any) : item.ori || '')
-      .replace(/\[\[([^\]]+)\]\]/g, '$1').trim()
+  const plainText = readingPlainText
 
   return <section className="backlink-reading" aria-label="链接到这篇笔记">
-    <h2>链接到这篇笔记 <span>{groups.size}</span></h2>
+    <h2 className="backlink-reading-head" onClick={() => setSectionOpen(v => !v)}>
+      <span className="backlink-reading-caret" data-open={String(sectionOpen)}>▸</span>
+      链接到这篇笔记 <span>{groups.size}</span></h2>
+    {sectionOpen && (
     <div className="backlink-reading-grid">
       {Array.from(groups.values()).map(({ source, citations }) => {
         const excerpts = citations.map(citation => {
@@ -353,5 +361,6 @@ export const LinkedReferenceComp = observer((props: { item: UnitPersist }) => {
         </button>
       })}
     </div>
+    )}
   </section>
 })

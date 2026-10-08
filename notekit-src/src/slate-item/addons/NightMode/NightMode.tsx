@@ -221,7 +221,8 @@ td {
   box-shadow: 8px 8px 0 0 var(--dark-extremely-important) !important;
 }
 
-.MuiDialog-paper * {
+/* Mermaid's local tokens and Monaco theme own their colors. */
+.MuiDialog-paper:not(.mermaid-dialog .MuiDialog-paper) * {
   color: var(--dark-text) !important;
 }
 
@@ -420,7 +421,7 @@ export function createNightModeAddon(params: NewAddonParams) {
       ;(window as any).notekitShell?.setTheme?.(theme)
       if (this.isNightMode) {
         $.style.exec(nightModeStyles, "night-mode-style")
-        document.querySelectorAll("meta[name=theme-color]").forEach(e=>{(e as HTMLMetaElement).content="#202123"})
+        document.querySelectorAll("meta[name=theme-color]").forEach(e=>{(e as HTMLMetaElement).content="#171a1e"})
         document.body.classList.add('night-mode')
       } else {
         const ele = document.getElementById("night-mode-style")

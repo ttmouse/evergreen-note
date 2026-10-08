@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791460422943-4a18b",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791460422943,
+  "sessionId": "claim-d125f26f-329b06a6",
+  "finishedAt": 1791460663945,
+  "durationMs": 241002,
+  "exitCode": 0,
+  "digest": "完成。本轮结论：\n\n**「看起来没变化」的真正原因不是样式没生效，而是 App 窗口从未刷新**——上一轮发布时把热更新标记 `.live-update` 写成了 0 字节空文件，而 App 每秒靠比对标记的**内容**决定是否自动刷新，空串永远等于空串，所以新样式一直没被加载。\n\n**处理**：按发布工具正规格式把标记重写为时间戳，App 在 1 秒内自动刷新。已核验运行中服务返回的是含修复的新构建（index-B91m7E88.js），并用无头浏览器强制夜间模式实测：Topics 表头底色 rgb(41,53,58) = 夜间 `--nk-surface`，白色表头块消失，整页截图目视正常。\n\n已在议题下回总结评论并移回 in_review，等你在 App 窗口确认（若仍见白色表头，⌘R 手动刷新一次即可）。教训已沉淀：发布一律走 tools/live-app.mjs。"
+}

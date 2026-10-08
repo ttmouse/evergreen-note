@@ -1,0 +1,17 @@
+{
+  "sampling_mode": "standard",
+  "runs_per_configuration": 3,
+  "blind_level": "weak_blind",
+  "isolation_mode": "artifact_path（开源技能）/ current_environment（已注册技能，存在污染风险：执行者可能看到其他设计技能）",
+  "baseline_contamination_risk": "medium",
+  "side_effect_risk": "read_only",
+  "artifact_leakage_risk": "low",
+  "note": "配置：design-review(jezweb)、web-design-guidelines(vercel) 为 artifact；ux-principles、echo-ux 为已注册技能，执行者被显式指定加载对应技能。",
+  "visual_comparability": "high",
+  "side_effect_mode": "read-only",
+  "visual_artifact_notes": "走查报告为 markdown，直接内嵌",
+  "limitations": [
+    "已注册技能（ux-principles/echo-ux）无法按次隔离，执行者环境含其他设计技能，存在交叉污染可能",
+    "weak_blind：单主控协调，评审仅见脱敏 outputs"
+  ]
+}

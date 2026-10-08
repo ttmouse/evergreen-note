@@ -738,7 +738,16 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
 
       const closeFloat = (ky?: KyString) => {
         if (ky && ITEM_TO_DIALOG[ky]) {
-          dialogClose(ITEM_TO_DIALOG[ky])
+          const dialogId = ITEM_TO_DIALOG[ky]
+          const dialog = document.getElementById(dialogId)
+          // In Andy mode, show() can reuse an already-open reading column for
+          // the hovered link. That dialog is not owned by this hover preview;
+          // closing it here would remove the user's Andy column on mouseout.
+          if (
+            app.states.floatViewerMode === 'andy' &&
+            dialog?.getAttribute('dialog-list-mode') === 'andy'
+          ) return
+          dialogClose(dialogId)
           delete ITEM_TO_DIALOG[ky]
         }
       }
@@ -828,6 +837,20 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
 
       document.addEventListener('mouseover', (e) => {
         const target = e.target as HTMLElement
+        // 左侧导航中的主题条目用于导航；悬停时不应触发笔记预览浮层。
+        if (target.closest('nav.nav-area')) {
+          checkItem = null
+          if (closeTimer) {
+            clearTimeout(closeTimer)
+            closeTimer = null
+          }
+          if (currentKy) {
+            closeFloat(currentKy)
+            currentKy = null
+          }
+          return
+        }
+
         if (target.matches('[item-ky] *,[item-ky]')) {
           const el = target.closest('[item-ky]') as HTMLElement
           const refky = el?.getAttribute('item-ky')

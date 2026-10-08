@@ -31,8 +31,10 @@ export const TopHead = (props: ElementComponentProps<any>) => {
   // 主题标题重名的持续状态：重名期间标题显示为危险色并常驻提示，
   // 直到冲突解除（保存拦截见 Topic.addonRun 的 saveItem cover）。
   // 与 Head 的 memo 依赖保持一致，随内容输入实时刷新。
+  // 草稿主题（⌘N 新建、topic 身份未建立）也要参与实时重名检查：
+  // 否则打标题全程无提示，直到回车保存才被 saveItem cover 拦下报“已存在”。
   const dupTopic = React.useMemo(() => {
-    if (isInline || isEmpty(item?.topic)) return null
+    if (isInline || (isEmpty(item?.topic) && !(item as any)?.draft)) return null
     try {
       const refined = $.topic?.refine?.(Item.headString(item))
       if (!refined) return null

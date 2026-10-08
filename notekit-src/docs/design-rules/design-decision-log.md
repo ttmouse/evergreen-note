@@ -107,3 +107,49 @@
 - **拍了**：①浮层打开时按 Esc 关闭最上层可见浮层（新命令 closeActiveNoteByEsc；closeActiveNote 在 fixed 模式关工作区标签、不关浮层，不复用）；②浮层默认 625px 的强制点移到 FloatViewer.show() 合并层（字面量 DialogProps 被 ...rest 覆盖为第三处「展开顺序吃默认值」缺陷；调用方显式 width 可覆盖）；③浮窗右下角 resize 手柄恢复显示（MobileEditBar 全局隐藏规则在浮窗内豁免），支持拖拽调宽、高度仍随内容。
 - **验证**：隔离实例 + CDP 真实按键（tools/float-esc-width-verify.mjs，台账 E-010）。
 - **过程教训**：dev:live 死亡后基于 .live-update 时间戳误判「已发布」两次；交付判断必须核对构建产物含目标改动。
+
+## 2026-10-06（`!important` 计数勘误）：原「193 处」口径错误，全项目实为 488 处
+- **事故**：audit-2026-10-05 第三节表把 `all-styles.css` 的 `!important` 记为 **1** 处。该文件是压缩成一整行的（`wc -l` = 1），当时用「行数」口径（`grep -c`）去数，恒得 1；改用「出现次数」（`grep -o | wc -l`）实为 **160** 处。据此推出的「三文件合计 193 处」和 DESIGN.md §5.3 的「全项目 191 处」都不可靠。
+- **实测（2026-10-06）**：三文件口径 workspace-theme 106 + NightMode 92 + all-styles 160 = **358**（审计当日 20:24 commit 0dbd564 时点为 101+92+160 = 353，此后 workspace-theme 因浮窗/蒙层两批改动 +5）；全项目口径（`src/` 递归、排除 `.bak`）= **488**。
+- **口径声明（防再错）**：逐文件出现次数 ≠ 全项目递归数，两者不同分母，不可互相加减；正本引用一律写明是哪种口径。
+- **改了**：audit 第三节表 `all-styles.css` 1 → 160 并加勘误块、第七节 193 → 353；DESIGN.md §4.5 起因行 193 → 全项目 488、§5.3 全项目 191 → 488。
+- **防线**：心跳探针 `number_drift` 已上线（2026-10-06），每轮把正本里的「全项目 N 处」与代码实测比对，偏差超 15% 就上报——本勘误正是它逮出来的第一条。
+- **教训**：统计一条数字前先问「口径是什么」——行数还是出现次数、单文件还是全项目、含不含压缩单行与 `.bak`。这条与 10-05 的「10px 计数口径」是同一类错，第二次犯，故这次写进口径声明。
+
+## 2026-10-08（夜间皮肤定案）：强调色回归日间蓝系 + 紫红泄漏修复 + 墨色去绿
+- **拍了**（豆爸，会话内对「深色主题皮肤优化」直接授权，方案为本条）：①夜间 `--nk-accent` #9bc4ce → **#69adff**，`--primary`/`--info`/`--node-btn-hover` 同步归一（日间四者同为 #0a84ff = accent；夜间此前 accent 系青绿、链接 #69adff 系蓝，同屏两族，违反 §4 一语义一色）；②`--nk-accent-soft` #2e4148 → `rgba(105,173,255,.16)`（跟 accent 同族的选择底）；③墨色去绿保冷调：`--nk-ink`/`--dark-text` #e3ebed → **#e8ecef**（H192→H206），`--nk-muted`/`--dark-text-less-important`/`--bgrey`/`--nk-backlink-heading` #a4b4b9 系 → **#a9b5bd**；④紫红泄漏修复：`body.night-mode` 内补 `--bg-color`/`--body-bg-color` → `var(--nk-surface)` 别名（NightMode 在 `:root` 注入紫红 #342828，FloatBar/StatusBar/TagsEl 等 7 处组件层在读，夜间选中弹条/状态栏一直泛紫红）；⑤Andy 纸面对齐 D-006 两色制：夜间 `--andy-paper` canvas → `var(--nk-surface)`（与日间 #fff 纸面/#fafafc 画布同构，夜间此前纸面=画布）；⑥侧栏压制规则的裸 hex（#222d32/#e3ebed ×4 条）改 token 引用防漂移。
+- **为什么**：实测证据（tools/theme-parity-probe.mjs，test-runs/night-skin-probe/parity.json）——日间 accent/链接/主按钮全蓝（H210），夜间 accent 系青绿（H191-192）而链接仍蓝，双主题强调色换色系且夜间双族并存；文字对比度全线过 AA（墨 12.9+、次级 5.89+），问题在色系统一性而非层级。青绿系 chrome（focus 环/选区/滚动条）双主题一致，属有意设计，不动。
+- **否掉**：①抬高画布/侧栏/表面灰阶差距制造层级——日间本就是「近连续纸面 + 细线分隔」（侧栏与画布同色，1px 线分隔），夜间 1.11/1.24 的灰阶差已比日间强，改灰阶反而破坏既有语言；②收编 NightMode.tsx 注入层（删 :root 定义）——属 audit 第七节暗色双源收敛批，挂起中，本批只在定义侧压值，不动文件；③focus 环 #8fb9c4 跟随 accent 变蓝——焦点环归属是 §4.5 待拍板项（日间环 #6c99a5 也非 accent 蓝），不趁批私定。
+- **影响面**：仅 `workspace-theme.css` 夜间块 + andy 基规则 + 夜间压制规则；浅色主题零改动。新值对比度：accent/画布 6.70、accent/表面 5.42、墨/画布 13.1、次级/侧栏 6.74，全过 AA。
+- **验收**：隔离实例双主题实测（parity 探针夜间 floatbar=表面色、accent=#69adff、andy 纸面=表面色）；热更发布后用户目检。
+echo done
+## 2026-10-08（夜间皮肤整体重调）：青灰板换中性深炭板，用户拍板「整体颜色、细节都要调」
+- **拍了**（豆爸，看过首批修复后明确「整体观感没变化」，给出主题列表页截图，指示整体颜色与细节重调）：夜间中性板从**青灰系整体换到中性深炭系**——画布 #1c2529→**#171a1e**、侧栏/卡片底 #222d32→**#1d2126**、表面 #29353a→**#24282e**、hover #304148→**#2a2f36**；细线整体减淡：线 #3b4a50→**#2c3238**（对画布 1.90→1.35，日间基准 1.07）、强线 #4a5b61→**#3a4149**、表格边 rgba(177,204,211,.2)→rgba(230,232,235,.14)；文字提亮增脆：墨 →**#e6e8eb**（对画布 13.1→14.2）、次级 →**#9ba4ad**（6.9）；遗留层全套同步（--dark-important 三档、--dark-kanban-secondary 首次入正本压值 #1f2429、--bgrey、--common-border、--search-node-bg、--suggest-item-hover-bg、--popup-menu-input-border、滚动条 #333a41/#3d444c）；NightMode 注入的 meta theme-color #202123→#171a1e（标题栏色调跟随）。强调色维持上批的蓝 #69adff 不动；青绿 chrome 家族（焦点环/选区/子节点焦点边）维持与日间的平行不重镀。
+- **为什么**：首批只修色系缺陷、灰阶架构未动，用户实测后拍板要整体换观感；旧板的青绿灰在截图里读为「浑浊发闷」，行线过重造成「网格感」。深炭中性板是暗色模式的常规质感解：画布更深更沉浸、层次靠表面提亮而非线框、文字对比反而更大。
+- **边界**：仅夜间 token 取值层 + 两条硬编码细节规则（滚动条）+ meta 色；组件结构、日间主题、蓝强调、青绿 chrome 家族全部不动。NightMode.tsx 的 :root 旧值定义仍全部被正本压住，收编照旧挂账。
+- **验收**：隔离实例双主题实测（夜间全套新值、日间零变化、正常字号对比度 0 不达标）；前后截图存 test-runs/night-skin-probe/（*-before-replate.png 为旧板）；发布 .live-update 21:25 用户目检。
+
+## 2026-10-08（夜间横线复测修正）：表格行线与搜索下划线入细线系统
+- **事故**：重调板发布后用户实测（主题列表页截图）指出「横线太强化」。根因有二：①MUI TableCell 默认分隔线是浅色主题的 `rgba(224,224,224,1)`，夜间从未被覆盖（NightMode 遗留层只改了表格文字色，没改边线）；②NightMode 遗留规则把 `.MuiInput-underline::before` 直接染成 `--dark-text` 近白。
+- **拍了**：夜间块补三条压制规则——正文行单元格边线归 `--nk-line`（#2c3238）、表头单元格归 `--nk-line-strong`（#3a4149）、下划线输入框静态态归 `--nk-line-strong`（聚焦态 ::after 仍走 accent 不动）。
+- **验证**：隔离实例真实主题态渲染实测（/topics 路由，102 个正文行单元格）：cellBorder=rgb(44,50,56)、headBorder=rgb(58,65,73)、inputBefore=rgb(58,65,73)，全部命中期望值。
+- **教训**：NightMode 92 条遗留规则当初只收编了「背景与文字」，边线类漏网；后续若立收编批，需按「背景/文字/边线」三类完整盘点，不能只扫显式写出 border 的规则——MUI 组件默认值本身就是一条隐形来源。
+
+## 2026-10-09（夜间分页栏修复）：TablePagination 墨色与翻页箭头入夜间板
+- **事故**：用户截图（主题列表页脚注）指出「每页条数下拉和翻页图标看不到」。根因：MUI v5 TablePagination 继承浅色主题墨色——下拉选中值「25」是近黑（对夜底不可见），翻页 IconButton 更是 `rgba(0,0,0,0.26)` 的禁用态黑；NightMode 遗留层与夜间块此前都只覆盖了表格主体，没覆盖分页栏。可见的「Rows per page:」和「1–7 of 7」是 TopicList 自己用 `--nk-muted` 写过的，恰好说明这不是没人遇到，是只有没被组件样式盖到的部分漏了。
+- **拍了**：夜间块补四条——`.MuiTablePagination-root` 归 `--nk-ink`（下拉值/内部原生 select 继承变亮）；toolbar 作用域 IconButton 归 `--nk-muted`、hover 归 `--nk-ink`、`.Mui-disabled` 归 `--nk-line-strong`。标签两条既有 muted 规则不动（组件层直接设色，优先级独立）。
+- **验证**：隔离实例 /topics 渲染实测——root/select 色 rgb(230,232,235)、标签 rgb(155,164,173)、四枚按钮（禁用态）rgb(58,65,73)，全中。踩坑一处：首版选择器用 `.MuiTablePagination-actions` 未命中，DOM 转储发现本仓库 MUI v5 的动作按钮容器是普通 MuiBox，改按 toolbar 作用域（与 TopicList 既有脚注样式同法）后命中。
+- **教训**：写组件级夜间规则前先在真实 DOM 上确认类名结构（MUI 版本间 actions 容器类名不稳定），不能凭文档记忆写选择器；验证探针从「测选择器」改成「先转储再测」一次过。
+
+## 2026-10-09（夜间图标清扫，举一反三批）：全应用 SVG 对比度清扫归零
+- **起因**：用户反馈「还有其他图标有类似问题」，按 fanhua 协议把分页栏修复泛化：新增 `tools/night-icon-sweep.mjs`——隔离实例真实夜间态下遍历 default//topics//diaries 三路由，量每个可见 SVG 的 fill/stroke 对有效背景的 WCAG 对比度，<3 上报。
+- **首轮 4 处命中，分诊**：①主题列表搜索框放大镜 `.MuiInputAdornment-root`（纯黑 1.2）→ 归 `--nk-muted`；②笔记头 node-icon（1.38）→ 定位到 emotion 运行时规则 `.css-*-defaults-defaults svg { fill: rgb(51,51,51) }`（日间墨色，不随主题切换，源码 grep 不可见）→ `html body.night-mode .node-icon svg.svg-icon { fill: currentColor }` 恢复跟随（连带恢复 NightMode 的白色 hover）；③④禁用态翻页箭头 1.69 为上批有意禁用色，WCAG 豁免，保留。
+- **验证**：修复后复扫三路由真实低对比图标 0 个；产物已热更发布（03:01）。
+- **为什么 fill 用 currentColor 而非直接上墨色**：显式 fill 会把 node-icon 内未来可能出现的彩色图标一并压平；currentColor 只恢复「跟随所在上下文颜色」的默认语义，hover 白由 NightMode 既有 color 规则继续供给。
+- **泛化规则已入 echo**（2 条）：夜间覆盖齐全性以渲染实测为准；写组件选择器先转储真实 DOM。
+
+## 2026-10-09（双主题图标穷尽排查，用户拍板「找出所有 SVG 排查两种模式」）：清扫矩阵全绿
+- **拍了**：①清扫探针升级 v2（tools/night-icon-sweep.mjs）——双主题 × 三路由（default、/topics、/diaries），图标侧量每个可见 SVG（含 hover 前隐形的行动按钮）fill/stroke 对有效背景对比度（<3 上报），线条侧量 border/outline ≥1px 实线对背景对比度（>9 判过亮，>9 阈值依据：日间最重的分隔线约 1.9，夜间细线系统 1.35，>9 必然是日间残留）；②当日页补灌勾选/普通条目覆盖 svg_dot 内容图标；③修复三处——`.previous-diary-wrap` 上边线（--cl-slate-300 日间残留，对夜底 11.76，即用户截图 8 的刺眼白线）归 `--nk-line`；NightMode 分组描边 `.node-layout-item-group-1`（次级灰全亮 6.4）压到 `--nk-line-strong`；`--dark-text-no-important` 首次入正本（紫红半透明 #9e6a6a55 → 中性 muted rgba(155,164,173,.28)）；④svg-icon 的 fill=currentColor 修复从 node-icon 扩大到全类（defaults 包裹规则作用范围不可静态界定，类级修复覆盖全部 Phosphor 图标；currentColor 不压平彩色图标）。
+- **图标通道盘点（双模式处理矩阵）**：Phosphor svg-icon（主图标集）= 日间 defaults #333 扁平策略 / 夜间 currentColor 跟随 + NightMode stroke 兜底；MuiSvgIcon = 日间主题板 / 夜间 --dark-text 全局兜底；内联无类 svg（分页箭头、放大镜）= 夜间块逐个已补；svg_dot 内容图标走 svg-icon 通道。
+- **验证**：终扫 2×3 矩阵全绿——夜间 0 图标 0 过亮线（/topics 仅剩有意禁用色 1.69，WCAG 豁免），日间 0/0。已热更发布（03:10）。
+- **过程教训**：线条检测器首版把「border-width:3px + style:none」的幽灵轮廓全部误报（所有元素都带 3px 幽灵 outline），补 style!=='none' 判据后归零——computed width 不为 0 不代表画了线，检测器必须查完整样式三元组；日间曾出现一次未复现的近白图标命中（#e2e8f0，1.18），两轮诊断均未再现身，疑为滚动位置相关的浮动按钮，清扫工具在库可随时复查。

@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791382604889-fb7d0",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791382604889,
+  "sessionId": "claim-d125f26f-2195d9ec",
+  "finishedAt": 1791382804271,
+  "durationMs": 199382,
+  "exitCode": 0,
+  "digest": "本轮完成，议题已移回 in_review。结论摘要：\n\n**「roma research」= Roam Research**，其「每日笔记 + 日历视图」就是你记忆中的功能形态。\n\n**历史考证（本仓）**：该功能在当前 Evergreen 里被拆成三块、各缺一角——\n1. `Daily` 插件：启动自动建当天日记，有 /diaries 路由，**无日历视角**；\n2. `DailyActivity` 插件：日记页脚显示当天创建/更新的节点，**不挂在日历上**；\n3. `Heatmap` + 通用 `MonthCalendar` 组件：月历渲染与点格跳日记已存在，**只显示色块计数，不列主题**。\n\nRoamEdit 合并版无日历功能，补不了也不该补（与源码还原进展文档结论一致）。性质是「拼装已有三块」的二次开发，不是修丢失代码。\n\n**实现分析**：数据层零新增（`indexed.created` 已按天索引、`daily.getAllTopics()` 现成）；UI 层新增 CalendarView 插件，复用 HeatmapComp 多月拼版 + `renderCellContent` 列出当天新增主题，约几十行。待你拍板口径：格子里列「新增主题」（推荐）还是「新增节点」。\n\n按仓库规则实施需你明确说「做」，本轮只交付调研分析（已发到议题评论，含完整文件路径与方案细节）。"
+}

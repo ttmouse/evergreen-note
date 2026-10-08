@@ -1,0 +1,7 @@
+Use case: logo-brand.
+Asset type: a production-quality square macOS application icon for 常青笔记 (Evergreen Note).
+Input image: the attached leaf icon is the design reference and refinement target.
+Primary request: refine this design into an elegant, highly recognizable app icon, retaining its dark charcoal-green rounded square and single pale blue-green leaf. Preserve the calm, minimal visual identity and diagonal leaf direction.
+Composition: one icon only, front-facing, centered on a square 1024×1024 canvas. The rounded square occupies approximately 84% of the canvas, with equal transparent margins. Use a continuous, beautifully proportioned macOS squircle silhouette. Inside, one bold botanical leaf points to the upper right, with a short rounded stem extending to the lower left. Leaf and stem are one continuous silhouette, optically centered, spacious padding, strong recognition at 32px.
+Style: precise vector-like edges, sophisticated minimalism. Deep forest-charcoal tile (#19272A), softly luminous muted cyan-sage leaf (#A2CDD0). Extremely restrained tonal shading for depth, almost flat; no glossy highlights. Smooth organic leaf outline with a clear tip. Do not add veins or additional symbols.
+Constraints: deliver the actual icon asset, not a mockup or a presentation sheet. Transparent background outside the rounded square. No words, letters, watermark, border, surrounding scene, extra leaves, notebook drawings, pen drawings, or ornamental details.

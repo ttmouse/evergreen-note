@@ -1,0 +1,37 @@
+{
+  "scenarios": [
+    {
+      "id": "daily-activity",
+      "title": "每日动态底部模块完整走查",
+      "prompt": "请对下面这个笔记应用的「每日动态」UI 模块做一轮完整走查，把所有你发现的问题按严重度排序输出，每条按 [问题]/[证据]/[建议] 格式。材料在 fixtures 目录：screenshot.jpg 是当前界面截图，DailyActivity.tsx 是组件代码，prefix.css 是样式。",
+      "expectations": [
+        {
+          "id": "section_gap",
+          "type": "judge",
+          "text": "识别相邻板块（当天创建/当天更新）之间零间距、边框贴合的缺陷"
+        },
+        {
+          "id": "grid_row_gap",
+          "type": "judge",
+          "text": "识别卡片网格行间距为 0（gap 行向缺失、靠 margin 模拟）的问题"
+        },
+        {
+          "id": "hooks_bug",
+          "type": "judge",
+          "text": "发现 useState 在条件 return 之后调用的 Hooks 违规代码缺陷"
+        },
+        {
+          "id": "preline",
+          "type": "judge",
+          "text": "发现摘录 join('\\n') 缺 white-space:pre-line 导致换行失效"
+        }
+      ],
+      "fixtures": [
+        "screenshot.jpg",
+        "DailyActivity.tsx",
+        "prefix.css"
+      ]
+    }
+  ],
+  "skill_name": "design-skills-comparison"
+}

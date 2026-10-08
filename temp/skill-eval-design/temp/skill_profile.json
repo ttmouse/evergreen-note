@@ -1,0 +1,62 @@
+{
+  "skill_name": "design-skills-comparison",
+  "skills": [
+    {
+      "skill_name": "design-review",
+      "skill_type": "holistic",
+      "capability_areas": [
+        "视觉走查",
+        "间距/节奏检查",
+        "截图评审"
+      ],
+      "side_effect_risk": "read_only",
+      "visual_output_types": [
+        "text"
+      ]
+    },
+    {
+      "skill_name": "web-design-guidelines",
+      "skill_type": "holistic",
+      "capability_areas": [
+        "Web 界面规范核对",
+        "无障碍",
+        "交互规范"
+      ],
+      "side_effect_risk": "external_read",
+      "visual_output_types": [
+        "text"
+      ]
+    },
+    {
+      "skill_name": "ux-principles",
+      "skill_type": "holistic",
+      "capability_areas": [
+        "交互原则逐条核对",
+        "移动端+PC 布局"
+      ],
+      "side_effect_risk": "read_only",
+      "visual_output_types": [
+        "text"
+      ]
+    },
+    {
+      "skill_name": "echo-ux",
+      "skill_type": "holistic",
+      "capability_areas": [
+        "个人经验规则召回",
+        "体验走查",
+        "规则沉淀"
+      ],
+      "side_effect_risk": "read_only",
+      "visual_output_types": [
+        "text"
+      ]
+    }
+  ],
+  "skill_type": "holistic",
+  "side_effect_risk": "read_only",
+  "visual_output_types": [
+    "text"
+  ],
+  "note": "多技能合并画像，详细各技能画像见 skill_profiles/"
+}

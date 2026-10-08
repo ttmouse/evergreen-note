@@ -1,0 +1,16 @@
+Use case: logo-brand.
+Asset type: beautifully designed macOS app icon for Evergreen Note / 常青笔记.
+Primary request: draw a NEW sophisticated leaf emblem with excellent silhouette design, as if created by an experienced identity designer. The design should feel graceful, intelligent, calm, and enduring.
+Canvas: square high resolution, one standalone icon only. Transparent exterior. A deep forest-charcoal (#19282A) macOS squircle centered with approximately 10% outer margin.
+Emblem design: one elegant asymmetric lanceolate leaf rising diagonally from lower left to upper right, in luminous pale sage-cyan (#A9D2CD). Construct its silhouette using a small number of exquisitely smooth, tensioned Bézier-like curves. Give it a long, tapering, subtly curved pointed tip, a slender sweeping convex outer contour, and a gently concave inner contour. It should have balanced proportions and restrained width, with a purposeful organic asymmetry, not a fat oval or a broad paddle. Integrate a slim gently curved stem into the leaf base seamlessly; the stem gradually tapers to a softly rounded end. Carve ONE elegant tapering dark negative-space midrib from the stem junction along the leaf's curve, stopping before the tip; this slim curved opening suggests a lightly folded leaf and gives the emblem a distinctive, deliberate graphic structure. It must remain unmistakably one single leaf with a unified silhouette, not multiple separate leaves.
+Composition: optically centered with generous breathing room. Leaf including stem occupies around 64% of tile height. Silhouette must remain readable at 32px, with crisp deliberate curves and no tiny details.
+Style: premium minimalist botanical brand mark, flat vector-like graphic. Exact clean edges, tasteful precision, quiet elegance. Uniform pale sage-cyan leaf color and nearly flat dark tile with only a barely perceptible tonal shift. No realistic texture, no glass, no glossy bevel, no heavy shadow.
+Avoid: chunky leaf, shovel or paddle silhouette, clipped flat leaf tip, awkward triangular joins, oversized blunt stem, rough outlines, vein networks, multiple leaves, generic stock clip art, letters, text, border, watermark, mockup, presentation sheet or surrounding props.
+Deliver a finished app icon asset.
+
+Final cleanup prompt:
+Use case: precise-object-edit.
+Edit target: the newly generated Evergreen Note app icon.
+Keep the exact elegant leaf silhouette, tapered tip, curved slender stem, negative-space central vein, proportions, location, rounded tile contour, and pale sage-cyan color.
+Change ONLY the dark background tile rendering: make the ENTIRE rounded square a perfectly uniform, fully opaque flat forest-charcoal color #1B2B2E, with absolutely no variation in luminance or opacity anywhere inside the rounded square. Remove all black blotches, cloudy patches, glow, texture, shading, shadow and transparency artifacts from inside the tile. The central vein should be the exact same flat dark tile color. Preserve the very subtle leaf tonal shading if needed, but give the tile a perfectly clean flat opaque vector finish.
+The area OUTSIDE the rounded square must remain genuinely transparent. The dark tile INTERIOR must have 100% opacity, including all corners within its contour. Crisp antialiased icon edges, one icon only, no text or watermark.

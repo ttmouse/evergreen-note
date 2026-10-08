@@ -28,7 +28,21 @@ function fixture() {
       getTopic: name => [...rows.values()].find(row => row.topic === String(name).toLowerCase()) || null,
       indexed: { tags: { 重点: { e1: { ky: 'e1', pky: '2026-10-04', ori: '带标签条目', status: 1 }, e2: { ky: 'e2', pky: 'x', ori: '回收站带标签', status: -1 } } } },
     },
-    topic: { getTopic: key => rows.get(key) },
+    topic: {
+      getTopic: key => rows.get(key),
+      createTopic: name => {
+        const old = [...rows.values()].find(row => row.topic === name.toLowerCase())
+        if (old) return old
+        const topic = { ky: 'topic-' + rows.size, topic: name.toLowerCase(), isTopic: true, ori: name, status: 1 }
+        rows.set(topic.ky, topic)
+        return topic
+      },
+    },
+    bilink: {
+      createElement: ({ topic }) => ({ blockType: 'bilink', topic, children: [{ text: topic }] }),
+      verify: leaf => leaf?.blockType === 'bilink',
+      string: leaf => leaf.topic,
+    },
     daily: { createTopic: key => { if (!rows.has(key)) rows.set(key, { ky: key, status: 1 }); return rows.get(key) } },
     checkbox: { createElement: ({ value }) => ({ blockType: 'checkbox', value, children: [{ text: '' }] }), verify: v => v?.blockType === 'checkbox' },
   }
@@ -228,4 +242,38 @@ test('topic and tag lookups', async () => {
   assert.deepEqual(fallback.items.map(x => x.ky), ['existing', 'oldnote'])
   const legacySearch = await runNoteCommand({ action: 'search', dbid: 'test-db', query: '无状态老条目' })
   assert.equal(legacySearch.total, 1)
+})
+
+test('createTopic persists a topic root and reuses an existing name', async () => {
+  const { $, rows } = fixture()
+  const first = await runNoteCommand({ action: 'createTopic', dbid: 'test-db', name: '  新主题  ' })
+  assert.equal(first.saved, true)
+  assert.equal(first.created, true)
+  assert.equal(first.reused, false)
+  assert.equal(rows.get(first.topicKey).ori, '新主题')
+  assert.equal(rows.get(first.topicKey).isTopic, true)
+  const second = await runNoteCommand({ action: 'createTopic', dbid: 'test-db', name: '新主题' })
+  assert.equal(second.topicKey, first.topicKey)
+  assert.equal(second.created, false)
+  assert.equal(second.reused, true)
+  assert.equal(rows.size, 4)
+  await assert.rejects(runNoteCommand({ action: 'createTopic', dbid: 'test-db', name: '   ' }), /主题名/)
+  $.dbDisk.flush = async () => { $.libAdmin.current.ky = 'another' }
+  await assert.rejects(runNoteCommand({ action: 'createTopic', dbid: 'test-db', name: '另一个主题' }), /切换/)
+  assert.equal(rows.size, 4)
+})
+
+test('appendTree turns [[topic]] markers into structured bilinks and exposes them on readback', async () => {
+  const { rows } = fixture()
+  const treeInput = {
+    action: 'appendTree', dbid: 'test-db', date: '2026-10-04', requestId: 'f'.repeat(64),
+    tree: { text: '因果关系', bold: true, children: [{ text: '可联系 [[注意力残余]]，也可联系 [[机会成本]]。' }] },
+  }
+  const result = await runNoteCommand(treeInput)
+  const body = rows.get(result.rootKey + '-0')
+  assert.equal(body.ori, '可联系 注意力残余，也可联系 机会成本。')
+  assert.deepEqual(body.mentions, ['注意力残余', '机会成本'])
+  assert.deepEqual(body.leaves.filter(leaf => leaf.blockType === 'bilink').map(leaf => leaf.topic), ['注意力残余', '机会成本'])
+  const read = await runNoteCommand({ action: 'get', dbid: 'test-db', ky: result.rootKey, depth: 2 })
+  assert.deepEqual(read.item.subitems[0].bilinks, ['注意力残余', '机会成本'])
 })

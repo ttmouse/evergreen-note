@@ -247,6 +247,10 @@ export function SearchResultItem(
 
   const count = $.refer.getBacklinkCount(item.ky) + $.embed.getBacklinkCount(item.ky)
 
+  const isTopic = Item.isTopic(item)
+  const nodeCount = isTopic ? $.counter.countDescendants(item) : 0
+  const wordCount = isTopic ? $.counter.countWordsOfTree(item).count : 0
+
   return (
     <div className={cssClass.join(' ')} onClick={onClick}>
       <div
@@ -259,11 +263,29 @@ export function SearchResultItem(
             keyword={keyword}
           />
         )}
-        {count > 0 && (
-          <Tip title={`References: ${count}`}>
-            <span>{count}</span>
-          </Tip>
-        )}
+        <span
+          style={{
+            flexShrink: 0,
+            marginLeft: 8,
+            fontSize: '12px',
+            color: 'var(--cl-slate-400)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {isTopic && (
+            <span>
+              {nodeCount} 节点 · {wordCount} 字
+            </span>
+          )}
+          {count > 0 && (
+            <Tip title={`引用来源笔记 ${count} 篇`}>
+              <span style={isTopic ? { marginLeft: 8 } : undefined}>
+                {isTopic ? '引用 ' : ''}
+                {count}
+              </span>
+            </Tip>
+          )}
+        </span>
       </div>
       <CrumbsComp truncate crumbs={crumbs} />
     </div>

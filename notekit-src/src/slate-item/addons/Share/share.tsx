@@ -99,6 +99,18 @@ export function createShareAddon(addonParams: NewAddonParams) {
             $.share.popupShareForm($.floatMenu.getContext().item)
           },
         },
+        copyLink: {
+          icon: icons.svg_link,
+          title: $t`share.copy_link`,
+          onClick() {
+            const ky = $.floatMenu.getContext().item?.ky
+            if (!ky) return
+            navigator.clipboard
+              .writeText(`evergreen://note/${ky}`)
+              .then(() => showSnack({ content: $t`share.copy_link_done`, severity: 'success', autoClose: 1000 }))
+              .catch(() => showSnack({ content: 'Copy failed', severity: 'error', autoClose: 1000 }))
+          },
+        },
       }
     }
 
@@ -234,6 +246,17 @@ export function createShareAddon(addonParams: NewAddonParams) {
           title: $t`share.share`,
           async onClick(e, { item }) {
             $.share.popupShareForm(item)
+          },
+        },
+        copyLink: {
+          icon: 'svg_link',
+          title: $t`share.copy_link`,
+          onClick(e, { item }) {
+            if (!item?.ky) return
+            navigator.clipboard
+              .writeText(`evergreen://note/${item.ky}`)
+              .then(() => showSnack({ content: $t`share.copy_link_done`, severity: 'success', autoClose: 1000 }))
+              .catch(() => showSnack({ content: 'Copy failed', severity: 'error', autoClose: 1000 }))
           },
         },
       })

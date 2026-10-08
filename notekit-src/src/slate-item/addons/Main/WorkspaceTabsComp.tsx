@@ -26,7 +26,16 @@ export const WorkspaceTabsComp = observer(() => {
     </div>
   }
 
-  return <div ref={listRef} className="workspace-tabs" role="tablist" aria-label="已打开的笔记">
+  return <div ref={listRef} className="workspace-tabs" role="tablist" aria-label="已打开的笔记"
+    onWheel={event => {
+      // The strip hides its scrollbar, so give mouse wheels the same horizontal
+      // scrolling precise trackpads get: vertical wheel delta pans the tabs.
+      if (event.deltaX !== 0) return
+      const el = event.currentTarget
+      if (el.scrollWidth <= el.clientWidth) return
+      el.scrollLeft += event.deltaY
+    }}
+  >
     {main.workspaceTabs.map((tab, index) => <div
       key={tab.key}
       className={`workspace-tab${tab.key === activeKey ? ' is-active' : ''}`}

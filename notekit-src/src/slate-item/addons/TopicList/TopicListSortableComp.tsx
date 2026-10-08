@@ -13,13 +13,12 @@ import { isEmpty } from '../../utils/isEmpty'
 import { ITEM_HAS } from '../Traits/Logic'
 import { colorBase } from '../../styles'
 import { WordHighlight } from '../../components/WordHighlight/WordHighlight'
-import { EnhancedTableHead } from './EnhancedTableHead'
+import { EnhancedTableHead, CHECKBOX_CELL_SX, CHECKBOX_SX } from './EnhancedTableHead'
 import { EnhancedTableToolbar } from './EnhancedTableToolbar'
 import { getColor } from '../../styles/theme'
 import { Item } from '../../interfaces/item'
 import { ago } from '../../utils/date/datekit'
 import { LayoutBadge } from '../LayoutFactory/LayoutBadge'
-
 export interface RowData {
   ky: string
   ori: string
@@ -224,18 +223,29 @@ export function TopicListSortableComp(props: TopicListSortableProps) {
       <TableContainer sx={{ flexShrink: 1, flexGrow: 1, minHeight: 0 }}>
         <Table
           sx={{
-            minWidth: 750,
+            // fixed 布局：列宽完全由表头行（EnhancedTableHead）决定，
+            // 标题再长也不会把表格撑宽；配合较低的 minWidth，容器多窄都不出现横向滚动。
+            tableLayout: 'fixed',
+            minWidth: 560,
             typography: 'body2',
             '& th.MuiTableCell-head': {
               position: 'sticky',
               top: 0,
               zIndex: 1,
-              bgcolor: 'background.paper',
-              boxShadow: '0 1px 0 var(--cl-slate-200)',
+              // 夜间模式是 CSS 注入（不改 MUI 调色板），background.paper 恒为白色，
+              // 必须用语义 token 才能在浅色/夜间都正确（DESIGN.md §4）
+              bgcolor: 'var(--nk-surface)',
+              boxShadow: '0 1px 0 var(--nk-line)',
             },
             '& th.MuiTableCell-head .MuiTableSortLabel-root': {
               fontSize: 13,
-              color: 'var(--cl-slate-500)',
+              color: 'var(--nk-muted)',
+            },
+            '& .MuiTableRow-root:hover': {
+              backgroundColor: 'var(--nk-hover)',
+            },
+            '& .MuiTableRow-root.Mui-selected': {
+              backgroundColor: 'var(--nk-accent-soft)',
             },
             '& td.MuiTableCell-root, & th.MuiTableCell-root': {
               py: '6px',
@@ -271,9 +281,10 @@ export function TopicListSortableComp(props: TopicListSortableProps) {
                     key={row.ky}
                     selected={isItemSelected}
                   >
-                    <TableCell padding="checkbox">
+                    <TableCell sx={CHECKBOX_CELL_SX}>
                       <Checkbox
                         color="primary"
+                        sx={CHECKBOX_SX}
                         checked={isItemSelected}
                         inputProps={{
                           'aria-labelledby': labelId,
@@ -296,7 +307,7 @@ export function TopicListSortableComp(props: TopicListSortableProps) {
                           fontSize: 14,
                           textDecoration: 'none',
                           display: 'block',
-                          maxWidth: 480,
+                          maxWidth: '100%',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -312,9 +323,9 @@ export function TopicListSortableComp(props: TopicListSortableProps) {
                         <p
                           style={{
                             margin: 0,
-                            maxWidth: 480,
+                            maxWidth: '100%',
                             fontSize: 13,
-                            color: 'var(--cl-slate-400)',
+                            color: 'var(--nk-muted)',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -327,10 +338,11 @@ export function TopicListSortableComp(props: TopicListSortableProps) {
                         </p>
                       )}
                     </TableCell>
-                    <TableCell align="center" sx={{ width: 80 }}>{row.words}</TableCell>
-                    <TableCell align="center" sx={{ width: 80 }}>{row.mentions}</TableCell>
-                    <TableCell align="center" sx={{ width: 100, whiteSpace: 'nowrap', color: 'var(--cl-slate-500)' }}>{ago(row.created)}</TableCell>
-                    <TableCell align="center" sx={{ width: 100, whiteSpace: 'nowrap', color: 'var(--cl-slate-500)' }}>{ago(row.updated)}</TableCell>
+                    {/* 列宽由表头行统一决定（tableLayout: fixed），此处不再重复声明 width */}
+                    <TableCell align="center">{row.words}</TableCell>
+                    <TableCell align="center">{row.mentions}</TableCell>
+                    <TableCell align="center" sx={{ whiteSpace: 'nowrap', color: 'var(--nk-muted)' }}>{ago(row.created)}</TableCell>
+                    <TableCell align="center" sx={{ whiteSpace: 'nowrap', color: 'var(--nk-muted)' }}>{ago(row.updated)}</TableCell>
                   </TableRow>
                 )
               })}
@@ -358,21 +370,21 @@ export function TopicListSortableComp(props: TopicListSortableProps) {
           paddingLeft: 16,
           paddingRight: 4,
           paddingBottom: 'env(safe-area-inset-bottom)',
-          borderTop: '1px solid var(--cl-slate-200)',
+          borderTop: '1px solid var(--nk-line)',
         }}
       >
         <span
           className="total-word-count"
           style={{
             fontSize: 13,
-            color: 'var(--cl-slate-500)',
+            color: 'var(--nk-muted)',
             whiteSpace: 'nowrap',
           }}
         >
           <span className="count-label">Word count of topics: </span>
           <span
             className="count-value"
-            style={{ color: 'var(--cl-slate-700)', fontWeight: 500 }}
+            style={{ color: 'var(--nk-ink)', fontWeight: 500 }}
           >
             {totalWords}
           </span>

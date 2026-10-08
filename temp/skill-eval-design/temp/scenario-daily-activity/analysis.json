@@ -1,0 +1,10 @@
+{
+  "unblinding": {
+    "version_a": "web-design-guidelines",
+    "version_b": "echo-ux",
+    "version_c": "ux-principles",
+    "version_d": "design-review"
+  },
+  "explanation": "design-review(jezweb) 胜出：其检查单含显式的相邻模块间距/垂直节奏条目与 squint test，唯一在多轮中稳定命中 E1 的技能；ux-principles 靠原则宽度命中代码缺陷但间距命中不稳定；web-design-guidelines 规则全但偏交互规范，E1 漂移大；echo-ux 依赖规则库召回，本轮新沉淀规则尚未覆盖板块间距。",
+  "recommendation": "截图驱动+显式间距检查单的技能（design-review）最适合此类视觉密度缺陷；echo-ux 用于沉淀个人教训形成长效召回。"
+}

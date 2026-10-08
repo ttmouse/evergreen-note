@@ -1,0 +1,35 @@
+{
+  "targets": {
+    "design-review": {
+      "source_type": "github",
+      "source": "https://github.com/jezweb/claude-skills (plugins/frontend/skills/design-review)",
+      "install_method": "cloned into temp/target-skills/jezweb-claude-skills/",
+      "resolved_path": "temp/target-skills/jezweb-claude-skills/plugins/frontend/skills/design-review/",
+      "isolation_mode": "artifact_path"
+    },
+    "web-design-guidelines": {
+      "source_type": "github",
+      "source": "https://github.com/vercel-labs/agent-skills (skills/web-design-guidelines)",
+      "install_method": "cloned into temp/target-skills/vercel-agent-skills/",
+      "resolved_path": "temp/target-skills/vercel-agent-skills/skills/web-design-guidelines/",
+      "isolation_mode": "artifact_path"
+    },
+    "ux-principles": {
+      "source_type": "already_installed",
+      "source": "~/.agents/skills/UX-principles",
+      "install_method": "already registered",
+      "resolved_path": "~/.agents/skills/UX-principles/",
+      "isolation_mode": "current_environment"
+    },
+    "echo-ux": {
+      "source_type": "already_installed",
+      "source": "~/.agents/skills/echo-ux",
+      "install_method": "already registered",
+      "resolved_path": "~/.agents/skills/echo-ux/",
+      "isolation_mode": "current_environment"
+    }
+  },
+  "notes": [
+    "已注册技能无法按次隔离，存在交叉污染可能，已记录为 medium 风险"
+  ]
+}

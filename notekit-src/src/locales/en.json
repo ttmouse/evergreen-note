@@ -639,7 +639,11 @@
     "title": "Daily activity",
     "quote": "Display daily activity at the bottom of each daily note",
     "created_references": "{{count}} Created items",
-    "updated_references": "{{count}} Updated items"
+    "updated_references": "{{count}} Updated items",
+    "created_section": "Created today",
+    "updated_section": "Updated today",
+    "expand_all": "Show all ({{count}} more)",
+    "collapse": "Show less"
   },
   "datePicker": {
     "title": "Date picker",
@@ -873,7 +877,9 @@
   "share": {
     "share": "Share",
     "success_msg": "{{link}}",
-    "sharing": "Sharing..."
+    "sharing": "Sharing...",
+    "copy_link": "Copy link",
+    "copy_link_done": "Link copied"
   },
   "fileManager": {
     "empty": "No files yet. Images and attachments you upload will show up here."

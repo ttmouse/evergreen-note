@@ -145,6 +145,12 @@ patchPlist(path.join(contents, 'Info.plist'), {
   CFBundleIdentifier: `com.local.${SLUG.replace(/-/g, '')}`,
 })
 
+const sourceIcon = path.join(SRC, 'desktop', 'assets', 'app-icon.icns')
+if (fs.existsSync(sourceIcon)) {
+  fs.copyFileSync(sourceIcon, path.join(contents, 'Resources', 'electron.icns'))
+  patchPlist(path.join(contents, 'Info.plist'), { CFBundleIconFile: 'electron.icns' })
+}
+
 /* --------------------------- 4. 放入应用文件 --------------------------- */
 
 step(5, 7, '放入应用文件到 Contents/Resources/app/')

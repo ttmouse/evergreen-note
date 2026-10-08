@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-src data:; object-src data:;"/>
+<title>eval-skills report: design-skills-comparison</title>
+<style>
+body { font-family: -apple-system, "Segoe UI", sans-serif; background: #f6f7f9; color: #1a1a1a; margin: 0; padding: 2rem; }
+body:has(.columns:target) .summary-card { display: none; }
+body:has(.columns:target) .scenario:not(:has(.columns:target)) { display: none; }
+body:has(.columns:target) .scenario:has(.columns:target) > h2,
+body:has(.columns:target) .scenario:has(.columns:target) > .prompt-block,
+body:has(.columns:target) .scenario:has(.columns:target) > .scenario-expectations { display: none; }
+.columns:target { scroll-margin-top: 2rem; }
+.summary-card { background: #fff; border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.summary-card h1 { margin: 0 0 0.5rem; font-size: 1.4rem; }
+.verdict-line { font-size: 1.1rem; font-weight: 600; color: #1b5e20; }
+.scenario-count { color: #666; font-size: 0.9rem; margin-top: 0.25rem; }
+.evidence-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1rem; }
+.chip { background: #eef2f7; border: 1px solid #d9e1ec; border-radius: 999px; padding: 0.3rem 0.65rem; font-size: 0.78rem; color: #3a4656; }
+.limitations { margin: 0.75rem 0 0; color: #6b4f00; font-size: 0.86rem; }
+.benchmark { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.82rem; }
+.benchmark th, .benchmark td { text-align: left; border-bottom: 1px solid #e5e7eb; padding: 0.45rem; }
+.scenario { background: #fff; border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.scenario h2 { margin-top: 0; font-size: 1.15rem; }
+.prompt-block { background: #f0f2f5; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.92rem; }
+.scenario-expectations { margin: 0 0 1rem; font-size: 0.86rem; }
+.scenario-expectations ul { margin: 0.4rem 0 0; padding-left: 1.25rem; }
+.expectation-type { color: #5b6472; font-size: 0.75rem; text-transform: uppercase; }
+.columns { display: flex; gap: 1.5rem; align-items: flex-start; overflow-x: auto; }
+.column { flex: 1 0 22rem; min-width: 0; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; }
+.column-label { font-weight: 700; color: #555; margin-bottom: 0.75rem; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.04em; }
+.run-count { float: right; color: #888; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.file-block { margin-bottom: 1rem; }
+.file-name { font-size: 0.8rem; color: #888; margin-bottom: 0.35rem; }
+.pdf-embed { width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 4px; }
+.html-embed { width: 100%; min-height: 420px; border: 1px solid #ddd; border-radius: 4px; background: #fff; }
+.img-embed { max-width: 100%; border-radius: 4px; border: 1px solid #ddd; }
+.text-embed { background: #fafafa; padding: 0.75rem; border-radius: 6px; font-size: 0.82rem; overflow-x: auto; white-space: pre-wrap; }
+.unsupported-note { background: #fff4e5; color: #6b4f00; border: 1px solid #f3d19c; border-radius: 6px; padding: 0.65rem; font-size: 0.82rem; margin-bottom: 0.75rem; }
+.download-link { margin-top: 0.5rem; font-size: 0.85rem; }
+.run-block { border-top: 1px solid #eee; padding-top: 0.75rem; margin-top: 0.75rem; }
+.run-block:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.run-label { color: #666; font-weight: 600; font-size: 0.78rem; margin-bottom: 0.5rem; }
+.grading { margin-top: 0.75rem; border-top: 1px solid #eee; padding-top: 0.75rem; }
+.grading-summary { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.4rem; }
+.expectations { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; }
+.expectations li { padding: 0.3rem 0; border-bottom: 1px dashed #eee; }
+.expectations li.pass { color: #1b5e20; }
+.expectations li.fail { color: #b71c1c; }
+.evidence { color: #777; font-size: 0.78rem; margin-left: 1.1rem; }
+.verdict { margin-top: 1rem; background: #fffbe6; border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.88rem; }
+.verdict summary { cursor: pointer; font-weight: 600; }
+.reasoning { margin: 0.5rem 0 0; color: #444; }
+.analysis { margin-top: 0.75rem; background: #eef7ff; border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.86rem; }
+.reveal { margin-top: 0.75rem; }
+.reveal-btn { background: #1a1a1a; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+.reveal-result { margin-left: 0.75rem; font-weight: 600; }
+</style>
+</head>
+<body>
+
+    <div class="summary-card">
+      <h1>eval-skills report: design-skills-comparison</h1>
+      <div class="verdict-line">Top configuration: design-review (1/1 wins). Wins: design-review: 1</div>
+      <div class="scenario-count">1 scenario(s) tested</div>
+      <div class="evidence-chips"><span class="chip"><strong>Blind level:</strong> weak_blind</span><span class="chip"><strong>Sampling:</strong> standard</span><span class="chip"><strong>Runs/config:</strong> 3</span><span class="chip"><strong>Isolation:</strong> artifact_path（开源技能）/ current_environment（已注册技能，存在污染风险：执行者可能看到其他设计技能）</span><span class="chip"><strong>Baseline contamination:</strong> medium</span><span class="chip"><strong>Side effects:</strong> read_only</span><span class="chip"><strong>Leakage risk:</strong> low</span><span class="chip"><strong>Visual comparability:</strong> high</span></div>
+      <ul class="limitations"><li>已注册技能（ux-principles/echo-ux）无法按次隔离，执行者环境含其他设计技能，存在交叉污染可能</li><li>weak_blind：单主控协调，评审仅见脱敏 outputs</li></ul>
+      <table class="benchmark"><thead><tr><th>Configuration</th><th>Pass rate</th><th>Time</th><th>Tokens</th><th>Errors</th></tr></thead><tbody><tr><td>web-design-guidelines</td><td>75.00 ± 25.00%</td><td>0.00 ± 0.00s</td><td>n/a</td><td>0.00 ± 0.00</td></tr><tr><td>echo-ux</td><td>66.67 ± 38.19%</td><td>0.00 ± 0.00s</td><td>n/a</td><td>0.00 ± 0.00</td></tr><tr><td>ux-principles</td><td>75.00 ± 0.00%</td><td>0.00 ± 0.00s</td><td>n/a</td><td>0.00 ± 0.00</td></tr><tr><td>design-review</td><td>91.67 ± 14.43%</td><td>0.00 ± 0.00s</td><td>n/a</td><td>0.00 ± 0.00</td></tr></tbody></table>
+    </div>
+    
+
+    <section class="scenario">
+      <h2>scenario-daily-activity</h2>
+      <div class="prompt-block"><strong>Prompt:</strong> (no prompt found)</div>
+      <div class="scenario-expectations"><strong>Expectations</strong><ul><li><span class="expectation-type">judge</span> 识别相邻板块（当天创建/当天更新）之间零间距、边框贴合的缺陷</li><li><span class="expectation-type">judge</span> 识别卡片网格行间距为 0（gap 行向缺失、靠 margin 模拟）的问题</li><li><span class="expectation-type">judge</span> 发现 useState 在条件 return 之后调用的 Hooks 违规代码缺陷</li><li><span class="expectation-type">judge</span> 发现摘录 join('\n') 缺 white-space:pre-line 导致换行失效</li></ul></div>
+      <div class="columns" id="scenario-daily-activity-runs"><div class="column"><div class="column-label">Version A<span class="run-count">3 runs</span></div><div class="run-block"><div class="run-label">Run 1</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># 「每日动态」UI 模块设计走查报告
+
+- 方法论：vercel-agent-skills / web-design-guidelines（已按技能要求经代理抓取最新规则清单 https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md ，8055 字节全量应用）
+- 材料：screenshot.jpg（978×658 截图）、DailyActivity.tsx（228 行）、prefix.css（79 行）
+- 严重度定义：P0 = 功能/可访问性阻断；P1 = 明显可用性或正确性缺陷；P2 = 规范偏离、体验瑕疵
+
+---
+
+## P0（阻断级）
+
+### 1. 板块折叠标题不可键盘操作，键盘与读屏用户无法折叠/展开模块
+- [问题] 模块级折叠的唯一交互绑定在 `&lt;h2 onClick&gt;` 上（DailyActivity.tsx:70-73）。`h2` 不是可聚焦元素，没有 `tabIndex`、`role="button"`、`onKeyDown`，违反规则「Interactive elements need keyboard handlers」与「`&lt;button&gt;` for actions」。折叠功能对键盘用户完全不可达。
+- [证据] DailyActivity.tsx:70-73：`&lt;h2 className="backlink-reading-head" onClick={() =&gt; setSectionOpen((v) =&gt; !v)}&gt;`；prefix.css 中 `.backlink-reading-head` 无任何聚焦样式。
+- [建议] 把可点击区域改为 `&lt;button type="button" aria-expanded={sectionOpen} aria-controls={panelId}&gt;` 包住 carets+标题，`h2` 只作语义外壳；或保留 `h2` 但内部嵌 button 并补 `onKeyDown`（Enter/Space）。
+
+### 2. 折叠箭头是纯文本字符且未标 decorative，状态变化不通知辅助技术
+- [问题] `▸` 字符（DailyActivity.tsx:74-76）直接暴露给读屏，会被朗读为无法理解的符号；开合状态只写在 `data-open` 属性上，无 `aria-expanded`，读屏用户感知不到模块是展开还是收起。违反「Decorative icons need aria-hidden="true"」。
+- [证据] DailyActivity.tsx:74-76；全文件无 `aria-expanded`。
+- [建议] carets 加 `aria-hidden="true"`，状态用按钮上的 `aria-expanded` 表达；如需动画旋转，用 CSS transform 而非换字符。
+
+### 3. 交互元素全部没有可见聚焦样式
+- [问题] 卡片按钮（`.backlink-reading-entry`）、展开/收起按钮（`.backlink-reading-toggle`）、标题按钮都没有 `:focus-visible` 规则；entry 还设了 `border: 0; background: transparent`，默认轮廓是唯一线索。违反「Interactive elements need visible focus」「Never outline-none without focus replacement」——透明卡片一旦被全局 reset 去掉 outline 就彻底隐形。
+- [证据] prefix.css:28-47、69-79：无任何 `:focus` / `:focus-visible` 声明。
+- [建议] 统一补 `:focus-visible { outline: 2px solid var(--nk-focus, …); outline-offset: 2px; }`，卡片可配 `:focus-within`。
+
+---
+
+## P1（严重）
+
+### 4. 大列表未虚拟化，且每次渲染全量重算分组
+- [问题] 「当天更新」实测 539 条（screenshot），`ActivityReadingComp` 每次渲染都对全量 items 做 Map 分组、排序、`plainText` 摘录拼接（DailyActivity.tsx:34-59），无 `useMemo`，无虚拟化。违反「Large lists (&gt;50 items): virtualize」。父组件 `withActivityReading` 每次编辑器渲染都会重新拉 `getList`（DailyActivity.tsx:214-216），输入不变也重算。
+- [证据] DailyActivity.tsx:30-59、65、214-216；screenshot 中「当天更新 539」。
+- [建议] 分组/排序/摘录用 `useMemo([items, pickTime])`；超 50 条时启用 `content-visibility: auto` 或窗口化渲染（折叠态已部分缓解，展开后仍全量）。
+
+### 5. `Math.max(...sorted.map(pickTime))` 有栈溢出风险
+- [问题] 展开运算符传参上限约十万级；单日动态条目一旦超限（批量导入场景）直接抛 RangeError，整个板块崩溃。且它被放进 `entries.map` 内联计算，无缓存。
+- [证据] DailyActivity.tsx:58：`last: Math.max(...sorted.map(pickTime))`。
+- [建议] 改 `sorted.reduce((m, x) =&gt; Math.max(m, pickTime(x)), 0)`（sorted 非空时等价于取首元素，因为已降序排序，可直接 `pickTime(sorted[0])`）。
+
+### 6. 卡片网格行间距为 0，相邻卡片垂直贴合
+- [问题] `gap: 0 16px` 把行间距定为 0，只靠子项 `margin-top: 8px` 撑开（prefix.css:25、37），多行卡片在视觉上首尾相接，且与 16px 列间距不对称。这是截图可见的「相邻模块贴合零间距」同类缺陷。
+- [证据] prefix.css:22-27、37。
+- [建议] `gap: 8px 16px`（或按设计档位取值），删掉子项的 `margin-top` 补丁。
+
+### 7. 网格负外边距造成卡片左右边距与容器内边距不一致
+- [问题] 容器 `padding: 16px`（prefix.css:4），网格 `margin: 0 -8px`（prefix.css:26）把左右各拉回 8px，首列/末列卡片距容器边框仅 8px，与标题的 16px 对齐基线冲突，截图里右列卡片被裁切的观感与此相关。
+- [证据] prefix.css:4、26。
+- [建议] 去掉负 margin；若为了消除子项水平 padding，改为只抵消子项自身的 padding 值并同步设置网格 `padding: 0 8px`。
+
+### 8. 摘录里的换行符不生效
+- [问题] 摘录用 `excerpts.join('\n')`（DailyActivity.tsx:93）拼接多段，但 `.backlink-reading-excerpt` 未设 `white-space: pre-line`，`\n` 被折叠成空格，多条摘录挤成一段，来源不可分。
+- [证据] DailyActivity.tsx:93；prefix.css:58-68 无 `white-space` 声明。
+- [建议] CSS 加 `white-space: pre-line;`，或改为多条摘录各渲染一个元素。
+
+### 9. 卡片按钮缺少 `type="button"`
+- [问题] entry 按钮未写 `type`（DailyActivity.tsx:83-94），默认为 `submit`；该组件会被塞进编辑器视图，一旦上游出现 form 包裹就会触发提交。同文件的 toggle 按钮都写了 `type="button"`（99、109 行），标准不一致。
+- [证据] DailyActivity.tsx:83。
+- [建议] 补 `type="button"`。
+
+### 10. 日期硬编码格式，未走 `Intl.DateTimeFormat`
+- [问题] 截图主标题「2026-10-08」来自 `YYYY_MM_DD` 索引键直接当展示文案（datekit 索引键，DailyActivity.tsx:13-14、127-138），违反「Dates/times: use Intl.DateTimeFormat not hardcoded formats」；英文环境同样显示中式年月日顺序。
+- [证据] screenshot 顶部；DailyActivity.tsx:5、13-14。
+- [建议] 展示层用 `new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(date)`，索引键仅作数据键。
+
+---
+
+## P2（一般）
+
+### 11. 无 hover / active 反馈定义
+- [问题] `.backlink-reading-entry` 定义了 `transition: background-color 100ms`（prefix.css:46）却没有任何 `:hover` 规则改变背景；toggle 同样没有 hover 态。违反「Buttons/links need hover: state」。指针用户得不到可点击暗示（截图中的两张卡片完全无差异化）。
+- [证据] prefix.css:28-47、69-79。
+- [建议] 补 `.backlink-reading-entry:hover { background: var(--nk-hover, rgba(0,0,0,.04)); }` 及 active 态加深。
+
+### 12. 折叠/展开状态未同步 URL
+- [问题] `expanded`、`sectionOpen` 均为纯 `useState`（DailyActivity.tsx:62-64），刷新/分享后丢失。违反「URL reflects state」「Deep-link all stateful UI」。对编辑器内嵌组件可降级处理，但至少折叠态应持久化（localStorage 或随 daily 日期参数）。
+- [证据] DailyActivity.tsx:62-65。
+- [建议] 以日期为键持久化展开状态，或接受内嵌场景并在代码注释说明豁免理由。
+
+### 13. 计数数字未用等宽数字
+- [问题] 标题计数 `{groups.size}`（DailyActivity.tsx:77）与截图「219 / 539」随日期变化宽度抖动，未设 `font-variant-numeric: tabular-nums`，违反排版规则。
+- [证据] DailyActivity.tsx:77；prefix.css:16-21。
+- [建议] h2 的 span 与计数容器加 `font-variant-numeric: tabular-nums;`。
+
+### 14. 触屏点击无 `touch-action: manipulation`
+- [问题] 卡片与按钮是高频点击目标，未声明 `touch-action: manipulation`，移动端/触屏笔记本有双击缩放延迟。
+- [证据] prefix.css 全文无 `touch-action`。
+- [建议] 对 `.backlink-reading-entry`、`.backlink-reading-toggle` 加 `touch-action: manipulation;`。
+
+### 15. carets 无旋转动画样式，`data-open` 状态纯摆设
+- [问题] `data-open={String(sectionOpen)}`（DailyActivity.tsx:74）写在了元素上，但 prefix.css 片段里没有任何 `[data-open]` 选择器——箭头永远不转，状态只靠内容显隐表达；若别处有该样式，本片段也未包含，走查范围内状态视觉断裂。
+- [证据] DailyActivity.tsx:74-76；prefix.css 无 `data-open` 规则。
+- [建议] 补 `[data-open='true'] { transform: rotate(90deg); }` + `transition: transform 150ms`，并包 `prefers-reduced-motion` 豁免。
+
+### 16. 空内容条目未被过滤，渲染空摘录卡片
+- [问题] `isEmpty(citation)` 只过滤了空对象（DailyActivity.tsx:35），`plainText(citation)` 为空字符串、也无父上下文的条目仍会生成只有标题无摘录的卡片；截图中第二个空 bullet 即为空内容直出的实例。
+- [证据] screenshot 第二个空列表项；DailyActivity.tsx:34-44、50-57。
+- [建议] 过滤条件加「摘录非空」：`if (!plainText(citation) &amp;&amp; !context) continue`。
+
+### 17. 截图层面：内容区顶部留白过大、右缘内容被裁切
+- [问题] 日期标题与第一条内容之间约 130px 空白（screenshot y≈50→160），远超任何合理节奏档位；列表行右端出现被视口裁切的痕迹（x≈940 处），提示容器存在横向溢出未处理。违反「Avoid unwanted scrollbars / fix content overflow」。
+- [证据] screenshot.jpg 目测坐标。
+- [建议] 收紧日期与正文间距到一个档位（如 24px）；给滚动容器加 `overflow-x: hidden` 并排查是哪个固定宽度子元素撑破。
+
+### 18. 长标题/长摘录仅截断无补救路径
+- [问题] 标题 2 行、摘录 4 行 line-clamp（prefix.css:52、62）本身合规，但截断后没有任何「查看全文」通道——唯一出口是整卡跳转，用户无法判断该不该点。属「User-generated content: anticipate very long inputs」的体验补充项。
+- [证据] prefix.css:48-68。
+- [建议] 截断时以 `title` 属性或展开态提供全文（hover tooltip 为最低成本方案）。
+
+---
+
+## 通过项（摘要）
+
+- 卡片/展开按钮使用原生 `&lt;button&gt;` 而非 div onClick ✓
+- 板块有 `aria-label` + `h2` 语义标题 ✓
+- 摘录/标题均有 line-clamp、flex 子项有 `min-width: 0` ✓
+- 空列表返回 null，不渲染空板块 ✓（组件级；条目级见问题 16）
+- transition 指定了具体属性而非 `transition: all` ✓
+- i18n 文案走 `$t` 而非硬编码 ✓
+
+## 修复优先级建议
+
+1. 先修 P0 三条（键盘可达性 + 焦点样式）——成本极低、影响面为全部用户中的键盘/读屏群体。
+2. P1 中 4/5（性能与崩溃风险）和 6/7（间距体系）分两批走。
+3. P2 可并入下次样式统一整改。
+</pre></div><div class="grading"><div class="grading-summary">4/4 expectations passed</div><ul class="expectations"><li class="pass">✓ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 True</div></li><li class="pass">✓ 识别网格行向间距为0<div class="evidence">命中行距关键词 True</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div><div class="run-block"><div class="run-label">Run 2</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># 每日动态 UI 走查报告（run-2 / version_a）
+
+走查方法：vercel-agent-skills `web-design-guidelines`（已按 SKILL.md 要求经 web_fetch 抓取最新 Web Interface Guidelines 全量规则清单后逐条核对）。
+材料：screenshot.jpg（978×658 界面截图）、DailyActivity.tsx（228 行）、prefix.css（79 行）。
+严重度定义：P0 崩溃/功能不可用或键盘完全不可达；P1 明显可用性/可访问性缺陷；P2 规范偏离与打磨项。每条按 [问题]/[证据]/[建议] 输出。
+
+---
+
+## P0
+
+### 1. React Hooks 在条件返回之后调用，存在运行时崩溃风险
+- [问题] `useState` 的两次调用位于 `if (!groups.size) return null`（第 45 行）之后，违反 Rules of Hooks：同一组件实例在「groups 为空 ↔ 非空」之间切换时，Hook 调用数量在两次渲染间不一致，React 会直接抛错白屏。
+- [证据] DailyActivity.tsx:45（提前 return）与 DailyActivity.tsx:62-64（`React.useState` ×2）。外层 `withActivityReading`（:216）对 items 为空时返回 null，挡住了大部分空场景，但只要 items 全是 `isEmpty` 的脏数据（:35 仍会 continue）就会命中空 groups 分支，且父层未拦截。
+- [建议] 把两个 `useState` 移到 `groups` 计算之前（函数最顶部、任何 return 之前），`if (!groups.size) return null` 保持在 Hook 之后。
+
+### 2. 板块折叠标题不可键盘操作，折叠功能对键盘用户完全不可达
+- [问题] 折叠整个模块的唯一入口是 `&lt;h2 onClick&gt;`，不是 button、无 `tabIndex`、无 `onKeyDown`、无 `role="button"`/`aria-expanded`。键盘用户（Tab/Enter/Space）永远无法折叠或展开板块。
+- [证据] DailyActivity.tsx:70-73（`&lt;h2 className="backlink-reading-head" onClick={...}&gt;`）；prefix.css:9-15 也未给 h2 设 `cursor: pointer`，鼠标用户同样得不到可点提示。
+- [建议] 在 h2 内放一个真正的 `&lt;button aria-expanded={sectionOpen} aria-controls="..."&gt;` 包住 caret+标题+计数；h2 保留纯文本语义。同时补 `cursor: pointer`。
+
+### 3. 模块横向溢出视口，卡片右边缘被裁切（截图实证）
+- [问题] 板块卡片（含 1px 边框）延伸到视口右缘之外，右侧边框与圆角被裁掉；`.backlink-reading-grid` 的负水平外边距叠加父容器无 `overflow-x` 约束，把内容推出容器。
+- [证据] screenshot.jpg：「当天创建 219」「当天更新 539」两张卡片右边框均被屏幕右缘切断、右侧留白为 0；prefix.css:26 `margin: 0 -8px`（负 margin 出血）且整个 prefix.css 无任何 `overflow-x` 处理。
+- [建议] 去掉负 margin 出血，或给 `.backlink-reading` 补 `overflow-x: clip` 并核对父级 padding；验收标准：任意窗口宽度下卡片右边框完整可见且与右侧留白 ≥ 8px。
+
+---
+
+## P1
+
+### 4. 卡片用 `&lt;button&gt;` 承担「跳转主题」的导航职责
+- [问题] 点击卡片的语义是导航到来源主题，却用 button + onClick 实现：不支持 Cmd/Ctrl+点击新开、不支持中键、不产生链接上下文菜单，也没有 `href` 可复制。
+- [证据] DailyActivity.tsx:83-94（`&lt;button onClick={(e) =&gt; $.topic.route(...)}&gt;`）。
+- [建议] 换成 `&lt;a&gt;`（route 目标若非 URL，至少生成可导航的 href / 保留 button 但补修饰键分支：`e.metaKey||e.ctrlKey` 时走新开逻辑）。
+
+### 5. 摘要换行符 `\n` 不会换行，多条摘录被挤成一行
+- [问题] `excerpts.join('\n')` 写入 `&lt;span&gt;`，但 CSS 没有 `white-space: pre-line`，`\n` 会被折叠成空格——多条动态摘录之间的视觉分隔丢失，与代码注释意图（逐条分行）不符。
+- [证据] DailyActivity.tsx:93（`{excerpts.join('\n')}`）；prefix.css:58-68（`.backlink-reading-excerpt` 无 `white-space` 声明）。
+- [建议] `.backlink-reading-excerpt { white-space: pre-line; }`，或改为每条摘录一个子元素。
+
+### 6. 折叠箭头是纯文本字符且无任何样式规则，展开态指示失真
+- [问题] `▸` caret 依赖 `data-open` 属性做旋转，但 prefix.css 中根本不存在 `.backlink-reading-caret` 规则——展开/收起时箭头永远指向右，状态指示错误；且装饰字符未加 `aria-hidden="true"`，读屏会念出「向右指的小三角」。
+- [证据] DailyActivity.tsx:74-76（`data-open={String(sectionOpen)}` + `▸`）；prefix.css 全文无 caret 相关规则。截图中间区域也可见两板块均为 ▸ 态。
+- [建议] 补 CSS：`.backlink-reading-caret[data-open="true"] { transform: rotate(90deg); }` + `transition: transform 150ms`（transform 合成器友好）；caret span 加 `aria-hidden="true"`，展开状态由标题按钮的 `aria-expanded` 承载（见问题 2）。
+
+### 7. 卡片与「展开全部/收起」按钮均无 hover 反馈
+- [问题] `.backlink-reading-entry` 声明了 `transition: background-color 100ms` 却没有任何 `:hover` 规则改变背景，过渡形同虚设；`.backlink-reading-toggle` 同样无 hover。交互元素缺少视觉反馈。
+- [证据] prefix.css:28-47、prefix.css:69-79（均无 `:hover` 声明）。
+- [建议] 补 `.backlink-reading-entry:hover { background: var(--nk-hover, rgba(0,0,0,.04)); }`，toggle 同理；hover/focus 态对比度应高于静止态。
+
+### 8. 展开后全量渲染数百张卡片，无虚拟化
+- [问题] 计数显示「当天更新 539」，点「展开全部」后 `entries`（含全部 `excerpts` 字符串预拼接）一次性 `.map()` 渲染成几百个 DOM 按钮，无 `content-visibility`、无虚拟滚动，长内容日会明显卡顿。
+- [证据] screenshot.jpg（当天更新 539）；DailyActivity.tsx:65（`expanded ? entries : entries.slice(...)`）、:82-95（全量 map）；DailyActivity.tsx:48-59（每项都在 render 里重算 plainText 拼接）。
+- [建议] 给 `.backlink-reading-entry` 加 `content-visibility: auto; contain-intrinsic-size: auto 64px;`（最小改动），或对 expanded 列表分页/窗口化；`excerpts` 拼接可用 `useMemo` 缓存。
+
+### 9. 展开状态是纯本地 useState，不进 URL、不持久化
+- [问题] 板块折叠（`sectionOpen`）与列表展开（`expanded`）都是一次性内存态：刷新丢失、无法分享/深链，也不记忆用户偏好。指南要求有状态 UI 反映到 URL。
+- [证据] DailyActivity.tsx:62-64。
+- [建议] 至少把「板块折叠」同步到 localStorage 或 URL query；「展开全部」因是临时浏览态可保留本地，但折叠偏好应持久。
+
+---
+
+## P2
+
+### 10. 计数数字未用等宽数字（tabular-nums）
+- [问题] 标题后的计数（219、539、groups.size、hidden）随数值变化会抖动相邻文字；指南要求数字列/对比数字使用 `tabular-nums`。
+- [证据] screenshot.jpg（219 / 539 与标题间距随位数变化）；prefix.css:16-21（h2 span 无 `font-variant-numeric`）。
+- [建议] `.backlink-reading h2 span { font-variant-numeric: tabular-nums; }`。
+
+### 11. 触屏基础三件套缺失
+- [问题] 所有可点元素未声明 `touch-action: manipulation`（移动端双击缩放延迟）与刻意的 `-webkit-tap-highlight-color`。
+- [证据] prefix.css:28-47、69-79（button 规则均无这两项）。
+- [建议] `.backlink-reading-entry, .backlink-reading-toggle, .backlink-reading-head { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }`（高亮交由 hover/active 背景承担）。
+
+### 12. 焦点样式仅依赖浏览器默认值，无 `:focus-visible` 增强
+- [问题] CSS 没有移除 outline（好），但也完全没定义焦点态；在自定义 hover 背景之后，默认焦点环与整体风格割裂且部分浏览器下不明显。
+- [证据] prefix.css 全文无 `:focus` / `:focus-visible`。
+- [建议] 补 `.backlink-reading-entry:focus-visible, .backlink-reading-toggle:focus-visible { outline: 2px solid var(--nk-accent); outline-offset: 2px; }`，不要用 `outline: none`。
+
+### 13. 12px 灰色摘录文字对比度踩线
+- [问题] 摘录用 `--nk-muted`（fallback #666）12px/16px 行高，浅色画布上约 4.6:1 勉强达标，暗色主题或自定义 muted 变量偏浅时会更低；小字号更需要充足对比。
+- [证据] prefix.css:58-68（font-size 12px + `var(--nk-muted)`）。
+- [建议] 摘录色改用比 muted 更深的次级文字变量，或保证暗色主题下 ≥ 4.5:1 并实测截图验收。
+
+### 14. `Math.max(...sorted.map(pickTime))` 的展开写法有数组长度上限
+- [证据] DailyActivity.tsx:58。单组 citations 超过约 10 万条时 `Math.max(...arr)` 会因参数展开超限抛 RangeError；当前场景量级安全，属防御性隐患。
+- [建议] 改 `sorted.reduce((m, i) =&gt; Math.max(m, pickTime(i)), 0)` 或循环取最大。
+
+### 15. 截图上方列表出现「空 bullets」
+- [问题] 模块上方的每日列表渲染了一个无任何文字的列表项（第二个圆点后为空白），违反「空内容不渲染破碎 UI」。
+- [证据] screenshot.jpg：日期标题下方第二条 bullet 为空。
+- [证据] 关联代码：DailyActivity.tsx:35 只在 `isEmpty(citation)` 时跳过，内容为纯空白/不可见字符的条目不会被过滤（`isEmpty` 若只判 null/undefined/空串则漏掉空白串）。
+- [建议] 过滤条件加 trim 判断（`!String(plainText(item)).trim()` 跳过），上游列表同样处理。
+
+---
+
+## 已核对通过的项（供对照，非问题）
+
+- 空数据处理：无内容返回 null 不渲染空卡片（withActivityReading，:216）；`hidden&gt;0` 才显示展开按钮。
+- 卡片文本容器有 `min-width: 0` + `-webkit-line-clamp`（2 行标题 / 4 行摘录），长内容不会撑破网格（prefix.css:34、52、62）。
+- 无 `transition: all`（只过渡 background-color）；无 `outline: none`；无 `autoFocus`；无禁用缩放；无 onPaste 拦截。
+- 语义方向正确：动作用 button（卡片/toggle），未出现 div/span onClick；section 有 `aria-label`。
+- 无图片/表单/拖拽场景，相关规则不适用。
+- `data-open` 用字符串布尔而非裸属性，React 传值写法正确。
+
+## 结论
+
+P0 三项（Hook 顺序、折叠标题键盘不可达、横向溢出）建议立即修；P1 中 5、6 属「代码意图与实际渲染不符」的功能性小 bug，4、7、8 影响日常手感与长内容性能；P2 均为打磨项。修复后按报告第 3 条的验收标准在运行中的 App 内截图复核（本报告为只读走查，未改任何代码）。
+</pre></div><div class="grading"><div class="grading-summary">2/4 expectations passed</div><ul class="expectations"><li class="fail">✗ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 False</div></li><li class="fail">✗ 识别网格行向间距为0<div class="evidence">命中行距关键词 False</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div><div class="run-block"><div class="run-label">Run 3</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># 「每日动态」UI 模块设计走查报告
+
+- 走查方法：Vercel web-design-guidelines 技能（规则清单已于走查时从 [vercel-labs/web-interface-guidelines command.md](https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md) 实时抓取，共 9 大类约 90 条规则逐条比对）。
+- 走查对象：`fixtures/DailyActivity.tsx`、`fixtures/prefix.css`、`fixtures/screenshot.jpg`（三份材料交叉验证，截图用于证实代码推断）。
+- 结论概览：**高危 4 条、中危 7 条、低危 4 条**。最严重的是一处真实的 React Hooks 违规（条件早退后调用 useState）和整块折叠交互对键盘/读屏用户不可达。
+
+---
+
+## 高危
+
+### 1. React Hooks 条件调用——违反 Rules of Hooks 的真实缺陷
+
+- **[问题]** `useState` 在函数组件的条件早退之后调用，Hooks 调用顺序随数据变化而改变，React 会在开发期直接抛错，生产下可能产生状态串位（把 A 卡片组的 `expanded` 状态接到 B 上）。
+- **[证据]** DailyActivity.tsx:45 `if (!groups.size) return null` 先于 DailyActivity.tsx:62-64 的 `React.useState(false)`。当某天无动态时组件走早退分支，Hook 数量比有数据时少 2 个。
+- **[建议]** 把两处 `useState`（`expanded`、`sectionOpen`）移到 `groups` 计算与早退判断之前；空数据直接在渲染 JSX 时返回 `null`，而不是提前 return。
+
+### 2. 板块折叠（h2 onClick）对键盘与读屏用户完全不可达
+
+- **[问题]** 折叠整个模块的交互挂在 `&lt;h2&gt;` 的 onClick 上：键盘用户无法聚焦、无法用 Enter/Space 触发；读屏用户得不到「可折叠 / 当前是否展开」的任何语义。这是对「交互元素必须有键盘处理」「动作用 button」两条规则的直接违反。
+- **[证据]** DailyActivity.tsx:70-73 `&lt;h2 className="backlink-reading-head" onClick={...}&gt;`；caret `▸`（DailyActivity.tsx:74-76）为纯装饰字符却未加 `aria-hidden="true"`，会被读屏念出。截图证据：screenshot.jpg 中「当天创建 219」「当天更新 539」两个模块均处于折叠态，但无任何「已折叠」的视觉/语义说明，仅剩一行标题。
+- **[建议]** 折叠按钮改为 `&lt;button type="button" aria-expanded={sectionOpen} aria-controls={面板id}&gt;` 包住标题行（button 上保留 h2 语义可写为 `&lt;h2&gt;&lt;button …&gt;…&lt;/button&gt;&lt;/h2&gt;`）；`▸` 字符加 `aria-hidden="true"`。
+
+### 3. 折叠/展开状态不进 URL，刷新即丢
+
+- **[问题]** 「展开全部」「板块折叠」都是纯 `useState` 局部状态，未同步到 URL。「URL 反映状态（过滤器、展开面板）」「对有状态 UI 做深链」两条规则均不满足；用户刷新或把链接发给别人，对方看到的展开状态完全不同。
+- **[证据]** DailyActivity.tsx:62-64 仅 `useState`，无任何 searchParams/URL 写入。
+- **[建议]** 至少把「板块是否展开」同步进查询参数（或 hash）；展开全部可保持局部状态，但刷新丢失体验也应评估。
+
+### 4. 单日最多数百张卡片一次性渲染，无虚拟化
+
+- **[问题]** 截图显示「当天更新 539」——展开全部后 539 个卡片按钮全量 `.map()` 渲染。规则要求超过 50 项的列表虚拟化。展开瞬间会明显卡顿（尤其低端机），且 539 个可聚焦按钮让键盘/读屏用户按 Tab 穿越整个模块变成灾难。
+- **[证据]** DailyActivity.tsx:82-95 `visible.map(...)` 直接渲染；DailyActivity.tsx:65 `expanded ? entries : entries.slice(0, 12)` 展开后无上限。截图证据：「当天更新 539」。
+- **[建议]** 引入虚拟化（如 `virtua`）或对容器加 `content-visibility: auto`；同时给展开后的列表加分页/「每次多显示 50 条」递进加载。
+
+---
+
+## 中危
+
+### 5. 卡片导航用 `&lt;button onClick&gt;` 而非链接，丢失浏览器原生导航手势
+
+- **[问题]** 点击卡片是「跳转到来源主题」——这是导航不是动作。用 `&lt;button&gt;` 实现导致 Cmd/Ctrl+点击、中键新开标签、悬停状态栏预览链接等全部不可用。
+- **[证据]** DailyActivity.tsx:83-94 `&lt;button className="backlink-reading-entry" onClick={...route(...)}&gt;`。
+- **[建议]** 若路由框架支持，改为 `&lt;a href&gt;`（编程式导航可包一层）；至少保留按钮方案时在提示文案上说明不支持新开标签。
+
+### 6. 卡片与「展开全部」按钮均无 hover 视觉反馈
+
+- **[问题]** `.backlink-reading-entry` 定义了 `transition: background-color` 却从未定义 `:hover`/`:active` 的背景色，鼠标悬停无任何反馈；`.backlink-reading-toggle` 同样没有 hover 态。违反「按钮/链接需要 hover 状态」。
+- **[证据]** prefix.css:46（只有 transition 声明）、prefix.css:69-79（toggle 无任何状态样式）。
+- **[建议]** 补 `.backlink-reading-entry:hover { background: var(--nk-hover, rgba(0,0,0,0.04)); }`，toggle 同理；`:active` 再加深一档。
+
+### 7. 摘录换行丢失：`\n` 拼接但没有 `white-space: pre-line`
+
+- **[问题]** 多条摘录用 `excerpts.join('\n')` 拼进一个 `&lt;span&gt;`，但 CSS 没设 `white-space: pre-line`，换行符会被 HTML 折叠成空格——「上下文 — 摘录 — 上下文 — 摘录」全部糊成一段，多来源卡片可读性差。
+- **[证据]** DailyActivity.tsx:93 `{excerpts.join('\n')}`；prefix.css:58-68 `.backlink-reading-excerpt` 无 white-space 声明。
+- **[建议]** 给 `.backlink-reading-excerpt` 加 `white-space: pre-line`，或改为多条摘录各渲染一行（配合 line-clamp 收口）。
+
+### 8. 折叠箭头「▸」在两种状态下视觉完全相同——状态指示失效
+
+- **[问题]** caret 依赖 `data-open` 属性做旋转区分，但 prefix.css 中没有任何 `[data-open]` 相关规则：展开与折叠箭头都朝右。用户无法从箭头方向判断模块是否可展开/已展开。截图证实：两个模块均显示朝右的「▸」。
+- **[证据]** DailyActivity.tsx:74-76（`data-open={String(sectionOpen)}`）；prefix.css 全文无 `data-open` 选择器；screenshot.jpg 中「当天创建」「当天更新」箭头同向。
+- **[建议]** 补 `.backlink-reading-caret { transition: transform 100ms linear; } .backlink-reading-caret[data-open="true"] { transform: rotate(90deg); }`。
+
+### 9. 相邻模块近乎零间距，与模块上方留白严重不一致
+
+- **[问题]** 截图中「当天创建」「当天更新」两个板块卡片上下贴合，间距约 2px，而日期标题到首个列表之间却有大段空白——间距节奏不一致，模块边界糊在一起。相邻容器间距为 0 是本仓库设计规则明令禁止的档位。
+- **[证据]** screenshot.jpg：两卡片边框几乎相接；DailyActivity.tsx 中两个板块由 `addMoreComponent` 相邻注入，prefix.css 中 `.backlink-reading` 无 margin 声明（只有 padding），板块间距完全依赖外部环境。
+- **[建议]** 给 `.backlink-reading` 加 `margin-top`（取设计规范中的标准档位，如 12–16px），或在宿主容器统一设置相邻组件间距。
+
+### 10. 「展开全部」触摸目标过小
+
+- **[问题]** toggle 按钮 `padding: 4px 8px`、`font-size: 12px`，实际高度约 26px，低于 44px（触屏）/24px 的最低可用命中标准，在移动或触屏笔记本上难点中。
+- **[证据]** prefix.css:71-72。
+- **[建议]** 增大 padding 至纵向命中区 ≥ 32px（如 `padding: 8px 12px`），或用伪元素扩大命中范围。
+
+### 11. 计数数字未用等宽数字（tabular-nums）
+
+- **[问题]** 「当天创建 219」「当天更新 539」这类计数会同屏对比，非等宽数字会导致相邻数字列视觉宽度抖动。
+- **[证据]** prefix.css:16-21（`.backlink-reading h2 span` 无 `font-variant-numeric`）。
+- **[建议]** 加 `font-variant-numeric: tabular-nums;`。
+
+---
+
+## 低危
+
+### 12. 无显式 `:focus-visible` 焦点样式，仅靠浏览器默认值
+
+- **[问题]** 组件未设置任何 focus 样式（好消息是没有 `outline: none` 反模式，默认焦点环仍在），但卡片是透明背景，默认焦点环在浅色主题下对比偏弱。建议显式声明以保证品牌一致与可辨识度。
+- **[证据]** prefix.css 全文无 `:focus-visible` 规则。
+- **[建议]** 补 `.backlink-reading-entry:focus-visible { outline: 2px solid var(--nk-accent); outline-offset: 2px; }`，toggle 同理。
+
+### 13. 触屏双击缩放延迟未处理
+
+- **[问题]** 可点击元素密集的模块未设 `touch-action: manipulation`，触屏设备上点击有约 300ms 双击判定的潜在延迟。
+- **[证据]** prefix.css 全文无 `touch-action`。
+- **[建议]** 在 `.backlink-reading-entry`、`.backlink-reading-toggle`、折叠按钮上加 `touch-action: manipulation;`。
+
+### 14. 空标题卡片会产生无可访问名称的按钮
+
+- **[问题]** 卡片标题取 `source.topic || plainText(source)`，两者都可能是空字符串（例如空笔记），此时渲染出一个读屏念不出任何内容的 `&lt;button&gt;`。列表项本身有 `isEmpty` 过滤，但「存在但文本为空」的项防不住。
+- **[证据]** DailyActivity.tsx:87, 90-92。
+- **[建议]** 渲染前对标题做兜底（如 `$t('dailyActivity.untitled')`），或在 `plainText(source)` 为空时跳过该分组。
+
+### 15. 过渡动画未适配 prefers-reduced-motion
+
+- **[问题]** `transition: background-color 100ms linear` 与建议新增的 caret 旋转变换都未包 `prefers-reduced-motion` 介质查询。颜色过渡影响轻微，旋转建议顺手一起适配。
+- **[证据]** prefix.css:46。
+- **[建议]** `@media (prefers-reduced-motion: reduce) { .backlink-reading * { transition: none; } }`。
+
+---
+
+## 附：符合项（抽查通过）
+
+- 空数据返回 `null` 不渲染空壳（DailyActivity.tsx:45、216）——符合「处理空状态」。
+- 标题/摘录均有 line-clamp，grid 子项有 `min-width: 0`（prefix.css:34、52、62）——长内容截断合规。
+- `transition` 明确列出属性、未用 `transition: all`（prefix.css:46）。
+- 列表项用语义化 `&lt;button&gt;` 而非 `div onClick`；section 有 `aria-label`。
+- 卡片整卡命中区大（min-height 64px），无死区。
+
+## 严重度统计
+
+| 严重度 | 数量 | 条目 |
+| --- | --- | --- |
+| 高危 | 4 | #1 Hooks 条件调用、#2 折叠不可达、#3 状态不进 URL、#4 数百项无虚拟化 |
+| 中危 | 7 | #5–#11 |
+| 低危 | 4 | #12–#15 |
+</pre></div><div class="grading"><div class="grading-summary">3/4 expectations passed</div><ul class="expectations"><li class="pass">✓ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 True</div></li><li class="fail">✗ 识别网格行向间距为0<div class="evidence">命中行距关键词 False</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div></div><div class="column"><div class="column-label">Version B<span class="run-count">3 runs</span></div><div class="run-block"><div class="run-label">Run 1</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># 「每日动态」UI 模块走查报告
+
+- 走查方式：echo-ux 技能（`ec rules match` 召回 → 截图/代码/样式三方对照分析 → 结构化输出 → 收工关单）
+- 材料：`screenshot.jpg`、`DailyActivity.tsx`、`prefix.css`（均为只读）
+- 严重度定义：P0 = 功能损坏或崩溃；P1 = 用户可感知的交互/可达性缺陷；P2 = 体验与视觉一致性；P3 = 健壮性与性能隐患
+
+---
+
+## P0-1 Hooks 条件调用，卡片数量跨越 0↔非 0 时整棵树崩溃
+
+[问题] `ActivityReadingComp` 在 `useState` 之前有提前 `return null`（第 45 行 `if (!groups.size) return null`），Hooks 调用次数随数据变化，违反 React Hooks 规则。
+[证据] DailyActivity.tsx:45-64：`if (!groups.size) return null` 位于 `React.useState(false)`（第 62、64 行）之前。当某天从「无动态」变为「有动态」（或反向）引发组件重渲染时，React 抛出 "Rendered fewer hooks than expected" 类错误，整个编辑器视图白屏。这条与内存中已沉淀的教训一致（echo-ux 盲测里 Hooks 条件调用是能被代码审查抓到的真 bug）。
+[建议] 把两个 `useState` 提到 `groups` 计算之前、任何 return 之前；或把空态判断移入父组件 `withActivityReading`（它已经做了 `isEmpty(items)` 判断，可直接把 `groups.size` 判断也收进渲染前的数据层），保证组件体 Hooks 顺序恒定。
+
+## P0-2 折叠箭头不随状态旋转，开/合状态无视觉信号（且是「点了没反应」同族缺陷）
+
+[问题] 折叠指示符永远渲染字面字符 `▸`，代码里只设置了 `data-open` 属性，prefix.css 没有任何针对 `.backlink-reading-caret` 或 `[data-open]` 的规则，展开状态（应为 ▾）完全不体现。
+[证据] DailyActivity.tsx:74-76 渲染 `&lt;span className="backlink-reading-caret" data-open={String(sectionOpen)}&gt;▸&lt;/span&gt;`；prefix.css 全文 79 行无 `.backlink-reading-caret` 选择器。截图里两个板块均为收起态、箭头朝右恰好「碰巧正确」，但展开后箭头依旧朝右，用户点开后得不到任何状态反馈——这正是本项目 2026-10-08 复盘过的「引用面板折叠箭头失效」同族问题（当时根因是 overlay 吞点击，本次是状态样式缺失）。
+[建议] 在 CSS 补 `.backlink-reading-caret { display:inline-block; transition: transform 100ms; } .backlink-reading-caret[data-open="true"] { transform: rotate(90deg); }`；或直接换图标库的 chevron 图标按状态切换方向。
+
+## P0-3 板块点击区域横向溢出，右侧卡片被裁切
+
+[问题] 截图可见板块卡片延伸到视口右缘之外，右侧边界与内容被裁掉，板块没有完整落在可视区域内。
+[证据] screenshot.jpg：「当天创建 219」「当天更新 539」两张卡片右边框均超出图像右缘、圆角不可见。样式上 `.backlink-reading-grid` 用 `margin: 0 -8px`（prefix.css:26）做负外边距扩展，而 `.backlink-reading` 自身 padding 为 16px——当宿主容器（daily 页）本身已有内边距或板块被挂到别的容器时，负 margin 会造成水平溢出。这正是 UX.LAYOUT.003 的检查项：「板块被单独挂到新容器时是否仍保有间距/是否溢出」。
+[建议] 去掉 `margin: 0 -8px` 的负外边距技巧，让网格宽度自然等于容器内容宽；若需要卡片贴边视觉，用 `padding-inline` 与 `gap` 组合而非负 margin。
+
+## P1-1 折叠标题不可键盘操作、无 ARIA 状态，键盘与读屏用户无法折叠板块
+
+[问题] `&lt;h2 onClick&gt;` 是唯一折叠入口：不可聚焦、不响应 Enter/Space、无 `role="button"`、无 `aria-expanded`、无 `cursor:pointer`。
+[证据] DailyActivity.tsx:70-78；prefix.css:9-15 的 `h2` 规则没有 cursor/hover/focus 样式。鼠标用户能点，键盘用户完全无法操作板块折叠。
+[建议] 给 `h2` 加 `role="button" tabIndex={0} aria-expanded={sectionOpen}` 并 `onKeyDown` 处理 Enter/Space；更简做法是把标题行整体换成 `&lt;button className="backlink-reading-head" aria-expanded={...}&gt;`，再在 CSS 里重置按钮默认样式。
+
+## P1-2 卡片按钮无 hover/focus 反馈，transition 指向不存在的状态
+
+[问题] `.backlink-reading-entry` 声明了 `transition: background-color 100ms linear`，但样式表里没有任何 `:hover`/`:focus-visible` 规则改变背景色——过渡动画没有目标态，悬停和键盘聚焦均无任何视觉反馈。
+[证据] prefix.css:28-47（transition 声明）与全文缺失的 `:hover`/`:focus-visible` 规则对照；操作反馈是 echo-ux 流程的必查维度。
+[建议] 补 `.backlink-reading-entry:hover { background: var(--nk-hover, rgba(0,0,0,0.04)); }` 和 `.backlink-reading-entry:focus-visible { outline: 2px solid var(--nk-accent); outline-offset: -2px; }`；`.backlink-reading-toggle`（prefix.css:69-79）同样补 hover/focus。
+
+## P1-2b 「当天创建/更新」分类不互斥，同一笔记重复计入两榜
+
+[问题] 当天创建的笔记同时带有当天的 `updated` 时间戳，会同时出现在「当天创建」和「当天更新」两个板块里，计数（截图 219/539）含重复，用户对不上账。
+[证据] DailyActivity.tsx:176-193：`created` 与 `updated` 两个索引各自独立按日期收项，无互斥处理。UX.DATA.001 要求「分类之间互斥、无重叠」。
+[建议] 明确产品语义后二选一：更新板块过滤掉「今天创建」的项（`updated` 板块只展示老笔记的改动），或在 UI 上标注口径（如「更新含今日新建」）。
+
+## P2-1 「展开全部」一次性渲染最多 539 张卡片，无渐进加载
+
+[问题] `expanded` 为布尔值，点击「展开全部 N」后把全部 entries（截图显示当天更新 539 组）一次性全部渲染，无分页/虚拟化；`entries` 每次渲染都重新分组、排序、拼接摘录，无 memo。
+[证据] DailyActivity.tsx:65（`entries.slice`）、97-105（expand 按钮）、48-59（每次渲染全量重算）；UX.LOADING.001 要求渐进呈现而非一次性整块刷新。
+[建议] `useMemo` 包住分组/排序计算；「展开全部」改为「加载更多」按批（如每次 48 张）追加，或对网格做虚拟化。
+
+## P2-2 折叠箭头用文本字符 `▸` 充当图标
+
+[问题] 状态指示用的是 Unicode 字符而非图标库图标，跨平台字形不一致，也违反本仓「使用开源图标库而非 emoji/装饰字符」的约束。
+[证据] DailyActivity.tsx:75；UX.VISUAL.004 / WORKFLOW.DOCS.003。
+[建议] 换项目图标库的 chevron-right/chevron-down，随 `sectionOpen` 切换。
+
+## P2-3 折叠/展开引发下方内容整体跳动，切换不丝滑
+
+[问题] `sectionOpen` 切换采用条件卸载（`{sectionOpen &amp;&amp; ...}`），板块高度从「标题行」到「标题+网格+按钮」瞬变，页面下方内容瞬间位移；展开全部时同样整块插入推走邻居。状态前后视线落点不保持。
+[证据] DailyActivity.tsx:79-116；UX.SMOOTH.001「状态变了，视线落点不变」「内容更新是原地变化，还是插入新行把邻居推走」。
+[建议] 折叠用 grid-template-rows / max-height 过渡而不是卸载；展开批加载保持「加载更多」按钮位置稳定，新增行出现在按钮上方、按钮不下跳。
+
+## P2-4 计数徽标语义不明
+
+[问题] 标题旁的数字（截图 219/539）没有单位与语义，用户无法区分是「219 张卡片」「219 条动态」还是「219 个主题」——实际它是分组后的来源主题数（`groups.size`），与列表实际条目数不一致。
+[证据] DailyActivity.tsx:77（`{groups.size}`）；截图数字巨大但折叠后仅显示 12 张卡，感知对不上。
+[建议] 给计数补语义（如「219 个主题」），或同时展示「主题数 / 动态条数」。
+
+## P3-1 大数组上用 `Math.max(...spread)`，有栈溢出风险
+
+[问题] 第 58 行 `Math.max(...sorted.map(pickTime))` 在条目极多时可能超出参数个数上限（约 65k），且该行在每次渲染都执行。
+[证据] DailyActivity.tsx:58。
+[建议] 改 `sorted[0]`（已按 pickTime 降序排序，首元素即最大值），顺带省一次 map。
+
+## P3-2 `getCreatedItems` 对每条记录做递归 `getItem`，O(n) 深拷贝放大
+
+[问题] 第 135-137 行对当天每个创建项调 `$.dbMemory.getItem(item.ky, { isRecur: true })`，`withActivityReading` 里又 `filter(notEmpty)` 后全量进入组件，量大时拖慢首帧。
+[证据] DailyActivity.tsx:132-139、214-216；UX.LOADING.001 首屏耗时视角。
+[建议] 摘录渲染只需要节点的文本，可延迟到卡片可见时再取（懒加载/分批），避免为 539 组全量递归取子树。
+
+## P3-3 折叠状态与展开状态不持久化
+
+[问题] `sectionOpen`、`expanded` 都是组件内存态，切换日期或重挂载后复位；对「每天默认全折叠」这类偏好无法记忆。
+[证据] DailyActivity.tsx:62-64。
+[建议] 如产品需要，把板块折叠态持久化到 addon config 或 localStorage；至少在走查后由用户拍板默认值。
+
+## P3-4 空动态日无占位（依赖父级兜底）
+
+[问题] 板块无内容时返回 `null`（DailyActivity.tsx:45、216），页面上两个板块直接消失，用户无法区分「今天没有动态」和「模块坏了」。
+[证据] DailyActivity.tsx:45、205-216 注释「无内容时返回 null（不渲染空卡片）」；UX.DATA.001 是否遗漏关键状态（空态）。
+[建议] 空态显示一行灰字「今天暂无创建/更新」比整块消失更可解释；若刻意保持消失，应在项目 UI 规范中登记该决定。
+
+---
+
+## 规则召回与应用记录
+
+- 召回 16 条，实际影响判断：UX.LAYOUT.003（P0-3 溢出/间距归属）、UX.DATA.001（P1-2b 分类不互斥、P3-4 空态）、UX.SMOOTH.001（P2-3 跳动）、UX.LOADING.001（P2-1 渐进、P3-2 首帧）、UX.VISUAL.004 / WORKFLOW.DOCS.003（P2-2 图标字符）。
+- 召回未采用：UX.DECISION.005（本模块无选项面板/弹窗）、UX.SEARCH.001 与 PRD.SEARCH.001（无搜索结果列表场景）、UX.CONTEXT.001（未涉及历史快照展示）、UX.DECISION.001（无复杂选择）、UX.VISUAL.001/005/006（未发现装饰性动画/擅自添加元素/强调色滥用，反而 CSS 全走变量，符合规则）、ENG.EXTEND.001、ENG.PEER.001、PRD.BOUNDARY.001、UX.SEARCH.001（同前）。
+</pre></div><div class="grading"><div class="grading-summary">1/4 expectations passed</div><ul class="expectations"><li class="fail">✗ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 False</div></li><li class="fail">✗ 识别网格行向间距为0<div class="evidence">命中行距关键词 False</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="fail">✗ 发现摘录换行失效<div class="evidence">命中 False</div></li></ul></div></div><div class="run-block"><div class="run-label">Run 2</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># 「每日动态」UI 模块走查报告（echo-ux）
+
+- 走查对象：DailyActivity.tsx（ActivityReadingComp / createDailyActivityAddon）、prefix.css、screenshot.jpg
+- 方法：ec rules 召回体验规则 → 截图/代码/样式三方对照分析
+- 严重度定义：P0 功能/运行时损坏；P1 主流程体验受损；P2 可用性/一致性问题；P3 打磨项
+
+---
+
+## P0 — 会崩溃的功能缺陷
+
+### 1. React Hooks 条件调用：空组时 useState 位置漂移，随时崩溃
+- [问题] `ActivityReadingComp` 在第 45 行 `if (!groups.size) return null` 提前返回，而 `React.useState`（第 62、64 行）在其后——同一组件的 Hook 数量随数据变化，违反 Hooks 规则。
+- [证据] DailyActivity.tsx:45 与 :62-64；React 运行时会抛 "Rendered fewer hooks than expected" 并卸载整棵子树。触发路径很日常：当天有内容渲染出卡片后，用户删光当天条目（或切换日期）导致 `groups.size` 变 0，下一次渲染 Hook 数从 2 变 0。
+- [建议] 把两个 `useState` 移到所有提前 return 之前（组件顶部），或在 `withActivityReading` 外层保证非空才挂载内部组件且内部组件不再提前 return。
+
+### 2. `getUpdatedItems` 缺少索引存在性守卫，索引未初始化时直接抛错
+- [问题] `getCreatedItems` 有 `typeof $.dbMemory.indexed.created === 'object'` 守卫，`getUpdatedItems` 没有——`$.dbMemory.indexed.updated` 为 undefined 时 `date in undefined` 抛 TypeError。
+- [证据] DailyActivity.tsx:126-139 两个方法守卫不对称。
+- [建议] 与 created 同款守卫，或抽一个 `getIndexed(date, kind)` 统一处理。
+
+---
+
+## P1 — 主流程体验受损
+
+### 3. 截图证实：卡片计数 219/539 却一张卡片都看不见，板块默认收起且状态不可信
+- [问题] 截图中「当天创建 219」「当天更新 539」下方均为空白。代码里 `sectionOpen` 默认 `true`，但截图箭头是收起态（▸）——要么状态被外部重置/未持久化导致用户每次都面对收起板块，要么箭头方向没有跟随状态。
+- [证据] screenshot.jpg；DailyActivity.tsx:64（默认 true）、prefix.css 中**完全没有** `.backlink-reading-caret` 和 `[data-open]` 的样式——`data-open` 属性写了但没有任何 CSS 消费它，箭头永远是一个朝右的字符，展开态毫无视觉区分。
+- [建议] 补 caret 样式：`[data-open="true"] { transform: rotate(90deg) }` + transition；并考虑把 `sectionOpen` 持久化（localStorage 或 addon config），避免用户每次进页面都要重新展开。
+
+### 4. 折叠标题 `h2` 可点击但不可键盘操作、无 aria 状态
+- [问题] 板块级折叠只挂在 `&lt;h2 onClick&gt;` 上：不可聚焦、不支持 Enter/Space、没有 `role="button"` / `tabIndex` / `aria-expanded`，键盘用户完全无法折叠板块，读屏用户也不知道它是可折叠的。
+- [证据] DailyActivity.tsx:70-78；对照规则 UX.DECISION.005（交互必须支持纯键盘操作）。
+- [建议] 把标题行包成 `&lt;button aria-expanded={sectionOpen} aria-controls={id}&gt;`，或给 h2 加 `role="button" tabIndex={0}` + onKeyDown。
+
+### 5. 摘要换行符失效：多条摘录黏成一团
+- [问题] 卡片摘录用 `excerpts.join('\n')`（第 93 行）分隔多条内容，但 `.backlink-reading-excerpt` 是普通 `-webkit-box` + line-clamp，`white-space` 默认 normal——`\n` 被折叠成空格，多条摘录黏成一段，且不同主题之间只靠空格分隔，无法分辨条数。
+- [证据] DailyActivity.tsx:93；prefix.css:58-68。另外每条内部已用 `' — '` 连接上下文，再叠加失效的 `\n`，分隔语义混乱。
+- [建议] 摘录改为按条渲染多个 `&lt;span className="excerpt-line"&gt;`（每条 `display:block` + clamp 用外层容器 `-webkit-line-clamp` 控制），或最低成本加 `white-space: pre-line`。
+
+### 6. 同一条目同时出现在「当天创建」和「当天更新」两个板块，内容重复
+- [问题] 当天新建的条目必然同时有 created 和 updated 时间戳，会在两个板块各渲染一张一模一样的卡片，539 条更新里相当比例是重复信息，违反状态分类互斥原则。
+- [证据] DailyActivity.tsx:126-139（两个索引独立取值，无差集）；规则 UX.DATA.001（分类必须穷举且互斥）。
+- [建议] 「当天更新」板块过滤掉 `datekit(item.created) === 当天` 的条目，或卡片上标注「新建」徽标并允许用户关掉重复。
+
+---
+
+## P2 — 可用性与一致性问题
+
+### 7. 每次渲染全量重排：539 条数据无 memo，排序/分组/取父节点每帧重跑
+- [问题] `ActivityReadingComp` 渲染体里对全部条目建 Map 分组、排序、逐条 `getItem` 取父节点拼摘录，没有任何 `useMemo`；列表越长输入越卡，且父组件每次状态变化都全量重算。
+- [证据] DailyActivity.tsx:30-59。
+- [建议] 用 `useMemo(() =&gt; buildGroups(items), [items, pickTime])` 包住分组与摘录计算。
+
+### 8. 「展开全部/收起」按钮文案与状态可能同时出现两个、且展开态没有数量反馈
+- [问题] 展开后若 `entries.length &gt; COLLAPSED_COUNT` 显示收起按钮，逻辑本身对；但 `expanded === true` 时 `hidden` 恒为 0、展开按钮消失，两个按钮互斥靠两段独立条件维护，中间态脆弱。且收起后视口停留在原处，内容突然缩短，视线落点跳变。
+- [证据] DailyActivity.tsx:97-114；规则 UX.SMOOTH.001（状态切换视线落点不变）。
+- [建议] 合并为一个 toggle 按钮（`expanded ? collapse : expand`）；展开/收起后如需滚动补偿，记录触发前 `getBoundingClientRect()` 并在渲染后复位。
+
+### 9. 卡片可点击跳转依赖 `source.topic || plainText(source)`，无主题的条目点击可能空跳
+- [问题] 分组时 `citation.isTopic || citation.topic` 不满足就回退到父主题，再回退到 citation 自身（第 36-39 行）；点击时 `route(source.topic || plainText(source))`——若该条目既无 topic 属性、plainText 又为空（如纯附件节点），点击无效果且无反馈。
+- [证据] DailyActivity.tsx:36-39, 86-88。
+- [建议] 分组阶段对不可路由的 source 降级为不可点（渲染 span 而非 button），或点击时给出空态提示。
+
+### 10. 网格行间距为 0，行与行只靠每张卡片自己的 `margin-top: 8px` 撑开
+- [问题] `.backlink-reading-grid` 用 `gap: 0 16px`（行间距 0），行距实际由 `.backlink-reading-entry { margin-top: 8px }` 提供。这是规则 UX.LAYOUT.003 点名的反模式：间距归属错位——一旦某个板块单独被挂到别的容器、或卡片末行/首行状态变化（如展开动画），间距就不成立；8px 也不在设计档位（8/16/24 中 8 虽在档位内，但网格间距与列间距 16px 不一致，视觉上行松列紧不均衡）。
+- [证据] prefix.css:22-27, 37；规则 UX.LAYOUT.003。
+- [建议] 改为 `gap: 12px 16px`（或项目档位内的行/列距），删除卡片的 `margin-top`。
+
+### 11. 网格负外边距 `margin: 0 -8px` 使卡片溢出容器内边距，与外层 16px padding 打架
+- [问题] 容器 padding 16px，网格 `margin: 0 -8px` 向两侧各溢出 8px，卡片左右实际只剩 8px 呼吸空间；截图右侧卡片边框直接被视口裁切（可能叠加了更外层布局问题，但此负 margin 是本模块自己引入的错位源）。
+- [证据] prefix.css:4, 26；screenshot.jpg 右缘卡片边框被切。
+- [建议] 去掉负 margin；若是为了对齐某个 8px 栅格，应在注释里写明对齐对象，否则删。
+
+### 12. 键盘焦点样式缺失：focus 时只有 background 过渡，无可见焦点环依赖浏览器默认
+- [问题] `.backlink-reading-entry` / `.backlink-reading-toggle` 重置了 `border: 0 / none; background: transparent`，却未定义 `:focus-visible` 样式；如果全局有 outline 重置（本仓 workspace-theme 曾有类似 reset），键盘用户找不到焦点在哪。
+- [证据] prefix.css:28-47, 69-79；规则 UX.DECISION.005（键盘可达）。
+- [建议] 显式补 `:focus-visible { outline: 2px solid var(--nk-accent); outline-offset: -2px }`。
+
+---
+
+## P3 — 打磨项
+
+### 13. 标题行可点但没有 pointer 光标，折叠可供性弱
+- [证据] prefix.css:9-15，`h2` 未设 `cursor: pointer`（截图里光标停在标题上无任何提示）。
+- [建议] `.backlink-reading-head { cursor: pointer }`，修复第 4 条时一并处理。
+
+### 14. 计数展示语义不明：「219」是主题数还是条目数
+- [问题] 标题旁数字是 `groups.size`（主题分组数），但用户看到「当天创建 219」大概率理解为"创建了 219 条笔记"；两者可能差数倍。
+- [证据] DailyActivity.tsx:77。
+- [建议] 文案区分：「219 个主题」或同时给条目数。
+
+### 15. 空态直接 `return null`，板块整体消失，用户失去"今天没动静"的确认
+- [证据] DailyActivity.tsx:45, 216。折叠板块尚有标题在，空态则整块蒸发，与折叠态视觉上无法区分"没数据"和"没加载"。
+- [建议] 空态渲染标题 + 「今天暂无动态」一行灰字（规则 UX.LOADING.001 的占位精神）。
+
+### 16. 附加元数据陈旧
+- [问题] `addonInfo().updated: 20221109`、`defaultValue: 'off'`——组件已多轮迭代（OP-047），元数据未跟随；`addonRun` 留空壳注释。
+- [证据] DailyActivity.tsx:159-168, 196-198。
+- [建议] 更新 `updated` 字段；空壳删除或补真实初始化。
+
+---
+
+## 汇总
+
+| 严重度 | 条目 |
+| --- | --- |
+| P0 | #1 Hooks 条件调用；#2 索引守卫缺失 |
+| P1 | #3 展开状态/箭头失效；#4 折叠不可键盘操作；#5 摘录换行失效；#6 创建/更新板块内容重复 |
+| P2 | #7 无 memo 全量重排；#8 toggle 按钮脆弱+视口跳变；#9 空主题点击空跳；#10 网格间距归属错位；#11 负 margin 溢出；#12 焦点样式缺失 |
+| P3 | #13 pointer 缺失；#14 计数语义；#15 空态蒸发；#16 元数据陈旧 |
+
+规则应用情况：UX.DECISION.005（键盘可达）、UX.SMOOTH.001（状态切换视线）、UX.DATA.001（互斥）、UX.LAYOUT.003（间距归属）、UX.VISUAL.001/004（视觉克制核查通过，本模块无 AI 味装饰）。
+</pre></div><div class="grading"><div class="grading-summary">3/4 expectations passed</div><ul class="expectations"><li class="fail">✗ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 False</div></li><li class="pass">✓ 识别网格行向间距为0<div class="evidence">命中行距关键词 True</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div><div class="run-block"><div class="run-label">Run 3</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># 每日动态 UI 模块走查报告（echo-ux）
+
+- 走查对象：`temp/fixtures/screenshot.jpg`、`DailyActivity.tsx`、`prefix.css`
+- 方法：ec rules match 召回 9 条规则 → 截图 + 代码 + 样式三方对照分析
+- 结论：共 12 条问题，按严重度排序如下
+
+---
+
+## P0 — 功能性缺陷（会崩溃 / 结果错误）
+
+### 1. React Hooks 条件调用，组件会直接崩溃
+
+[问题] `ActivityReadingComp` 在 `if (!groups.size) return null`（第 45 行）之后才调用 `React.useState`（第 62、64 行），违反 Hooks 规则；分组数在空与非空之间变化时触发「Rendered fewer hooks than expected」崩溃。
+
+[证据] DailyActivity.tsx:45 提前 return；DailyActivity.tsx:62/64 `useState`。当天第一条动态出现/清空的瞬间即命中。这与本项目已知缺陷模式（Hooks 条件调用为代码级真 bug）一致。
+
+[建议] 把两个 `useState` 移到组件最顶部（任何 return 之前），或将空态判断移到 `withActivityReading` 外层包装里（该层已经做了 `isEmpty(items) → null`，内层这个 return null 本身冗余，可直接删除）。
+
+### 2. 标题计数与正文内容矛盾（截图可见 219/539 但无一张卡片）
+
+[问题] 截图中「当天创建 219」「当天更新 539」两个板块正文区完全没有卡片，标题数字宣称有内容、正文却是空的，状态展示自相矛盾，用户无法判断是没加载、被折叠还是数据丢了。
+
+[证据] screenshot.jpg：两个板块只显示标题行与计数，下方空白；代码 `sectionOpen` 默认 `true`（DailyActivity.tsx:64），`withActivityReading` 仅在 items 全空时返回 null——说明此时 sectionOpen 为真、items 非空，正文理应有 12 张卡片。违反 UX.DATA.001（状态穷举与诚实展示）。
+
+[建议] 先查 `visible.map` 渲染链路（如 `$.dbMemory.getItem` 返回空导致 excerpts 全空、卡片高度塌缩为 0 被父容器 overflow 裁掉），并给卡片加最小可见性兜底；计数与内容不一致时宁可显示「加载中/暂无明细」占位，不能数字与空白并存。
+
+### 3. 折叠指示器方向与实际状态不符
+
+[问题] caret 字符固定为 `▸`（向右 = 收起），prefix.css 里没有任何针对 `data-open` 的旋转规则；`sectionOpen` 默认展开时指示器仍指向右，用户会误以为点开的是收起状态。
+
+[证据] DailyActivity.tsx:74-76 写了 `data-open={String(sectionOpen)}` 说明本意是让 CSS 旋转，但 prefix.css 全文无 `data-open` 选择器；截图两个板块均为 `▸`。
+
+[建议] 在 prefix.css 补 `.backlink-reading-caret[data-open="true"] { transform: rotate(90deg); }` 并加 transition；或改用图标库的 chevron 组件，别用裸文本字符当图标（见问题 9）。
+
+## P1 — 状态与交互缺陷
+
+### 4. 折叠/展开状态跨日期残留
+
+[问题] `expanded`、`sectionOpen` 两个 state 不随 `item`（日期）变化重置；用户在某天收起板块或展开全部后切到另一天，旧状态被沿用，与「看新一天」的预期不符。
+
+[证据] DailyActivity.tsx:62-64 useState 无 key/reset 逻辑；`Comp` 以 `props.item` 为输入但从不响应其变化。
+
+[建议] 给使用处加 `key={item.ky}`，或在组件内用「渲染期比较 + setState」模式在 item 变化时重置；最简单是父级 key 方案，无额外代码。
+
+### 5. 相邻卡片行距为 0，靠卡片自身 margin-top 兜底
+
+[问题] 网格 `gap: 0 16px`（行间距 0），行距全靠 `.backlink-reading-entry` 的 `margin-top: 8px` 补——间距不归属布局层，卡片被单独复用到别的容器时行距消失；且列距 16 / 行距 8 视觉不均。
+
+[证据] prefix.css:25 `gap: 0 16px`；prefix.css:37 `margin-top: 8px`。命中 UX.LAYOUT.003（同级板块必须显式间距、走 8/16/24 档位、不靠父级顺带给出）。
+
+[建议] 改为 `gap: 16px`（或 8px 统一），删除卡片的 `margin-top`；折叠切换后间距依然成立。
+
+### 6. 多条摘录换行丢失，挤成一行
+
+[问题] `excerpts.join('\n')` 用换行拼接多条摘录，但 `.backlink-reading-excerpt` 是普通 span，`\n` 不生效，多条动态连成一串「上下文 — 摘录 — 上下文 — 摘录」，无法分辨条数。
+
+[证据] DailyActivity.tsx:93；prefix.css:58-68 无 `white-space: pre-line`。且 `-webkit-line-clamp: 4` 会把多行内容截断得更早，用户不知道被截掉了多少条。
+
+[建议] excerpt 容器加 `white-space: pre-line`；更优做法是每条摘录独立成行元素并在超出时显示「还有 N 条」，把截断量诚实告知（UX.CONTEXT.001）。
+
+### 7. 折叠标题行不可键盘操作、无可达性语义
+
+[问题] 整个模块的折叠/展开只挂在 `&lt;h2 onClick&gt;` 上：无 `tabIndex`、无 Enter/Space 处理、无 `role="button"`/`aria-expanded`，键盘用户与读屏用户完全无法折叠板块；h2 内嵌可点击也不合语义。
+
+[证据] DailyActivity.tsx:70-78。命中 UX.DECISION.005（键盘操作必须到位）的精神：关键控件不得只有指针路径。
+
+[建议] 把标题行改为 `&lt;button type="button" aria-expanded={sectionOpen} aria-controls={id}&gt;` 包裹文本，caret 作为其子元素；或至少给 h2 加 tabIndex=0 与 keydown 处理。
+
+### 8. 「展开全部/收起」按钮键盘焦点不可见
+
+[问题] 两个 toggle 按钮都是 `background: transparent; border: none`，prefix.css 无 `:hover`/`:focus-visible` 样式，键盘 Tab 到这里没有任何视觉指示，用户不知道焦点在哪。
+
+[证据] DailyActivity.tsx:97-114；prefix.css:69-79。
+
+[建议] 补 `.backlink-reading-toggle:hover { background: var(--nk-hover); }` 与 `:focus-visible { outline: 2px solid var(--nk-focus); }`，卡片 entry 同样检查焦点可见性。
+
+## P2 — 展示质量
+
+### 9. 文本字符 `▸` 充当图标
+
+[问题] 用裸 Unicode 字符 `▸` 做折叠指示，不同平台/字体渲染不一（有的显示为 emoji 风格或方块），且无法统一控制粗细与颜色。
+
+[证据] DailyActivity.tsx:75。命中 UX.VISUAL.004/WORKFLOW.DOCS.003（应使用开源图标库而非字符/emoji 充当图标）。
+
+[建议] 换成项目图标库的 chevron-right 图标，旋转逻辑不变。
+
+### 10. 计数语义含糊：groups.size 是「分组数」不是「条目数」
+
+[问题] 标题旁数字是按来源主题分组后的卡片数（`groups.size`），用户很可能理解成「当天创建了 219 条笔记」；两条口径差异在折叠场景（只显示 12 张卡）下进一步放大。
+
+[证据] DailyActivity.tsx:77 `{groups.size}`；注释（206 行）也确认是分组计数。命中 UX.DATA.001（关键状态口径必须清楚）。
+
+[建议] 文案区分「N 个主题 · M 条动态」，或 tooltip 说明口径；至少与折叠文案「展开全部 N 张」用同一口径。
+
+### 11. 无主题的条目点击行为不可预期
+
+[问题] `$.topic.route(source.topic || plainText(source))`：无 topic 属性的条目会把摘录纯文本当路由目标，可能触发一次全文搜索或跳到不存在的主题，点击结果不可预期且无反馈。
+
+[证据] DailyActivity.tsx:87；分组逻辑（37-39 行）允许 `?? citation` 兜底出无 topic 的 source。
+
+[建议] 无 topic 的条目降级为不可点击的 div（去掉 cursor: pointer），或点击后显式执行「以此文本搜索」并给出结果视图，不给静默失败路径。
+
+## P3 — 代码与样式卫生
+
+### 12. 死样式声明与私有前缀无兜底
+
+[问题] `.backlink-reading` 声明了 `container-type: inline-size` 但全文没有任何 `@container` 查询，是死代码；截断用的是 `-webkit-line-clamp` 私有前缀（虽然 Chromium 系可用，但无标准 `line-clamp` 声明）。
+
+[证据] prefix.css:3、50-52、60-62。
+
+[建议] 删除 container-type 或补上真正响应卡片的 @container 规则；line-clamp 补标准属性声明。
+
+### 附：性能备注（不单列问题）
+
+- `getCreatedItems` 的 `isRecur: true` 深读取与分组、排序都在每次渲染同步执行（无 memo），539 条更新时每次状态切换（折叠/展开）全量重算；建议 `useMemo` 包住 entries 计算。
+- `expanded` 后一次性渲染全部卡片，量级大时建议分段渲染或虚拟列表。
+
+---
+
+## 规则应用记录
+
+- UX.DATA.001（状态穷举诚实展示）：pass —— 问题 2、10 的判据。
+- UX.LAYOUT.003（同级显式间距）：pass —— 问题 5 的判据。
+- UX.SMOOTH.001（状态指示一致）：pass —— 问题 3（caret 与状态不符）。
+- UX.DECISION.005（键盘可达）：pass —— 问题 7、8。
+- UX.VISUAL.004（禁字符图标）：pass —— 问题 9。
+- UX.CONTEXT.001（诚实截断）：pass —— 问题 6。
+- UX.VISUAL.001/005/006、ENG.*、PRD.*、WORKFLOW.DOCS.003：召回但未影响本次结论（模块整体视觉克制、无强调色滥用，未发现违反点）。
+</pre></div><div class="grading"><div class="grading-summary">4/4 expectations passed</div><ul class="expectations"><li class="pass">✓ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 True</div></li><li class="pass">✓ 识别网格行向间距为0<div class="evidence">命中行距关键词 True</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div></div><div class="column"><div class="column-label">Version C<span class="run-count">3 runs</span></div><div class="run-block"><div class="run-label">Run 1</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># 「每日动态」UI 模块走查报告（ux-principles 技能 · 逐条原则走查）
+
+- 走查对象：`screenshot.jpg` + `DailyActivity.tsx` + `prefix.css`（只读材料）
+- 走查方法：加载 ux-principles 技能，遍历 `principles/` 全部 17 条原则 + 附录「审核工作台补充原则 11 条」+ 业界参考框架（Nielsen / WCAG），逐条对照截图与代码。
+- 结论概览：P0×1，P1×4，P2×5，P3×4。移动端专属原则（安全区/overscroll/弹窗全屏等）大多不适用（本模块为 PC 阅读式卡片网格，无 fixed 元素、无弹窗、无输入框），已逐条排除并在文末列出。
+
+---
+
+## P0 必须修
+
+### 1. [问题] React Hooks 条件调用：早退 return 在 useState 之前，违反 Hooks 规则
+- [证据] `DailyActivity.tsx:45` — `if (!groups.size) return null` 位于组件体内，而 `React.useState` 在 `DailyActivity.tsx:62-64` 才调用。一旦同一挂载位置的组件从「有分组」变为「无分组」（如日期切换后数据清空、过滤变化），Hook 调用数量在两次渲染间不一致，React 直接抛错 "Rendered fewer hooks than expected"，整个编辑器视图崩溃。外层 `withActivityReading`（215-216 行）虽然过滤了空列表，使该路径多数时候不可达，但组件自身未设防，属于埋雷。
+- [建议] 把两个 `useState` 提到所有条件 return 之前（函数组件开头），或用 `useState` 的惰性初始化；最低成本是把 62-64 行移到 30 行 `const groups = new Map(...)` 之前。
+
+## P1 建议改（高）
+
+### 2. [问题] 摘录换行符不生效：多条摘录被压成一团
+- [证据] `DailyActivity.tsx:93` — `excerpts.join('\n')` 以 `\n` 拼接多条摘录；但 `prefix.css:58-68` 的 `.backlink-reading-excerpt` 未设 `white-space: pre-line`，`\n` 按 HTML 规则折叠为空格。多条摘录（且每条内部还有 ` — ` 拼接的上下文，见 56 行）被合并成一个段落再被 `-webkit-line-clamp: 4` 截断，用户看到的是无结构的半句截断文本，无法分辨「这是几条动态」。
+- [建议] 给 `.backlink-reading-excerpt` 加 `white-space: pre-line;`；或改为每条摘录渲染独立元素（如 `&lt;span className="excerpt-line"&gt;`），从结构上保证分行，同时便于将来对单条摘录加省略。
+
+### 3. [问题] 可折叠标题无键盘可达性，也无可点击线索
+- [证据] `DailyActivity.tsx:70-73` — `&lt;h2 onClick=...&gt;` 是整个板块折叠/展开的唯一开关，但 h2 不是可聚焦元素：无 `tabIndex`、无 `role="button"`、无 `onKeyDown`（回车/空格不触发），纯键盘用户无法操作折叠。同时 `prefix.css:9-15` 未给 h2 设 `cursor: pointer` 和 hover 反馈，鼠标用户也看不出标题可点（对照工作台补充原则 4「状态用文字直接表达」与 Nielsen「系统状态可见性」）。
+- [建议] 把标题行改为 `&lt;button type="button" aria-expanded={sectionOpen} aria-controls="面板 id"&gt;` 包裹（按钮内放 caret + 标题 + 计数），或保留 h2 语义、内部嵌 button；CSS 补 `cursor:pointer` 与 `:hover/:focus-visible` 样式。
+
+### 4. [问题] 卡片与「展开/收起」按钮零交互反馈：无 hover / active / focus-visible 样式
+- [证据] `prefix.css:46` 定义了 `transition: background-color 100ms linear`，但全片段没有任何 `:hover`、`:active`、`:focus-visible` 规则去改变 `background`——过渡没有目标态，等于装饰。整卡是 `&lt;button&gt;`（tsx:83-94），点击后跳转来源主题是强操作，却没有可感知的悬停/按下反馈（Nielsen #1 系统状态可见性；工作台补充原则 2「选中态=热区」的反馈面同理）。
+- [建议] 补 `.backlink-reading-entry:hover { background: var(--nk-hover-bg, rgba(0,0,0,.04)); }`、`:active` 加深一档、`:focus-visible` 用 `outline: 2px solid ...`；toggle 按钮同样补齐。
+
+### 5. [问题] 触控目标远小于 44×44pt（touch-target-44pt）
+- [证据] `prefix.css:69-78` — `.backlink-reading-toggle` 为 `padding: 4px 8px; font-size: 12px; line-height` 未设，实际高度约 22-24px；`prefix.css:13` 标题行 `line-height: 20px`，折叠开关点击带高度也只有 20px。均在移动端/触屏下远低于 44×44pt 最小触控标准（Apple HIG / Material）。
+- [建议] 触屏场景（`@media (hover:none) and (pointer:coarse)`）下给 toggle 与标题开关补 `min-height: 44px`（或加大 padding 撑热区，视觉不变、热区扩大）。
+
+## P2 建议改（中）
+
+### 6. [问题] 网格行间距为 0 + 负 margin 挤进容器内边距（grid-and-flex-stack / 工作台 density 纪律）
+- [证据] `prefix.css:22-27` — `.backlink-reading-grid { gap: 0 16px; margin: 0 -8px; }`：行间距（row-gap）为 0，垂直间隔完全依赖卡片的 `margin-top: 8px`（38 行）；负 margin 把网格两侧各拉进容器 16px 内边距 8px，卡片文字距板块边框仅剩卡片自身 `padding: 8px`。hover 背景块之间垂直仅 8px、水平紧贴容器边，视觉分组弱、误触率高；这也是本仓 DESIGN.md 明令禁止的「相邻容器 0 间距」同款问题。
+- [建议] `gap: 8px 16px`（或 12px 16px），去掉负 margin，让卡片 hover 背景与容器边缘保留 ≥8px 呼吸空间。
+
+### 7. [问题] 折叠箭头 `data-open` 无对应旋转样式，状态不随开合变化
+- [证据] `DailyActivity.tsx:74-76` — caret 输出 `data-open={String(sectionOpen)}`，但 `prefix.css` 全片段没有 `[data-open]` 相关规则，`▸` 永远指向右。截图也证实两个板块都收起时箭头仍为静态右指（`screenshot.jpg`：「当天创建 219」「当天更新 539」行首）。开合状态只靠箭头这一个视觉信号传达，而它不变（Nielsen #1；工作台补充原则 4）。
+- [建议] 若旋转样式在别处已有则忽略；否则补 `.backlink-reading-caret[data-open="true"] { transform: rotate(90deg); }` + `transition: transform 100ms`。
+
+### 8. [问题] 日期/数据切换时折叠状态不重置
+- [证据] `DailyActivity.tsx:62-64` — `expanded` / `sectionOpen` 是组件内部 state，组件按位置复用；用户在某天点了「展开全部」（539 条全量渲染）后切到另一天，`expanded` 仍为 true，新的一天直接全量渲染，性能与认知负担都被上一天的操作劫持。
+- [建议] 用 `key`（如当前日期）强制重挂载，或在 `items`/日期变化时用 `useEffect` 重置；至少对「展开全部」加条数上限保护。
+
+### 9. [问题] `Math.max(...arr)` 展开大数组 + 计算结果从未使用（性能/健壮性）
+- [证据] `DailyActivity.tsx:58` — `last: Math.max(...sorted.map(pickTime))`：`当天更新 539` 条时展开 539 个参数，接近引擎参数上限风险（V8 上限约 6.5 万，当前安全但纯属浪费）；且 `last` 在渲染中从未被读取（全文无引用），每次渲染白算。
+- [建议] 删除 `last`；若将来要用，改为 `sorted.length ? pickTime(sorted[0]) : 0`（sorted 已按时间降序）。
+
+### 10. [问题] 计数徽标语义不明：`groups.size` 是「分组数」还是「动态条数」用户无法分辨
+- [证据] `DailyActivity.tsx:77` — `{title} &lt;span&gt;{groups.size}&lt;/span&gt;`，裸数字无单位、无 `aria-label`。截图里「当天创建 219」「当天更新 539」：539 是分组数（来源主题数）还是条数？二者相差可能很大（groups 是按来源主题分组的，条数是 citations 总和），用户核对预期时会产生误判（Nielsen #2 与现实匹配）。
+- [建议] 显示为「N 个主题」或「N 条」，并给徽标加 `aria-label`；屏读用户目前听到的只是裸数字。
+
+## P3 可优化（低）
+
+### 11. [问题] 移动端 tap 高亮未消除（tap-highlight）
+- [证据] `prefix.css` 全片段无 `-webkit-tap-highlight-color: transparent`，触屏点击整卡按钮会出现 iOS/Android 默认灰色闪块，与自定义 hover 反馈叠加显得脏。
+- [建议] 触屏媒体查询下对 `.backlink-reading-entry, .backlink-reading-toggle` 设 `-webkit-tap-highlight-color: transparent;`，反馈交给 `:active` 背景。
+
+### 12. [问题] 空状态直接 return null，无占位引导（state-full-container 变体）
+- [证据] `DailyActivity.tsx:45` 与 216 行 — 无内容时组件整体消失。对「当天动态」场景可接受（无动态≠异常），但当某天创建为 0、更新很多时，两个板块一隐一现，页面高度跳变；且用户无法区分「没动态」和「模块被关掉了」。
+- [建议] 保持 null 即可，但可考虑给 daily 页级容器一个统一的「今日暂无动态」空态文案，避免静默空白。
+
+### 13. [问题] 12px 灰色小字对比度未兜底
+- [证据] `prefix.css:66,75` — 摘录与 toggle 均为 12px + `var(--nk-muted)`（fallback `#666`）。若主题变量在深色模式下解析为更浅的灰，12px 小字对比度可能低于 WCAG AA 的 4.5:1。
+- [建议] 为 `--nk-muted` 在深浅两套主题下各核对一次对比度；12px 文本建议不低于 4.5:1。
+
+### 14. [问题] 分组逻辑对「既是主题又有 topic 字段」的条目自分组，可能与卡片点击目标不一致
+- [证据] `DailyActivity.tsx:36-39` — `citation.isTopic || citation.topic ? citation : 父主题`，卡片标题渲染 `source.topic || plainText(source)`（91 行），点击路由 `source.topic || plainText(source)`（87 行）。当 source 是条目自身（isTopic）但 `topic` 为空时，标题退化为 `plainText(source)` 整段摘录文字充当标题、并把它当路由关键词，长摘录做标题会撑爆 2 行截断且路由可能失配。
+- [建议] 对 `!source.topic` 的分组考虑跳过或回退到父主题链，避免「整段文字当标题」。
+
+---
+
+## 已逐条检查、不适用的原则（附排除理由）
+
+| 原则 | 结论 |
+|---|---|
+| content-no-overlap | 无 position:fixed/absolute 元素，无硬编码 padding-bottom 让路，通过 |
+| panel-hidden-by-default | 无侧滑面板，通过 |
+| sticky-header-topmost | 无固定头部（h2 为普通流），不适用 |
+| input-focus-keyboard-avoid | 无输入框，不适用 |
+| modal-fullscreen | 无弹窗，不适用 |
+| safe-area-adaptation | 桌面阅读视图，无固定底栏/全屏层，不适用（若日后进移动端需补） |
+| overscroll-behavior | 本片段无独立滚动容器，不适用 |
+| hover-not-control-visibility | 片段内 :hover 不控制可见性（目前连 hover 都没有，见问题 4），通过 |
+| pc-api-mobile-equivalent | 无 drag/drop 等 PC 专属 API，通过 |
+| tooltip-tap-trigger | 无 tooltip/mouseenter 浮层，通过 |
+| self-contained-interface-layer | 非独立全屏层，不适用 |
+| sidebar-fixed-content-scroll | 走查范围仅模块片段，双栏骨架不在材料内，无法判定 |
+| mobile-first-css | 该原则针对独立 HTML 页内联样式，本模块为应用内组件样式，部分适用（grid 的 minmax(220px,1fr) 在极窄容器下仍能降为单列，行为可接受） |
+| grid-and-flex-stack | 多列网格会自然降列（auto-fill），通过；行距问题归入问题 6 |
+| state-full-container | 见问题 12 |
+| touch-target-44pt | 见问题 5 |
+| tap-highlight | 见问题 11 |
+
+补充原则（工作台 11 条）中适用并已核对的：4（状态文字化→问题 7、10）、7（内容左对齐/操作右对齐：卡片布局符合）、8（密度：标题+摘录同行堆叠符合）、2（选中态=热区：hover 反馈缺失归问题 4）；1、3、5、6、9、10、11 不适用于本片段。
+
+## 严重度汇总
+
+- **P0（1 条）**：#1 Hooks 条件调用
+- **P1（4 条）**：#2 摘录换行失效、#3 折叠开关键盘不可达、#4 零交互反馈、#5 触控目标过小
+- **P2（5 条）**：#6 网格 0 行距+负 margin、#7 箭头状态不变、#8 折叠态跨日期残留、#9 无用大数组展开、#10 计数语义不明
+- **P3（4 条）**：#11 tap 高亮、#12 空态静默、#13 小字对比度、#14 无 topic 分组的标题退化
+</pre></div><div class="grading"><div class="grading-summary">3/4 expectations passed</div><ul class="expectations"><li class="fail">✗ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 False</div></li><li class="pass">✓ 识别网格行向间距为0<div class="evidence">命中行距关键词 True</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div><div class="run-block"><div class="run-label">Run 2</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># 「每日动态」UI 模块走查报告（ux-principles 全流程）
+
+- 走查对象：`screenshot.jpg` + `DailyActivity.tsx` + `prefix.css`
+- 走查方式：ux-principles 技能 16 条原则 + 工作台补充 10 条 + Nielsen/WCAG 附录逐条对照
+- 日期：2026-10-08
+- 严重度定义：**P0 必须修**（崩溃/功能失效）｜**P1 建议改**（明显体验缺陷）｜**P2 可优化**
+
+---
+
+## P0 必须修
+
+### 1. React Hooks 在条件 return 之后调用（违反 Rules of Hooks）
+**[问题]** `ActivityReadingComp` 在 line 45 `if (!groups.size) return null` 早退之后才调用两个 `React.useState`（line 62、64）。当同一位挂载点上的组件在「空 → 非空」间切换（例如切换日期、当天数据异步到位）时，Hook 调用次数在两次渲染间不一致，React 会直接抛错 "Rendered fewer hooks than expected"，整个编辑器视图崩溃。
+**[证据]** `DailyActivity.tsx:45`（早退）先于 `DailyActivity.tsx:62-64`（`useState` × 2）；`withActivityReading` 里 line 216 还有第二个早退 `if (isEmpty(items)) return null`，同样发生在子组件挂载判定之前，会放大挂载/卸载抖动。
+**[建议]** 把两个 `useState` 提到所有早退之前（函数顶部），或在早退前保证 Hook 顺序恒定；`withActivityReading` 的空判定保留即可（它在子组件外，不影响 Hook 链）。
+
+### 2. 摘录换行符不生效，多段摘录挤成一行
+**[问题]** 卡片摘录用 `excerpts.join('\n')` 拼接多段摘录，但 `.backlink-reading-excerpt` 未设 `white-space: pre-line`，HTML 渲染时 `\n` 被折叠为空格。多条摘录连成一长串，`-webkit-line-clamp: 4` 名义上"四行摘录"实际可能只显示一条主题的前四行，其余摘录信息完全丢失且无任何提示。
+**[证据]** `DailyActivity.tsx:93` `excerpts.join('\n')`；`prefix.css:58-68` 的 `.backlink-reading-excerpt` 无 `white-space` 声明。
+**[建议]** 给 `.backlink-reading-excerpt` 加 `white-space: pre-line`；或将摘录改为 `&lt;span&gt;` 列表逐条渲染，展示条数上限独立于行数上限。
+
+### 3. 折叠箭头无旋转样式，展开/收起无视觉反馈
+**[问题]** caret 的开合状态只写进了 `data-open` 属性，但 `prefix.css` 里根本没有 `.backlink-reading-caret` 任何规则——属性无人消费，`▸` 永远朝右。截图里板块默认展开（能看到 219/539 的计数与卡片区域），箭头却仍指右（收起语义），用户无法从箭头判断当前是开是合，点标题后界面也无变化反馈。
+**[证据]** `DailyActivity.tsx:74-76` `&lt;span className="backlink-reading-caret" data-open={...}&gt;▸&lt;/span&gt;`；`prefix.css` 全文无 `caret` 选择器；截图两板块箭头均为右向。
+**[建议]** 补 CSS：`.backlink-reading-caret { display:inline-block; transition: transform 120ms; } .backlink-reading-caret[data-open="true"] { transform: rotate(90deg); }`。
+
+---
+
+## P1 建议改
+
+### 4. 板块标题不可键盘操作、无 ARIA 状态
+**[问题]** 收起/展开整个模块的交互绑在 `&lt;h2 onClick&gt;` 上：不是按钮、无 `tabindex`、无 `role`，键盘用户（Tab + Enter/Space）完全无法折叠板块；屏幕阅读器也读不到当前开合状态。WCAG「可操作」原则直接违反。
+**[证据]** `DailyActivity.tsx:70-78`：`&lt;h2 className="backlink-reading-head" onClick={...}&gt;`，无 `aria-expanded`、无 `aria-controls`。
+**[建议]** 在 h2 内放一个真正的 `&lt;button aria-expanded={sectionOpen} aria-controls={面板id}&gt;` 包住箭头+标题，或给 h2 加 `role="button"` + `tabIndex={0}` + onKeyDown 处理 Enter/Space（前者更标准）。
+
+### 5. 点击/悬停目标过小，触控热区不足 44pt
+**[问题]** 标题行高仅 20px（`h2` line-height: 20px、无额外 padding），"当天创建/当天更新"整行可点但实际热区高度约 20-24px；「展开全部/收起」按钮 padding 仅 `4px 8px`，高度约 24px。移动端原则 `touch-target-44pt`（≥44×44pt）双违反。
+**[证据]** `prefix.css:9-15`（h2 行高 20px 无 padding）、`prefix.css:69-79`（toggle 按钮 padding: 4px 8px）。
+**[建议]** 标题行加 `padding: 12px 0`（或用负 margin 补偿保持视觉）；toggle 按钮 `padding` 提到 `8px 12px` 并保证 `min-height: 44px`（桌面可放宽到 32px，但当前 24px 偏小）。
+
+### 6. 卡片无 hover / focus-visible 反馈，transition 是死代码
+**[问题]** `.backlink-reading-entry` 定义了 `transition: background-color 100ms`，但样式表没有任何 `:hover`、`:active`、`:focus-visible` 规则改变背景——鼠标悬停和键盘聚焦时卡片毫无反馈，用户无法确认"这个可以点、焦点在哪"。整套卡片实际是 `&lt;button&gt;`，浏览器默认 focus 轮廓也可能因样式重置背景被弱化。
+**[证据]** `prefix.css:28-47`：`transition: background-color 100ms linear;` 存在，全文无 `.backlink-reading-entry:hover` / `:focus-visible`。
+**[建议]** 补 `.backlink-reading-entry:hover { background: var(--nk-hover, rgba(0,0,0,.04)); }` 与同值的 `:focus-visible`（外加 `outline: 2px solid var(--nk-accent)` 保证键盘可见）。
+
+### 7. 网格行距为 0，靠 margin hack 撑间距，卡片与容器贴边
+**[问题]** `.backlink-reading-grid` 用 `gap: 0 16px`（行距 0），行间距改由卡片 `margin-top: 8px` 提供；再用 `margin: 0 -8px` 负外边距把网格向两侧撑出容器内边距。这是本项目已知缺陷模式（相邻容器 0 间距 + 负 margin hack）：窄容器下卡片热区会贴到容器边框和圆角上，hover 高亮块也会压到 `border-radius: 8px` 的容器圆角内。
+**[证据]** `prefix.css:22-27`（`gap: 0 16px; margin: 0 -8px`）与 `prefix.css:37`（`margin-top: 8px`）。
+**[建议]** 直接 `gap: 8px 16px`，删掉 `margin: 0 -8px` 与 `margin-top: 8px` 两个 hack；间距取设计档位值，不做 0 值行距。
+
+### 8. 大数据量无 memo、无虚拟化，展开全部一次性渲染
+**[问题]** 每次渲染都对全部条目重算分组、排序、`plainText` 摘录（截图显示"当天更新 539"条）；`getCreatedItems` 还对每个条目做 `getItem(ky, { isRecur: true })` 递归取值。点击「展开全部」后一次性渲染全部卡片，无虚拟滚动、无分页。在 539 条规模下点击折叠/展开会明显卡顿。
+**[证据]** `DailyActivity.tsx:30-59`（每次 render 重建 Map + 排序 + 摘录拼接，无 `useMemo`）；`DailyActivity.tsx:135-137`（`isRecur: true` 递归）；`DailyActivity.tsx:65`（`expanded` 时渲染全部 entries）；截图计数 219 / 539。
+**[建议]** 用 `useMemo` 包住分组+摘录计算（依赖 `items`、`pickTime`）；展开态考虑分批渲染（如每次 +50）或复用项目既有虚拟列表。
+
+### 9. 标题计数语义不清：数字是"分组数"还是"条数"？
+**[问题]** h2 里的计数显示 `groups.size`（来源主题分组数），截图显示"当天创建 219 / 当天更新 539"。若 219/539 实为条目数，则与代码语义不符；若确是分组数，用户也很难区分"219 篇笔记"和"219 个主题"。另外折叠时只显示 12 张卡片，计数与可见卡片数差距巨大（539 vs 12）而无任何"共 N 个主题、M 条动态"的拆解说明。
+**[证据]** `DailyActivity.tsx:77` `{title} &lt;span&gt;{groups.size}&lt;/span&gt;`；注释 line 206「标题里的计数在渲染时由 groups.size 提供」；截图「当天创建 219」「当天更新 539」。
+**[建议]** 明确计数单位并在 UI 上表达（如「当天更新 · 86 个主题 / 539 条」）；`$t('dailyActivity.expand_all', { count: hidden })` 的 count 也要与该口径一致。
+
+### 10. 折叠状态不持久化，板块每次进来都全开
+**[问题]** `sectionOpen` / `expanded` 都是组件本地 `useState`，切换日期或离开再回来（组件卸载重建）后状态重置为全展开。面对 539 条的默认全开视图，用户每次都要重新收起，"用户控制与自由"打了折扣。
+**[证据]** `DailyActivity.tsx:62-64`；组件随 `addMoreComponent` 挂载于编辑器视图，切换日期即重建。
+**[建议]** 折叠偏好写入 addon `config`（`config = {}` 已存在，line 124）或 localStorage，按板块记忆开合。
+
+---
+
+## P2 可优化
+
+### 11. 移动端安全项缺失：tap 高亮与触摸滚动
+**[问题]** 样式未设置 `-webkit-tap-highlight-color: transparent` 与 `overscroll-behavior`。该模块基于 webview/移动适配时（backlink 网格 minmax 220px 可在窄容器触发横排改竖排），点卡片会出现系统灰块闪动，嵌套滚动到底时可能带动整页橡皮筋。对应原则 `tap-highlight`、`overscroll-behavior`。
+**[证据]** `prefix.css` 全文无 `-webkit-tap-highlight-color` / `overscroll-behavior`。
+**[建议]** 在卡片与 toggle 上加 `-webkit-tap-highlight-color: transparent`；滚动容器（若板块可滚动）加 `overscroll-behavior: contain`。
+
+### 12. 加载/空状态依赖"不渲染"，缺少系统状态可见性
+**[问题]** 空数据时返回 `null`（无空卡片，这是合理的），但大数据计算（539 条分组+摘录）在主线程同步执行期间没有任何"计算中"反馈；Nielsen「系统状态可见性」在此缺失。低优先级因为当前为同步计算、卡顿即冻结，用户至少能感知"在干活"。
+**[证据]** `DailyActivity.tsx:45, 216`（null 早退）；无 loading/skeleton 分支。
+**[建议]** 若按问题 8 引入分批/异步加载，配 skeleton 或"正在汇总…"文字；纯同步方案可忽略。
+
+### 13. 摘录与计数用 12px muted 色小字，长文可读性与对比度存疑
+**[问题]** 摘录 `font-size: 12px; line-height: 16px; color: var(--nk-muted)`，是界面最小字号承载最长内容；muted 灰在浅色背景上的对比度需实测（WCAG AA 正文要求 4.5:1，12px 小字更敏感）。
+**[证据]** `prefix.css:58-68`；截图两板块收起态无法验证实际摘录渲染，但计数「219/539」同为 12px 灰字可作参照。
+**[建议]** 摘录提至 13px / 行高 18px 与标题一致，或实测 `--nk-muted` 对比度不达 4.5:1 时换深一档变量。
+
+### 14. 展开全部后无"收起"入口的边界泄漏
+**[问题]** 「收起」按钮条件是 `expanded &amp;&amp; entries.length &gt; COLLAPSED_COUNT`，逻辑正确；但当 `entries.length` 恰在 12±1 边界、且分组数据在编辑过程中实时变化（用户边写边看每日动态）时，`hidden` 与按钮会闪现/消失，触发布局跳动。低概率，但编辑器场景数据是活的。
+**[证据]** `DailyActivity.tsx:97-114`；`withActivityReading` 每次渲染重取 `getList`。
+**[建议]** toggle 区域给固定 `min-height`，或对 `entries.length` 变化做防抖。
+
+---
+
+## 走查覆盖说明
+
+- 16 条原则中 `sticky-header-topmost`、`modal-fullscreen`、`safe-area-adaptation`、`input-focus-keyboard-avoid`、`panel-hidden-by-default`、`hover-not-control-visibility`、`pc-api-mobile-equivalent`、`tooltip-tap-trigger`、`sidebar-fixed-content-scroll`、`state-full-container`（部分，见问题 12）在本模块无对应场景或未发现问题，未列入。
+- 工作台补充 10 条中 `selection-equals-hitarea`（卡片高亮无选中态概念）、`left-content-right-actions`（卡片已左对齐）、`density-inline`（摘录独立成块属合理设计）通过。
+- 截图独立观察：两个板块在收起态下仍占满宽度、卡片未渲染，与代码 `sectionOpen &amp;&amp;` 一致，未发现截图与代码矛盾项（箭头方向问题已归入问题 3）。
+</pre></div><div class="grading"><div class="grading-summary">3/4 expectations passed</div><ul class="expectations"><li class="fail">✗ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 False</div></li><li class="pass">✓ 识别网格行向间距为0<div class="evidence">命中行距关键词 True</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div><div class="run-block"><div class="run-label">Run 3</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># 「每日动态」UI 模块走查报告（ux-principles 全原则走查）
+
+- 走查对象：`temp/skill-eval-design/temp/fixtures/` 下 `screenshot.jpg`、`DailyActivity.tsx`、`prefix.css`
+- 方法：加载 ux-principles 技能，逐条比对 principles/ 目录 17 条原则 + 11 条工作台补充原则 + Nielsen/WCAG 附录；截图证据与代码/样式交叉验证
+- 结果：P0 ×1，P1 ×3，P2 ×4，P3 ×3；7 条原则明确通过，6 条不适用（已注明）
+
+---
+
+## P0 必须修
+
+### 1. React Hooks 条件调用，空组切换时组件崩溃
+- [问题] `ActivityReadingComp` 在第 45 行 `if (!groups.size) return null` 提前返回之后才调用 `React.useState`（第 62、64 行）。同一组件在「有内容」与「无内容」两次渲染间 Hook 数量不同，违反 Rules of Hooks。
+- [证据] DailyActivity.tsx:45 `if (!groups.size) return null` 早于 :62 `const [expanded, setExpanded] = React.useState(false)`、:64 `const [sectionOpen, setSectionOpen] = React.useState(true)`。典型触发路径：删除当天最后一条笔记使 219 → 0，React 直接抛 "Rendered fewer hooks than expected"，整个编辑器视图白屏。
+- [建议] 把两个 `useState` 移到 `if (!groups.size)` 之前；或把空态判断下沉到外层 `withActivityReading`（那里已-return-null 且无 Hook，安全）。
+
+---
+
+## P1 建议尽快修
+
+### 2. 相邻板块贴合零间距，「当天创建」与「当天更新」卡片粘在一起
+- [问题] `.backlink-reading` 无任何 margin，两个板块实例上下堆叠时仅隔 1px 边框，视觉上粘连为一个块；与上方日记内容反而留白很大，节奏失衡。
+- [证据] prefix.css:2-8 `.backlink-reading` 只有 `padding: 16px`，无 `margin`；screenshot.jpg 中「当天创建 219」与「当天更新 539」两张卡片边框相贴、中缝只有一条线，与上方列表的间距形成明显反差。
+- [建议] 给 `.backlink-reading` 加 `margin: 16px 0`（或外层容器用 `display:grid; gap:16px` 统一档位），使板块间距与模块内间距同档。
+
+### 3. 折叠状态不可见：箭头无旋转样式，展开/收起长得一样
+- [问题] 折叠箭头 `▸` 是写死的字符，CSS 里没有任何 `[data-open]` 旋转/换形规则，板块展开时箭头仍指向右，用户无法从视觉判断当前是展开还是收起状态（Nielsen #1 系统状态可见性）。
+- [证据] DailyActivity.tsx:74-76 `&lt;span className="backlink-reading-caret" data-open={String(sectionOpen)}&gt;▸&lt;/span&gt;`；prefix.css 全文无 `.backlink-reading-caret` 选择器，`data-open` 属性悬空。
+- [建议] 补 `.backlink-reading-caret { display:inline-block; transition: transform 150ms; } .backlink-reading-caret[data-open="true"] { transform: rotate(90deg); }`。
+
+### 4. 折叠标题行不可发现、不可键盘触达、触控目标过小
+- [问题] 折叠交互只挂在 `h2` 的 `onClick` 上：无 `cursor:pointer`、无 hover/active 反馈（可发现性差）；`h2` 无 `tabIndex`/`role="button"`/`onKeyDown`，键盘与读屏用户完全无法折叠（WCAG 可操作）；标题行高仅 20px，远低于 44×44pt 最小触控目标。
+- [证据] DailyActivity.tsx:70-73 `&lt;h2 className="backlink-reading-head" onClick={...}&gt;`；prefix.css:9-15 `.backlink-reading h2` 仅排版属性，无 cursor/hover/padding。
+- [建议] 标题行改为 `&lt;button type="button" aria-expanded={sectionOpen}&gt;` 包裹（或 h2 加 `role="button" tabIndex={0}` + Enter/Space 处理），CSS 加 `cursor:pointer` + hover 背景 + `padding:8px 0; min-height:44px`；`aria-controls` 指向网格容器。
+
+---
+
+## P2 建议改
+
+### 5. 多条摘录的 `\n` 拼接在 HTML 中失效，多条动态挤成一段
+- [问题] `excerpts.join('\n')` 放进 JSX 文本后换行符塌缩为空格，同主题多条当天动态之间没有任何可见分隔，阅读上混为一谈。
+- [证据] DailyActivity.tsx:93 `{excerpts.join('\n')}`；prefix.css:58-68 `.backlink-reading-excerpt` 无 `white-space: pre-line`。
+- [建议] excerpt 加 `white-space: pre-line`，或每条摘录渲染为独立 `&lt;span&gt;`/列表行。
+
+### 6. 「展开全部」无上限渲染，219/539 个分组一次性进 DOM
+- [问题] `expanded` 后 `entries` 全量渲染，截图场景是 539 组，一次性铺几百个卡片按钮，滚动卡顿、找内容也更难；且展开后没有分组/分页收口。
+- [证据] DailyActivity.tsx:65 `const visible = expanded ? entries : entries.slice(0, COLLAPSED_COUNT)`；screenshot.jpg 标题计数 219 / 539。
+- [建议] 展开改为阶梯加载（每次 +24）或虚拟滚动；至少对 expanded 状态再加一层上限与「继续加载」。
+
+### 7. 卡片点击无任何视觉反馈，transition 空转
+- [问题] `.backlink-reading-entry` 与 `.backlink-reading-toggle` 声明了 `transition: background-color` 却没有任何 `:hover`/`:active`/`:focus-visible` 背景规则，整个模块的所有可点元素按下均无反馈；移动端也未关 tap 高亮（tap-highlight 原则）。
+- [证据] prefix.css:46、69-79：只有 transition 定义，无状态伪类；也无 `-webkit-tap-highlight-color: transparent`。
+- [建议] 补 `:hover/:active { background: var(--nk-hover-bg, rgba(0,0,0,.04)) }` 与 `:focus-visible` 描边；触屏下关默认高亮、靠 :active 提供反馈。
+
+### 8. 卡片边框溢出视口右缘（截图可见）
+- [问题] 截图中两张板块卡片右边框被裁切、延伸出屏幕右缘，说明外层容器缺少宽度/溢出约束；`.backlink-reading-grid` 的 `margin: 0 -8px` 负外边距会加剧溢出（吃掉父级 padding 后仍可能超出）。
+- [证据] screenshot.jpg（978px 宽）：「当天创建」「当天更新」卡片右侧边框不可见、内容贴屏；prefix.css:26 `margin: 0 -8px`，:3 `container-type: inline-size` 但无 `max-width`/`overflow` 约束。
+- [建议] 排查外层插入容器（`addMoreComponent` 宿主）是否给了 `min-width:0`；负 margin 改为网格自身的 `padding-inline: 8px` 对冲方案，并验证 `entry` 的 `min-width:0` 链路完整。
+
+---
+
+## P3 可优化
+
+### 9. 展开状态未暴露给辅助技术
+- [问题] 折叠区只有视觉切换，网格容器无 `aria-hidden`/`hidden` 语义联动，caret 字符也未 `aria-hidden`，读屏会把「▸」读出来。
+- [证据] DailyActivity.tsx:74-79；prefix.css 无相关处理。
+- [建议] 网格容器挂 `id` + 标题 `aria-controls`，caret 加 `aria-hidden="true"`。
+
+### 10. 行数截断依赖 `-webkit-line-clamp` 私有方案
+- [问题] 标题 2 行、摘录 4 行截断全部依赖 `-webkit-box` 私有前缀属性，虽现代浏览器普遍支持，但无标准回退，截断处也无省略号兜底确认。
+- [证据] prefix.css:50-56、60-63。
+- [建议] 保持现状可接受；如需严谨，补 `@supports not (-webkit-line-clamp: 2)` 的 `max-height + overflow:hidden` 回退。
+
+### 11. 索引取值防御不一致（代码层）
+- [问题] `getCreatedItems` 有 `typeof $.dbMemory.indexed.created === 'object'` 守卫，`getUpdatedItems` 没有；索引未初始化时前者安全、后者直接抛错，属同类场景双标准。
+- [证据] DailyActivity.tsx:126-139。
+- [建议] 抽一个 `getIndex(date, kind)` 统一守卫。
+
+---
+
+## 通过项（逐条原则结论）
+
+| 原则 | 结论 |
+|---|---|
+| content-no-overlap | 通过：模块内无 fixed/absolute 覆盖元素 |
+| panel-hidden-by-default | 通过：无侧滑面板 |
+| sticky-header-topmost | 不适用：无固定头部 |
+| input-focus-keyboard-avoid | 不适用：无输入框 |
+| modal-fullscreen | 不适用：无弹窗 |
+| safe-area-adaptation | 不适用：非全屏层/无固定底栏（宿主层面负责） |
+| overscroll-behavior | 不适用：模块自身无滚动容器（依赖页面级滚动） |
+| pc-api-mobile-equivalent | 通过：无 drag/PC 专属 API |
+| grid-and-flex-stack | 基本通过：`auto-fill, minmax(220px,1fr)` 窄屏自然降为单列；扣分项见 #8 负 margin 溢出 |
+| hover-not-control-visibility | 通过：无 hover 控制可见性（问题是完全没有 hover 反馈，见 #7） |
+| tooltip-tap-trigger | 不适用：无信息浮层 |
+| state-full-container | 通过（约定内）：空数据返回 null 不渲染空卡片，符合「无内容不占位」的注释约定；但折叠态本身即空态的载体，无额外引导可接受 |
+| tap-highlight | 不通过：见 #7 |
+| touch-target-44pt | 不通过：见 #4 |
+| mobile-first-css | 基本通过：尺寸以小屏为默认、无 max-width 覆盖堆叠 |
+| self-contained-interface-layer | 不适用：非独立界面层 |
+| sidebar-fixed-content-scroll | 不适用：无双栏结构 |
+
+补充原则（工作台 11 条）中相关项：#2 对应「相邻容器间距禁 0 值」，#4 对应「操作控件位置稳定/热区范围」；其余（scrollbar、单选等）不适用于本模块。
+</pre></div><div class="grading"><div class="grading-summary">3/4 expectations passed</div><ul class="expectations"><li class="pass">✓ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 True</div></li><li class="fail">✗ 识别网格行向间距为0<div class="evidence">命中行距关键词 False</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div></div><div class="column"><div class="column-label">Version D<span class="run-count">3 runs</span></div><div class="run-block"><div class="run-label">Run 1</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># Design Review: 每日动态（DailyActivity）UI 模块
+
+**日期**: 2026-10-08
+**对象**: `temp/skill-eval-design/temp/fixtures/` 下 screenshot.jpg + DailyActivity.tsx + prefix.css（走查材料，只读）
+**方法**: jezweb design-review 技能（布局/排版/颜色/层级/组件一致性/交互/响应式 七维走查），无浏览器环境，以截图 + 源码静态核对代替。
+
+## Overall Impression
+
+整体是克制的阅读式卡片网格，token 化配色和 line-clamp 摘录做得不错；但存在一个会崩溃的 React Hooks 违规、板块之间零间距贴合、折叠控件无任何状态指示与键盘可达性——「看起来像开发者顺手做的」成分集中在折叠/展开这一条交互链上。
+
+## Findings（按严重度排序）
+
+### 高（High）
+
+**1. [问题] React Hooks 在条件提前返回之后调用，组件会在「空 ↔ 非空」切换时崩溃**
+- [证据] `DailyActivity.tsx:45` `if (!groups.size) return null` 早于 `DailyActivity.tsx:62-64` 的两个 `React.useState`。首次渲染条目为空返回 null、出现条目后重渲染时 Hook 数量从 0 变 2，触发「Rendered fewer hooks than expected」并卸载整棵子树。截图里两个板块（219/539 条）正是依赖这个开关路径的组件。
+- [建议] 把两个 `useState` 移到函数最顶部（任何 return 之前），或拆成先算数据再早退的小函数 + 外层组件持有状态。
+
+**2. [问题] 两个板块卡片上下贴合、零间距，边框线叠在一起**
+- [证据] 截图中「当天创建 219」与「当天更新 539」两张卡片边框直接相接，视觉上融为一个双格块。代码侧：`.backlink-reading`（prefix.css:2-8）之间没有任何 margin/间距规则；板块由 `addMoreComponent` 顺序堆叠，模块级 margin 缺失。这属于技能「Grouping / Consistent spacing」的反例——不相关的两个板块视觉上被强制成一组。
+- [建议] 给 `.backlink-reading` 加 `margin-top: 24px`（首个板块用 `:first-of-type` 归零），或在宿主容器统一板块间档位，与项目 DESIGN.md §5.2 的间距档位对齐。
+
+**3. [问题] 板块折叠无状态指示、无键盘可达性：caret 永远是「▸」，标题行不可聚焦**
+- [证据] JSX 用 `data-open={String(sectionOpen)}`（DailyActivity.tsx:74-76）标记展开态，但 prefix.css 里没有任何 `.backlink-reading-caret` 或 `[data-open]` 规则——三角永远不会旋转，收起与展开长得一模一样（截图两个板块均为「▸」却无法分辨谁开谁关）。同时 `&lt;h2 onClick&gt;`（:70-73）没有 `tabIndex`、`role="button"`、`aria-expanded`，键盘用户完全无法折叠板块，屏幕阅读器也读不到状态。
+- [建议] CSS 补 `.backlink-reading-caret { display:inline-block; transition: transform 150ms ease; } [data-open="true"] { transform: rotate(90deg); }`；h2 改为内含 `&lt;button aria-expanded={sectionOpen}&gt;` 或给 h2 加 `tabIndex={0}` + `onKeyDown` 处理 Enter/Space，caret 加 `aria-hidden`。
+
+### 中（Medium）
+
+**4. [问题] 网格负外边距使卡片左边缘与标题左边缘错位 8px**
+- [证据] `.backlink-reading-grid { margin: 0 -8px }`（prefix.css:26）把网格左右各外扩 8px，卡片内容起点在容器 padding 16px - 8px = 8px 处，而 h2 标题在 16px 处——同一板块内标题与卡片左边缘不齐（技能「Alignment」反例）。负 margin 的意图应是抵消卡片自身的 8px padding 让文字对齐标题，但它作用在盒子边缘而非文字上，只对齐了卡片边框以外的空白。
+- [建议] 若目的是文字视觉对齐，去掉负 margin，改为让卡片 `padding: 8px` 保持、接受 8px 文字缩进；或把负 margin 与卡片 padding 都改为同值并实测对齐。任选其一，但标题与卡片文字必须有同一条左基线。
+
+**5. [问题] 网格行距 8px 与列距 16px 不一致，且行距完全依赖卡片自身的 margin-top**
+- [证据] `.backlink-reading-grid { gap: 0 16px }`（prefix.css:25）行 gap 为 0，垂直节奏全靠 `.backlink-reading-entry { margin-top: 8px }`（:37）。结果是：列间 16px、行间 8px + 卡片自身 padding 8px×2，实际视觉行距被卡片内部空白稀释，紧密程度与列方向不对称；网格语义也被破坏（间距该由 gap 表达）。
+- [建议] 改为 `gap: 8px 16px`（或统一 12px），删除 entry 的 `margin-top`。
+
+**6. [问题] 卡片没有 hover 反馈，可点击性不可感知**
+- [证据] `.backlink-reading-entry` 定义了 `transition: background-color 100ms linear`（prefix.css:46）和 `cursor: pointer`，但整个 CSS 片段没有任何 `:hover` / `:focus-visible` 规则——transition 过渡的是永远不变的背景色。整张卡片是 `&lt;button&gt;`，却只有鼠标指针变化这一个可点击线索（技能「Hover states / Focus states」双反例）。
+- [建议] 补 `.backlink-reading-entry:hover { background: var(--nk-hover, rgba(0,0,0,.04)) }` 和 `:focus-visible { outline: 2px solid var(--nk-accent); outline-offset: 2px }`；`.backlink-reading-toggle` 同样缺 hover/focus，一并补。
+
+**7. [问题] 多条摘录用 `\n` 拼接但 CSS 未开启 `white-space: pre-line`，换行全部丢失**
+- [证据] `DailyActivity.tsx:93` `excerpts.join('\n')` 把一天内多条动态塞进同一个 `&lt;span&gt;`，而 `.backlink-reading-excerpt`（prefix.css:58-68）是普通 `-webkit-box` 截断容器，`white-space` 默认 normal——换行符被折叠成空格，4 行摘录实际是 4 行连成一气的长文再被硬截断，信息边界消失。
+- [建议] CSS 加 `white-space: pre-line;`；或 JSX 改为 `excerpts.slice(0,4).map(...)` 渲染独立 `&lt;span className="...-excerpt-line"&gt;`（每条各自 clamp 一行），语义更干净。
+
+**8. [问题] 标题计数语义含混：219/539 既是「分组卡片数」又像「动态条数」，与「默认只显示 12 张」叠加造成认知落差**
+- [证据] h2 里的数字是 `groups.size`（分组后的来源主题数，DailyActivity.tsx:77），而「展开全部」按钮的 N 是 `entries.length - 12`。用户看到「当天创建 219」点开，预期看到 219 条当天创建的笔记，实际得到 219 张按主题聚合的卡片且首屏只有 12 张；卡片内的摘录又是「上下文 — 摘录」拼接的多条内容。三个数量（原始条目数、分组数、可见卡片数）在 UI 上互相矛盾。
+- [建议] 计数旁注明单位（如「219 个主题」），或改为显示原始条目数；「展开全部」按钮已带 count 是对的，保持与标题单位一致。
+
+**9. [问题] 「展开全部」一次渲染全部条目，500+ 卡片无虚拟化也无分页**
+- [证据] `expanded` 后 `visible = entries`（DailyActivity.tsx:65）全量渲染；截图板块计数 219/539，展开当天更新即一次性挂载 539 张卡片 × 若干 DOM 节点，含每条的 `plainText(parent)` 计算（:51-55），滚动和交互会明显掉帧。
+- [建议] 展开改为「加载更多」增量追加（每次 +24），或对超出首屏的部分做虚拟列表。
+
+### 低（Low）
+
+**10. [问题] 折叠按钮 hover 过渡 100ms，低于 150–200ms 的常规手感区间**
+- [证据] prefix.css:46 `transition: background-color 100ms linear`。
+- [建议] 统一为 `150ms ease`。
+
+**11. [问题] toggle 按钮颜色兜底值硬编码 `#666`，绕过 token 体系**
+- [证据] prefix.css:75 `color: var(--nk-muted, #666)`。同文件其余处兜底用的是语义 token（如 `var(--nk-backlink-bg, var(--nk-canvas))`）。若 `--nk-muted` 在暗色主题下定义缺失，#666 在深底上对比不足。
+- [建议] 兜底改成 `var(--nk-ink-dim, #888)` 一类的语义层，或确认 `--nk-muted` 全主题必有后删掉兜底。
+
+**12. [问题] 字号层级梯度过弱：板块标题 14px / 卡片标题 13px / 摘录 12px，每级只差 1px**
+- [证据] prefix.css:12、:54、:66。squint test 下三层文字几乎同一视觉重量，板块标题仅靠 600 字重撑住。
+- [建议] 保持克制的前提下把板块标题提到 15–16px（或卡片标题降为 13px 但摘录用更弱的颜色/行高拉开），让三层在眯眼测试下可分辨。
+
+**13. [问题] 卡片按钮无 `title`/`aria-label`，标题与摘录被 line-clamp 截断后全文不可获知**
+- [证据] `-webkit-line-clamp: 2/4`（prefix.css:52、:62）会静默裁切；`&lt;button&gt;`（DailyActivity.tsx:83-94）未把完整标题放进 `title` 属性或 `aria-label`，鼠标悬停与读屏用户都拿不到全文。
+- [建议] 按钮 `title={source.topic || plainText(source)}`，读屏再加 `aria-label` 同值。
+
+**14. [问题] caret 字符「▸」是纯文本装饰，未对读屏隐藏**
+- [证据] DailyActivity.tsx:74-76，与第 3 条同源；读屏会把它读成多余字符。
+- [建议] `aria-hidden`（随第 3 条改造一并处理）。
+
+## What Looks Good
+
+- 卡片用语义 token（`--nk-backlink-*`、`--nk-ink`、`--nk-muted`）而非裸色值，暗色主题可随 token 切换。
+- `-webkit-line-clamp` 让长标题/摘录优雅截断，网格 `repeat(auto-fill, minmax(220px, 1fr))` 响应式合理。
+- 无内容返回 null 不渲染空板块；卡片本体是 `&lt;button&gt;`，点击目标语义正确。
+- 板块级折叠 + 量大默认折叠（COLLAPSED_COUNT）的产品方向是对的——问题只在指示与可达性，不在方案。
+
+## Top 3 Fixes
+
+1. 修 Hooks 条件调用（发现 1）——这是功能性崩溃，不是观感问题。
+2. 板块间补 24px 间距 + caret 旋转指示 + h2 键盘化（发现 2、3）——一组改动同时解决「贴合」与「折叠不可感知/不可达」。
+3. 网格 `gap: 8px 16px` 去掉负 margin 与卡片 margin-top，补卡片 hover/focus（发现 4、5、6）——对齐与可点击性一次到位。
+</pre></div><div class="grading"><div class="grading-summary">4/4 expectations passed</div><ul class="expectations"><li class="pass">✓ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 True</div></li><li class="pass">✓ 识别网格行向间距为0<div class="evidence">命中行距关键词 True</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div><div class="run-block"><div class="run-label">Run 2</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># Design Review: 每日动态（DailyActivity）UI 模块
+
+**Date**: 2026-10-08
+**方法**: 按 design-review 技能（layout/typography/colour/hierarchy/component/interaction/responsive 七维）走查，材料为 screenshot.jpg + DailyActivity.tsx + prefix.css（离线走查，无法实测 dark mode 与多宽度）。
+**Overall Impression**: 信息架构清晰（分组→卡片→摘录），但整体偏「开发者气质」：交互反馈缺失、状态可视性差、存在一处会直接导致运行时崩溃的 React 规则违例，以及多处贴合并留白失控。
+
+---
+
+## Findings（按严重度排序）
+
+### High
+
+#### 1. React Hooks 条件调用——提前 return 后才调用 useState，状态会跨条件错乱甚至崩溃
+- **[问题]** `ActivityReadingComp` 在第 45 行 `if (!groups.size) return null` 之后才调用 `React.useState`（第 62、64 行）。一旦同一组件实例的 items 从空变为非空（例如折叠日期后数据异步到达、切换日期），Hook 调用数量在两次渲染间不一致，违反 Rules of Hooks，轻则状态串位，重则直接抛错白屏。
+- **[证据]** DailyActivity.tsx:45（return null）vs :62-64（useState）。另外 `withActivityReading` 外层还有一层 `isEmpty(items) → null`（:216），同一挂载点会在「渲染 0 个 Hook 的组件」与「渲染 2 个 Hook 的组件」间切换，放大触发概率。
+- **[建议]** 把两个 useState 移到函数最顶部（所有提前 return 之前）；或把空态判断改为渲染层面（`if (!groups.size) return &lt;section hidden /&gt;` 不推荐）——最简单是所有 Hook 前置。
+
+#### 2. 可点击卡片没有任何 hover / focus-visible 反馈，键盘焦点不可见
+- **[问题]** `.backlink-reading-entry` 是承载唯一主操作（跳转来源主题）的 `&lt;button&gt;`，但 prefix.css 里没有 `:hover`、`:focus-visible`、`:active` 任何一条规则——鼠标悬停无反馈、Tab 聚焦无焦点环，用户无法知道卡片可点，键盘用户完全失去位置感。唯一的 `transition: background-color 100ms` 因没有 hover 目标而形同虚设。
+- **[证据]** prefix.css:28-47（entry 规则块内无伪类）；grep 全文件无 `hover`/`focus`。
+- **[建议]** 补 `.backlink-reading-entry:hover { background: var(--nk-hover, rgba(0,0,0,.04)) }` 与 `:focus-visible { outline: 2px solid var(--nk-accent); outline-offset: -2px }`；transition 放宽到 150ms ease。
+
+#### 3. 相邻模块零间距贴合——「当天创建」与「当天更新」两个板块边框直接相接
+- **[问题]** 截图中两个板块卡片上下边框贴合，视觉上糊成一个双线块，分不清是两个独立模块还是一张破损的卡片。这属于技能定义的 High（看起来像渲染坏了）。
+- **[证据]** screenshot.jpg：两个灰框在 y≈430 处边框直接相接；组件里两个板块（Created / Updated）只是先后 `addMoreComponent`，prefix.css 的 `.backlink-reading` 只有自身 padding，模块间垂直间距依赖外部布局，未保证非零。
+- **[建议]** 在容器层面给连续 `.backlink-reading` 之间 16px（一个 DESIGN 档位）间距，如 `.backlink-reading + .backlink-reading { margin-top: 16px }`，或由父布局统一 `gap`。
+
+#### 4. 空内容条目仍渲染成孤零零的项目符号
+- **[问题]** 截图第二个 bullet 只有一个圆点、无任何文字。空文本的 citation 没有被过滤，渲染出一个可交互列表项的空壳——用户会以为是 bug 或「可点的隐形条目」。
+- **[证据]** screenshot.jpg y≈233 处空圆点；代码 :34-35 只用 `isEmpty(citation)`（判对象），:50-57 组摘录时 `plainText(citation)` 可返回空串，未按「整条摘录为空则不渲染该 citation」过滤。
+- **[建议]** 在构建 excerpts 时过滤掉 join 后为空的条目；若某卡片 excerpts 全空则跳过该 citation，避免空 bullet 与空卡片。
+
+### Medium
+
+#### 5. 折叠箭头（caret）无任何样式与状态表现，开合无视觉区分
+- **[问题]** `&lt;span className="backlink-reading-caret" data-open&gt;` 输出字符「▸」，但 prefix.css 完全没有 `.backlink-reading-caret` 规则——`data-open` 属性没有任何对应样式，箭头展开/收起时不旋转、不变色，模块收起与展开状态只能靠内容消失来猜。
+- **[证据]** DailyActivity.tsx:74-76；prefix.css 全文件无 caret 规则。
+- **[建议]** 补 `.backlink-reading-caret { display:inline-block; transition: transform 150ms }` + `[data-open="true"] { transform: rotate(90deg) }`。
+
+#### 6. 多段摘录用 '\n' 拼接但容器不保留换行，全部挤成一行
+- **[问题]** 代码用 `excerpts.join('\n')` 拼多条摘录，但 `.backlink-reading-excerpt` 没有 `white-space: pre-line`，换行符在 span 中被折叠为空格——同主题多条动态混在一起无法区分，排版意图完全落空。
+- **[证据]** DailyActivity.tsx:93（join('\n')）；prefix.css:58-68（无 white-space）。
+- **[建议]** 给 `.backlink-reading-excerpt` 加 `white-space: pre-line;`；或改为每条摘录一个子元素、用 margin 分隔。
+
+#### 7. 行 clamp 截断无 ellipsis 之外的补救——标题/摘录截断后看不到全文，也无 title 提示
+- **[问题]** 标题 `-webkit-line-clamp: 2`、摘录 `-webkit-line-clamp: 4` 截断后，没有任何 `title` 属性或展开手段看到完整内容。按技能标准「truncates with ellipsis, title attribute shows full text」不达标（ellipsis 有、title 无）。
+- **[证据]** prefix.css:50-57、:60-67；DailyActivity.tsx:90-93 无 title 属性。
+- **[建议]** 在 button 上加 `title={source.topic || plainText(source) + '\n' + excerpts.join('\n')}`；长摘录可考虑「点击卡片跳转」作为已有补救并在报告中注明。
+
+#### 8. 板块收起后没有任何「已收起」的可发现性，且 h2 点击目标不可键盘触达
+- **[问题]** 折叠整个模块的交互挂在 `&lt;h2 onClick&gt;` 上：无 `role="button"`、无 `tabIndex`、无 `aria-expanded`、无 `onKeyDown`——键盘用户无法收起/展开板块，屏幕阅读器也不知道这是可折叠控件。收起态只剩标题行，新用户看不出还能展开。
+- **[证据]** DailyActivity.tsx:70-78。
+- **[建议]** h2 内套一个真正的 `&lt;button aria-expanded={sectionOpen}&gt;` 承载点击；保留 h2 为纯文本标题。
+
+#### 9. 页面级留白失控：日期大标题与第一条内容之间出现约 100px 的无意义空白
+- **[问题]** 截图顶部「2026-10-08」标题与 bullet 列表之间有一大段空带，而标题区与板块之间的间距又远小于它——垂直节奏没有统一刻度，看起来像「内容被抽走后留下的洞」。
+- **[证据]** screenshot.jpg y≈60–160 的空带；prefix.css 中无页头/列表相关间距规则可约束。
+- **[建议]** 用 8px 系刻度（如标题下 24px）固定页头与首个内容块的间距；排查该空隙是否来自空态组件占位。
+
+#### 10. 分组计数与实际展示脱节：标题写 219 / 539，默认只给 12 张卡片
+- **[问题]** 标题计数显示全量分组数（groups.size），但默认只渲染前 12 张且「展开全部」是文字小链接——用户第一眼读到的信息层级是「219 个主题」，实际视野里只有 12 张，认知与视觉不一致；且折叠前无法判断剩余内容的重要性。
+- **[证据]** DailyActivity.tsx:61（COLLAPSED_COUNT=12）、:77（`&lt;span&gt;{groups.size}&lt;/span&gt;`）；screenshot.jpg 中 219 / 539 计数。
+- **[建议]** 计数旁加「显示前 12 个」的微文案（如「219 · 显示 12」），或把展开按钮做成次级按钮样式而不是 12px 灰字链接。
+
+### Low
+
+#### 11. 字号层级过密：板块标题 14px 与卡片标题 13px 仅差 1px，squint test 无主次
+- **[问题]** h2 14px/600 与卡片 title 13px/400 视觉重量几乎相同，页面缺乏明确的层级跳变；整页最重要的「日期」反而在截图里是唯一有层级的元素。
+- **[证据]** prefix.css:12（14px）与 :54（13px）。
+- **[建议]** 板块标题维持 14px，卡片标题可降到 13px 但加 500 字重或用主题色区分；或把板块标题提到 15-16px 拉开档位。
+
+#### 12. muted 色文本 12px 存在对比度风险（无法在本走查中实测 token 值）
+- **[问题]** 摘录、计数、展开按钮都用 `var(--nk-muted)` 且 12px；若 muted 是常见的中灰（如 #999 量级），在浅底上不满足 WCAG AA 4.5:1。本走查无运行环境，只能标记风险。
+- **[证据]** prefix.css:18、:65、:75（含回退 #666，回退值尚可，但真实 token 未知）。
+- **[建议]** 实测 `--nk-muted` 在 `--nk-canvas` 上的对比度；不达标则正文类 muted 至少提到 4.5:1 的灰阶。
+
+#### 13. 图标/符号用文本字符「▸」而非图标字体，跨平台渲染大小不一
+- **[问题]** caret 用裸 Unicode 字符，不同系统字体的三角形大小、基线、颜色权重不一致，且无法精细控制。
+- **[证据]** DailyActivity.tsx:75。
+- **[建议]** 换成项目图标库的 chevron 图标，或统一用 CSS 画三角/SVG。
+
+#### 14. 同 ky key 冲突风险：source 回退 citation 自身时可能重复 key
+- **[问题]** :39 回退 `?? citation` 后，多条无法解析来源的 citation 若 ky 相同（或索引里同一条被建/更两个板块重复收录），`key={source.ky}` 会产生重复 key 告警与渲染异常。
+- **[证据]** DailyActivity.tsx:36-43、:84。
+- **[建议]** key 改为 `source.ky + '#' + group.citations[0]?.ky` 之类的稳定组合，或分组时按 ky 去重。
+
+---
+
+## What Looks Good（应保留）
+- 卡片网格 `repeat(auto-fill, minmax(220px, 1fr))` 自适应，窄容器不破版。
+- 摘录用 line-clamp 控制卡片高度，列表不失控。
+- 无内容返回 null 不渲染空板块，符合「不留空卡」原则。
+- 量大默认折叠 + 可展开的意识（OP-047）方向正确，只是呈现层细节欠打磨。
+- 色彩全部走语义 token（--nk-*），没有硬编码彩色。
+
+## Top 3 Fixes
+1. **把 useState 移到提前 return 之前**（#1）——这是会崩溃的正确性问题，任何视觉打磨之前先修。
+2. **补齐卡片的 hover / focus-visible 与 caret 旋转**（#2、#5）——几行 CSS，直接把「看起来能点」的反馈补上，视觉收益最大。
+3. **模块之间加 16px 间距 + 消灭空 bullet**（#3、#4）——消除截图里最扎眼的两处「看起来坏了」。
+</pre></div><div class="grading"><div class="grading-summary">3/4 expectations passed</div><ul class="expectations"><li class="pass">✓ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 True</div></li><li class="fail">✗ 识别网格行向间距为0<div class="evidence">命中行距关键词 False</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div><div class="run-block"><div class="run-label">Run 3</div><div class="file-block"><div class="file-name">report.md</div><pre class="text-embed"># Design Review: 每日动态（DailyActivity）UI 模块
+
+**Date**: 2026-10-08
+**材料**: screenshot.jpg（当日页截图）+ DailyActivity.tsx + prefix.css
+**方法**: 按 design-review 技能的 7 类检查项（布局间距 / 排版 / 颜色对比 / 视觉层级 / 组件一致性 / 交互态 / 响应式），截图与代码交叉验证。
+
+## Overall Impression
+
+整体是「能用但未打磨」的开发者审美：卡片网格的行间距、标题层级、折叠指示与空态处理都欠火候；另有一个会直接导致运行时报错的 React Hooks 结构性 bug。
+
+## Findings（按严重度排序）
+
+### High
+
+**1. React Hooks 条件调用，运行时会崩溃**
+- [问题] `ActivityReadingComp` 在 `useState` 之前有 `if (!groups.size) return null` 提前返回（DailyActivity.tsx:45 vs :62-64）。当某天数据从「有」变「无」（如切换日期、删除笔记），组件在同一挂载位置从「渲染 2 个 hook」变「渲染 0 个 hook」，触发 React "Rendered fewer hooks than expected" 错误，整个编辑器视图白屏。
+- [证据] DailyActivity.tsx:45 `if (!groups.size) return null`；:62 `React.useState(false)`、:64 `React.useState(true)` 位于其后。
+- [建议] 把两个 `useState` 移到函数最顶部（所有提前返回之前），或把空判断下沉到渲染处（`if (!groups.size) return null` 改为在 JSX 里条件渲染）。
+
+**2. 卡片网格行间距为 0，相邻行卡片贴合**
+- [问题] 网格 `gap: 0 16px` 行间距为 0，行距全靠每张卡片 `margin-top: 8px` 兜底。8px 的行距配上 hover 背景和 64px 最小高度，卡片行与行几乎贴死，与列间 16px 不对称，也违反本项目 DESIGN.md §5.2「相邻容器禁止 0 间距档位」的纪律；末行还会多出一个 8px 的底部多余边距，板块底部留白不对称。
+- [证据] prefix.css:25 `gap: 0 16px`；:37 `margin-top: 8px`。截图无法展开验证（见问题 4），但代码路径确定。
+- [建议] 改为 `gap: 8px 16px` 并删除 `margin-top: 8px`（或统一走 12px 档），让横纵向间距同档。
+
+**3. 折叠箭头不随状态旋转，开/合外观无差异**
+- [问题] 箭头字符 `▸` 只有 `data-open` 属性标记，prefix.css 里没有任何针对 `data-open` 的旋转/替换规则，展开与收起时箭头指向完全相同。截图里两个板块处于收起态，但箭头仍指向右侧偏下的同一形态——用户无法从箭头本身读出状态，只能靠「下面有没有内容」猜。
+- [证据] DailyActivity.tsx:74-76 `data-open={String(sectionOpen)}` + 字面量 `▸`；prefix.css 全文无 `[data-open]` 规则。
+- [建议] 补 CSS：`.backlink-reading-caret { display:inline-block; transition: transform 150ms ease; } .backlink-reading-caret[data-open="true"] { transform: rotate(90deg); }`。
+
+**4. 板块标题折叠无键盘可达性，违反交互态检查**
+- [问题] 折叠交互挂在 `&lt;h2 onClick&gt;` 上：h2 不可聚焦、无 `role="button"`、无 `aria-expanded`、无键盘事件，键盘用户完全无法折叠/展开板块；折叠状态也不向读屏器暴露。
+- [证据] DailyActivity.tsx:70-78，`&lt;h2 className="backlink-reading-head" onClick={...}&gt;` 内部无 tab/role/aria 属性。
+- [建议] 在 h2 内放一个真正的 `&lt;button aria-expanded={sectionOpen} aria-controls={...}&gt;` 包住标题文本与箭头，或给 h2 加 `tabIndex={0}` + `role="button"` + onKeyDown 处理 Enter/Space（前者更规范）。
+
+### Medium
+
+**5. 摘录内的换行符被 CSS 折叠，多条摘录黏成一团**
+- [问题] 代码用 `excerpts.join('\n')` 分隔一条主题下的多条动态（DailyActivity.tsx:93），但 `.backlink-reading-excerpt` 没有设 `white-space: pre-line`，HTML 渲染时 `\n` 折叠为空格——同一主题的多条摘录、以及「上下文 — 摘录」的拼接串会连成一句不可分读的长文本，line-clamp 4 行截断后信息损失更大。
+- [证据] DailyActivity.tsx:56 `[context, plainText(citation)].filter(Boolean).join(' — ')`、:93 `excerpts.join('\n')`；prefix.css:58-68 无 `white-space` 声明。
+- [建议] 给 `.backlink-reading-excerpt` 加 `white-space: pre-line`；或改为每条摘录一个 `&lt;span className="...-excerpt-line"&gt;`，用 `display:-webkit-box` 逐行钳制。
+
+**6. 标题与摘录字重、字号层级过弱，眯眼测试失败**
+- [问题] 卡片标题 13px/400，摘录 12px/400（prefix.css:54-56、66-67），仅 1px 字号差且字重相同；对比板块标题 14px/600，卡片内部没有可辨的层级。截图上「当天创建 219」标题是唯一有层级的元素，卡片本体灰度均一。
+- [证据] prefix.css:48-57（title 13px / 400）、58-68（excerpt 12px / 400）。
+- [建议] 标题提到 `font-weight: 600`（或 500）并保持 13px；摘录维持 12px/400，用字重而非字号建立层级。
+
+**7. 截断无省略号语义，长标题/摘录被硬剪**
+- [问题] 标题与摘录用 `-webkit-line-clamp` 截断，但 `&lt;button&gt;` 上没有 `title` 属性展示全文，`text-overflow` 也未声明——长主题名被剪掉后用户既看不到省略提示也无法悬停读全文。每日动态里长标题很常见（219 个创建项）。
+- [证据] prefix.css:50-53、60-63 只有 line-clamp；DailyActivity.tsx:83-94 button 无 `title`。
+- [建议] button 加 `title={source.topic || plainText(source)}`；如需更完整，摘录 `title` 给出 join 前的全文。
+
+**8. 空 bullet 渲染：截图出现无文本的空列表项**
+- [问题] 截图日期标题下第二个圆点没有任何文本。每日动态的上层列表把空/空白笔记也渲染成了条目，属于「空态未处理」——`withActivityReading` 里只 `filter(notEmpty)` 了传入项，但条目文本可能为纯空白（`isEmpty` 若只判 null/undefined 则放行空白串）。
+- [证据] screenshot.jpg 第二个 bullet 无文字；DailyActivity.tsx:215 `filter(notEmpty)`；:47 `readingPlainText` 结果未做 trim 兜底。
+- [建议] 在分组循环前加 `if (!plainText(citation).trim() &amp;&amp; !citation.topic) continue`，或确认 `isEmpty` 对空白字符串的行为。
+
+**9. 板块（模块卡片）之间的垂直间距与内部间距不同档**
+- [问题] 截图中「当天创建」与「当天更新」两张板块卡片间距约 8–10px，而板块自身 padding 16px——外层节奏比内层紧，模块看起来像黏在一起的两张纸。板块间距应由上层布局提供统一档位（如 16px）。
+- [证据] screenshot.jpg 两板块间隙明显小于板块内边距；prefix.css:4 板块 `padding: 16px`，片段内无板块间 margin（依赖外部，实际效果偏小）。
+- [建议] 上层容器为 `.backlink-reading` 之间提供 ≥16px 的间距档；若间隙由别处样式给死，登记到 DESIGN.md 偏离清单。
+
+**10. getUpdatedItems 与 getCreatedItems 防御不对称，存在崩溃路径**
+- [问题] `getCreatedItems` 有 `typeof $.dbMemory.indexed.created === 'object'` 守卫，`getUpdatedItems` 直接 `date in $.dbMemory.indexed.updated`——索引未初始化时前者安全、后者抛 TypeError。这是组件一致性问题在代码层的体现（同一文件两种写法）。
+- [证据] DailyActivity.tsx:126-139 两函数对比。
+- [建议] `getUpdatedItems` 补同样的 `typeof` 守卫，或抽一个 `getIndexed(date, key)` 公用。
+
+### Low
+
+**11. 计数徽标裸露在 h2 里，无语义且易被误读为标题一部分**
+- [问题] `{title} &lt;span&gt;{groups.size}&lt;/span&gt;`（DailyActivity.tsx:77）把数量直接拼在标题文本流里，读屏会读成「当天创建 219」一个标题；视觉上 12px/400 的数字与 14px/600 标题基线对齐关系未处理（prefix.css 只给了 margin-left）。
+- [证据] DailyActivity.tsx:77；prefix.css:16-21。
+- [建议] 用 `&lt;span className="backlink-reading-count" aria-label={`${groups.size} 条`}&gt;` 并加 `vertical-align` 微调或改为 flex 对齐。
+
+**12. 硬编码颜色兜底值绕过设计令牌**
+- [问题] `.backlink-reading-toggle` 的 `color: var(--nk-muted, #666)`（prefix.css:75）：同文件其他规则兜底都指向令牌（`var(--nk-canvas)`、`var(--nk-ink)`），唯独这里兜底到裸十六进制值，令牌缺失时会出现一处离群灰色，暗色模式下 #666 对比也不达标。
+- [证据] prefix.css:75 vs :5、:11、:42、:65。
+- [建议] 兜底改为 `var(--nk-muted, var(--nk-ink))` 或与项目约定一致的令牌。
+
+**13. 折叠按钮缺 hover/focus 反馈**
+- [问题] `.backlink-reading-toggle` 只声明了 `cursor: pointer`，无 hover 背景与 `:focus-visible` 样式；卡片 entry 有 hover 过渡但片段内同样没有 `:focus-visible` 声明（若全局有则可忽略，片段无法证明）。键盘 focus 落在透明背景按钮上时几乎不可见。
+- [证据] prefix.css:69-78、28-47。
+- [建议] 补 `.backlink-reading-toggle:hover { background: var(--nk-hover); }` 与两条规则的 `:focus-visible { outline: 2px solid var(--nk-focus); outline-offset: 2px; }`。
+
+**14. 网格负 margin 使 hover 背景越出内容对齐线**
+- [问题] `.backlink-reading-grid { margin: 0 -8px }` 让卡片背景左边缘伸到 8px（prefix.css:26），而板块标题与正文对齐在 16px 内容线上；hover 时出现的背景块会向左突出 8px，破坏左对齐纪律。是为抵消 entry 自身 8px padding 的手法，但视觉副作用是悬停时内容「左跳」。
+- [证据] prefix.css:26 与 :38（entry padding 8px）。
+- [建议] 去掉负 margin，改为 entry `padding: 8px 8px` + `margin: 0 -8px` 只作用于列间距场景，或直接接受内容线即卡片背景线。
+
+## What Looks Good
+
+- 无内容返回 null 不渲染空板块（withActivityReading），空态纪律正确。
+- 量大折叠（COLLAPSED_COUNT=12）+ 展开/收起双向按钮，渐进披露思路正确。
+- 卡片用 `&lt;button&gt;` 承载整卡点击，语义比 div+onClick 好。
+- line-clamp 限制标题 2 行/摘录 4 行，防止长文撑爆网格；`minmax(220px, 1fr)` 自适应列宽合理。
+- 颜色基本走 `--nk-*` 令牌，跟随主题。
+
+## Top 3 Fixes
+
+1. 修复 Hooks 条件调用（问题 1）——唯一会直接白屏的缺陷。
+2. 网格行间距 `gap: 8px 16px` + 箭头随 `data-open` 旋转（问题 2、3）——一次 CSS 改动解决「贴合」与「状态不可读」两个最扎眼的观感问题。
+3. 摘录 `white-space: pre-line` + 卡片标题加字重与 `title` 提示（问题 5、6、7）——让截断的多条摘录恢复可读性并建立卡片内层级。
+</pre></div><div class="grading"><div class="grading-summary">4/4 expectations passed</div><ul class="expectations"><li class="pass">✓ 识别相邻板块零间距贴合<div class="evidence">报告命中间距关键词 True</div></li><li class="pass">✓ 识别网格行向间距为0<div class="evidence">命中行距关键词 True</div></li><li class="pass">✓ 发现 Hooks 条件调用代码缺陷<div class="evidence">命中 True</div></li><li class="pass">✓ 发现摘录换行失效<div class="evidence">命中 True</div></li></ul></div></div></div></div>
+      <details class="verdict"><summary>Blind judge verdict: Version D (Version A: —/10, Version B: —/10, Version C: —/10, Version D: —/10)</summary><p class="reasoning">共同基准：12 份报告质量普遍较高（证据均带代码行号、有严重度分级、有通过项对照），差异集中在四个植入缺陷的命中稳定性。version_d 是唯一在单次运行中同时命中全部四个期望的版本（run1 四项全中），且三-run 均稳定命中 E3（Hooks 条件调用）与 E4（white-space:pre-line），E1 命中 2.5/3，报告结构（七维走查+Top 3 Fixes+What Looks Good）可用性最好、无虚构条目，排第一。version_c 三-run 输出最一致（均分方差最小、有原则排除表），E3/E4 全中，但 E1 与 E2 从未在同一次运行中同时出现，覆盖面次于 d，排第二。version_a 单份报告最详尽（run1 达 18 条）但四项期望的命中在三次运行间漂移最大（E1/E2/E3 各只中 1-2 次），一致性差，排第三。version_b 最弱：E1 三-run 全漏，run1 一次只中 E3，且有两处过度推断（截图折叠态被解读为状态矛盾、索引守卫不对称），排第四。无平手。</p></details>
+      
+      <div class="reveal" data-labels="Version A = web-design-guidelines  |  Version B = echo-ux  |  Version C = ux-principles  |  Version D = design-review"><button class="reveal-btn" onclick="revealLabels(this)">Reveal configurations</button><span class="reveal-result" style="display:none"></span></div>
+    </section>
+    
+<script>
+function revealLabels(btn) {
+  const wrap = btn.parentElement;
+  const labels = wrap.getAttribute("data-labels");
+  const result = wrap.querySelector(".reveal-result");
+  result.textContent = labels;
+  result.style.display = "inline";
+  btn.disabled = true;
+}
+</script>
+<hr><h2>揭盲对照（评测后补充）</h2><ul><li><b>version_a</b> = <b>web-design-guidelines</b></li><li><b>version_b</b> = <b>echo-ux</b></li><li><b>version_c</b> = <b>ux-principles</b></li><li><b>version_d</b> = <b>design-review</b></li><li><b>结论</b>：design-review（jezweb）以 91.7% 通过率胜出——唯一内置「相邻模块间距/垂直节奏」显式检查项的技能；ux-principles 与 web-design-guidelines 并列 75%；echo-ux 66.7%（依赖个人规则库召回，本次场景其规则库尚未覆盖板块间距，评测后已自动沉淀新规则）。</li><li><b>证据强度</b>：weak_blind（单主控协调，评审仅见脱敏报告）；标准采样 4 配置 × 3 轮；已注册技能无法按次隔离，存在交叉污染可能。</li></ul></body>
+</html>
