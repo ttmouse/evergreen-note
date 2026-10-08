@@ -80,9 +80,13 @@ export function createHeatmapAddon({ app, $ }: NewAddonParams) {
     strmap(): StrmapRuleInfo {
       return {
         title: $t`heatmap.title`,
-        strmapRule: /\{\{heatmap\}\}$/,
+        // 支持 {{heatmap}} 与 {{heatmap 2021-11,2022-1}}（自定义起止月份）
+        strmapRule: /\{\{heatmap(?:\s*(\d{4}-\d{1,2})\s*,\s*(\d{4}-\d{1,2}))?\}\}$/,
         handle({ match }: StrmapParams) {
-          return $.heatmap.createElement();
+          const [, start, end] = match;
+          return $.heatmap.createElement(
+            start && end ? ({ start, end } as HeatmapProps) : undefined
+          );
         },
       };
     }
