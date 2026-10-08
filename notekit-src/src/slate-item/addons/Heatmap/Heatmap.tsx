@@ -163,7 +163,7 @@ export function createHeatmapAddon({ app, $ }: NewAddonParams) {
       return {
         title: $t`heatmap.title`,
         quote: $t`heatmap.quote`,
-        defaultValue: 'off',
+        defaultValue: 'on',
         updated: 20221108,
       };
     }
