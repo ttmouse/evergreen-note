@@ -101,11 +101,15 @@ step(3, 7, `重命名主可执行文件 Electron → ${NAME}`)
 fs.renameSync(path.join(contents, 'MacOS', 'Electron'), path.join(contents, 'MacOS', NAME))
 
 // Electron 靠 CFBundleName 定位 Helper，改名必须同步，否则渲染进程起不来。
+// 值是标量时用 -string；是数组/字典（如 CFBundleURLTypes）时用 -json。
 const patchPlist = (plist, kv) => {
   for (const [key, value] of Object.entries(kv)) {
-    const replaced = capture('plutil', ['-replace', key, '-string', String(value), plist])
+    const scalar = typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+    const type = scalar ? '-string' : '-json'
+    const arg = scalar ? String(value) : JSON.stringify(value)
+    const replaced = capture('plutil', ['-replace', key, type, arg, plist])
     if (!replaced.ok) {
-      const inserted = capture('plutil', ['-insert', key, '-string', String(value), plist])
+      const inserted = capture('plutil', ['-insert', key, type, arg, plist])
       if (!inserted.ok) throw new Error(`改写 ${key} 失败：${inserted.out}`)
     }
   }
@@ -136,13 +140,25 @@ for (const entry of fs.readdirSync(frameworks).sort()) {
 }
 
 step(4, 7, '改写主 Info.plist')
+// Bundle id 同时用作 URL name，先算出来避免两处写法漂移。
+const BUNDLE_ID = `com.local.${SLUG.replace(/-/g, '')}`
 patchPlist(path.join(contents, 'Info.plist'), {
   CFBundleName: NAME,
   CFBundleDisplayName: NAME,
   CFBundleExecutable: NAME,
   CFBundleShortVersionString: VERSION,
   CFBundleVersion: VERSION,
-  CFBundleIdentifier: `com.local.${SLUG.replace(/-/g, '')}`,
+  CFBundleIdentifier: BUNDLE_ID,
+  // 声明 evergreen://note/<ky> 深度链接。只靠运行期 app.setAsDefaultProtocolClient
+  // 注册不稳：任何跑起来的 Electron 实例都会抢这个 scheme（实测被别的 workspace 的
+  // 裸 Electron 抢走，点链接只会启一个空 Electron）。写进 Info.plist 才能让
+  // LaunchServices 静态绑定到本 App。
+  CFBundleURLTypes: [
+    {
+      CFBundleURLName: BUNDLE_ID,
+      CFBundleURLSchemes: ['evergreen'],
+    },
+  ],
 })
 
 const sourceIcon = path.join(SRC, 'desktop', 'assets', 'app-icon.icns')
