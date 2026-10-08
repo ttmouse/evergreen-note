@@ -385,9 +385,14 @@ const server = createServer(async (req, res) => {
     }
 
     // ---------- 静态资源 ----------
+    // OP-002：path.join 不消除 ..，decode 后可逃出 DATA_DIR（穿越拖走任意本机文件）；
+    // 且仅钳在 DATA_DIR 仍可用 ..%2Fnotekit.db 拖走主库，故按 saveUpload 落盘布局
+    // 分别钳制在 DATA_DIR/files/ 与 DATA_DIR/images/ 子目录内部
     if (p.startsWith('/files/') || p.startsWith('/images/')) {
-      const f = path.join(DATA_DIR, decodeURIComponent(p))
-      if (existsSync(f) && statSync(f).isFile()) return sendFile(res, f)
+      const sub = p.startsWith('/files/') ? 'files' : 'images'
+      const root = path.resolve(DATA_DIR, sub)
+      const f = path.resolve(root, '.' + decodeURIComponent(p.slice(sub.length + 1)))
+      if (f.startsWith(root + path.sep) && existsSync(f) && statSync(f).isFile()) return sendFile(res, f)
       res.writeHead(404)
       return res.end('not found')
     }
