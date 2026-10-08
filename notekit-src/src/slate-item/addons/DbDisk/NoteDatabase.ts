@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import type { KyString, TimeMilliSecond } from '../../interfaces/unit'
 import type { PreferPersist } from '../Prefer/Prefer'
 import type { ItemMap } from '../DbMemory/DbMemory'
@@ -81,14 +82,74 @@ async function migrateLegacyDatabases() {
 const pendingWrites = new Set<Promise<unknown>>()
 let writeError: unknown
 
+// OP-049：写失败后保留原始请求，错误条内提供「重试保存」主动重放。
+// PUT 按主键 ON CONFLICT DO UPDATE、PATCH/DELETE 幂等，原样重放安全；
+// 同一主键的新失败覆盖旧记录（重试只重放最新数据），对应写入成功后移除，
+// 避免重放旧数据覆盖已成功的新数据。
+const failedWrites = new Map<string, { url: string; init: RequestInit }>()
+let retryInProgress = false
+function writeKey(url: string, init: RequestInit): string {
+  const table = url.split('?')[0].split('/').filter(Boolean).pop() ?? ''
+  const field: string = (keys as Record<string, string>)[table] ?? 'ky'
+  let body: any
+  try { body = JSON.parse(String(init.body ?? '{}')) } catch { body = {} }
+  const rows: unknown[] = body.rows ?? body.keys ?? (body.row != null ? [body.row] : body.key != null ? [body.key] : [])
+  const primaryKey = rows.length
+    ? rows.map((row: any) => (row != null && typeof row === 'object' ? String(row[field]) : String(row))).join(',')
+    : body.where != null ? `where:${JSON.stringify(body.where)}` : 'unknown'
+  return `${url}::${primaryKey}`
+}
+function writeSettled(url: string, init: RequestInit, error: unknown) {
+  if (error == null) {
+    writeError = undefined
+    failedWrites.delete(writeKey(url, init))
+    if (storageAlert) notifyWriteRecovered()
+  } else {
+    writeError = error
+    failedWrites.set(writeKey(url, init), { url, init })
+    notifyWriteFailure(error)
+  }
+}
+function trackWritePromise<R>(url: string, init: RequestInit, promise: Promise<R>): Promise<R> {
+  pendingWrites.add(promise)
+  promise.then(
+    () => { pendingWrites.delete(promise); writeSettled(url, init, undefined) },
+    error => { pendingWrites.delete(promise); writeSettled(url, init, error) },
+  )
+  return promise
+}
+/** OP-049：重放全部失败写入；全部成功时经 writeSettled 走恢复路径收起错误条。 */
+export async function retryFailedWrites() {
+  if (retryInProgress) return
+  retryInProgress = true
+  try {
+    for (const [key, entry] of [...failedWrites]) {
+      if (failedWrites.get(key) !== entry) continue
+      await trackWritePromise(entry.url, entry.init, request(entry.url, entry.init)).catch(() => undefined)
+    }
+  } finally { retryInProgress = false }
+}
+
 // 写库失败必须让用户看见（OP-013）：编辑器是内存态，静默失败等于重启丢稿。
 // 单条持久错误条（autoClose 0）承载全部失败提示，恢复后原地转为成功并自动收起，
 // 避免连续失败每键弹一条。文案沿用存储层既有中文硬编码惯例。
 let storageAlert: SnackHanlder | undefined
 function notifyWriteFailure(error: unknown) {
   const detail = error instanceof Error ? error.message : String(error)
-  const content = `笔记保存失败，改动尚未保存：${detail}`
-  if (storageAlert) storageAlert.update({ open: true, severity: 'error', content, autoClose: 0 })
+  // 重试入口用原生 button（键盘天然可达），currentColor 边框适配 error 填充底色，不引主题色
+  const retryButton = createElement('button', {
+    key: 'retry',
+    onClick: () => { void retryFailedWrites() },
+    style: {
+      marginLeft: 12, padding: '2px 12px', font: 'inherit', lineHeight: 1.6,
+      color: 'inherit', backgroundColor: 'transparent',
+      border: '1px solid currentColor', borderRadius: 4, cursor: 'pointer',
+    },
+  }, '重试保存')
+  const content = createElement('span', null, `笔记保存失败，改动尚未保存：${detail}`, retryButton)
+  // update 分支不能带 autoClose：showSnack 的 update 对任意数字都会 setTimeout(handleClose, auto)，
+  // 传 0 会把持久错误条立即关闭（连续失败时表现为闪现即逝）；缺省则维持常驻
+  if (storageAlert) storageAlert.update({ open: true, severity: 'error', content })
   else storageAlert = showSnack({ content, severity: 'error', autoClose: 0, vertical: 'bottom', horizontal: 'center', clickAway: false })
 }
 function notifyWriteRecovered() {
@@ -145,21 +206,8 @@ export class SqlTable<T extends Row> {
     return request(api(this.db.name, this.name) + '?' + new URLSearchParams({ op, ...params }))
   }
   mutate<R>(init: RequestInit, op = ''): Promise<R> {
-    const promise = this.db.ready.then(() => request<R>(api(this.db.name, this.name) + op, init))
-    pendingWrites.add(promise)
-    promise.then(
-      () => {
-        pendingWrites.delete(promise)
-        writeError = undefined
-        if (storageAlert) notifyWriteRecovered()
-      },
-      error => {
-        pendingWrites.delete(promise)
-        writeError = error
-        notifyWriteFailure(error)
-      },
-    )
-    return promise
+    const url = api(this.db.name, this.name) + op
+    return trackWritePromise(url, init, this.db.ready.then(() => request<R>(url, init)))
   }
   toArray(): Promise<T[]> { return this.query('all') }
   async get(key: any): Promise<T | undefined> { return (await this.query<T | null>('get', { key: String(key) })) ?? undefined }
