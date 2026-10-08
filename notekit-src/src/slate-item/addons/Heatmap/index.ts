@@ -3,5 +3,6 @@
 export * from './Heatmap'
 export * from './HeatmapComp'
 export * from './HeatmapElementComp'
+export * from './HeatmapPageComp'
 export * from './helper'
 export * from './strategy'

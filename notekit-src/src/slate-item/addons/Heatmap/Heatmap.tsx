@@ -9,6 +9,7 @@ import { after } from '../../engine/helper';
 import { $t } from '../../../i18n';
 import { InlineElement } from '../Inlines/Inlines';
 import { HeatmapElementComp } from './HeatmapElementComp';
+import { HeatmapPageComp } from './HeatmapPageComp';
 import { SlashMenuItems } from '../SlashMenu/SlashMenu';
 import { IAddonElement } from '../ElementRegistry/ElementRegistry';
 import { StrmapParams, StrmapRuleInfo } from '../Strmap/Strmap';
@@ -202,6 +203,26 @@ export function createHeatmapAddon({ app, $ }: NewAddonParams) {
       //     --g2: ${g2};
       //     --b2: ${b2};
       //   }`);
+
+      // 侧边栏入口：注册 /heatmap 路由页面并加导航项
+      $.router?.register({
+        heatmap: {
+          title: $t`heatmap.title`,
+          comp: HeatmapPageComp,
+        },
+      });
+
+      $.nav?.addItems({
+        heatmap: {
+          size: 18,
+          order: 1500,
+          title: $t`heatmap.title`,
+          icon: 'svg_heatmap',
+          onClick() {
+            $.router?.to('/heatmap');
+          },
+        },
+      });
     }
   }
 
