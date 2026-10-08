@@ -322,7 +322,7 @@ tbody tr{transition:background .12s var(--ease)}
 tbody tr:hover{background:#f4f4f0}
 tbody tr:last-child td{border-bottom:0}
 td:first-child{width:34px;white-space:nowrap}
-td.cid{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+td.cid{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
 .badge{display:inline-block;border-radius:6px;padding:1px 8px;font-size:11.5px;font-weight:500;white-space:nowrap}
 .d-perf,.d-product,.d-ux,.d-design,.d-quality,.d-security{background:#f0f0ec;color:var(--ink);position:relative;padding-left:20px}
@@ -351,6 +351,22 @@ td:nth-child(6){white-space:nowrap;color:var(--muted);font-size:12.5px;font-vari
 .ops{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;gap:6px;padding:3px 4px 3px 14px;opacity:0;pointer-events:none;transition:opacity .12s var(--ease)}
 tbody tr:hover .ops,tbody tr:focus-within .ops{opacity:1;pointer-events:auto}
 @media(hover:none){.ops{position:static;transform:none;opacity:1;pointer-events:auto;padding:6px 0 0;display:flex}.tit:has(.ops button){padding-right:0}}
+/* OP-022 窄屏：六列表格在 ≈860px 以下把标题压到 15 字/行以内（768px 实测 143px）且 ID 换行、
+   390px 整页横向溢出（表格最小 705px）。断点取自实测：1024px 标题文本 339px 正常，768px 143px 不可读。
+   窄屏改为标题卡堆叠：标题（order:-1）全宽居前，ID/分类/状态/日期作为 flex 行收拢到标题下方；
+   卡片内同步复位 OP-023 的 178px 标题预留并把 .ops 转为文档流内一行（否则 390px 标题仅剩 136px），
+   「操作不盖标题」语义不变；触控设备继续由 hover:none 分支处理。 */
+@media(max-width:860px){
+  thead{display:none}
+  table,tbody{display:block;width:100%;border:0;background:none;border-radius:0;overflow:visible}
+  tbody tr{display:flex;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);margin-bottom:10px;padding:10px 12px 10px 38px;position:relative}
+  td{display:block;padding:0;border-bottom:0}
+  td:first-child{position:absolute;left:13px;top:12px;width:auto}
+  td.tit{order:-1;width:100%;max-width:none}
+  td.cid,td:nth-child(4),td:nth-child(5),td:nth-child(6){margin-top:7px;margin-right:6px}
+  .tit:has(.ops button){padding-right:0}
+  .ops{position:static;transform:none;padding:6px 0 0;width:100%}
+}
 button.act{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:7px;padding:3px 10px;font-size:12px;cursor:pointer;transition:border-color .14s var(--ease),background .14s var(--ease),color .14s var(--ease),transform .1s var(--ease)}
 button.act:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
 button.act:active{transform:scale(.97)}
