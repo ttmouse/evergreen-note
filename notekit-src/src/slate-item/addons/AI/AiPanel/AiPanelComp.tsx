@@ -5,7 +5,7 @@ import { useAddons } from '../../../hooks/useAddons'
 import { aiPanelStore as S, NoteRef } from './AiPanelStore'
 import { groupBlocks } from './phases'
 import { AiActivityTrack, ActivityOrb, AI_ACTIVITY_CSS } from './AiActivity'
-import { XIcon, ClockCounterClockwiseIcon, PlusIcon, CaretDoubleRightIcon, ArrowDownIcon, ArrowCounterClockwiseIcon, PaperPlaneTiltIcon, StopIcon } from '@phosphor-icons/react'
+import { SvgIcon } from '../../../../components/SvgIcon'
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -228,7 +228,7 @@ export const AiPanelComp = observer(() => {
             padding: 2,
           }}
         >
-          <ClockCounterClockwiseIcon size={14} weight={histOpen ? 'fill' : 'regular'} />
+          <SvgIcon name="svg_recent" width={16} />
           {convs.length > 1 && <span style={{ fontSize: 10, lineHeight: 1 }}>{convs.length - 1}</span>}
         </button>
         {/* 「清空」的语义收窄：它从来不删除任何东西，实际是「收工 + 另起一段」，
@@ -250,7 +250,7 @@ export const AiPanelComp = observer(() => {
             padding: 2,
           }}
         >
-          <PlusIcon size={14} />
+          <SvgIcon name="svg_add" width={16} />
         </button>
         <button
           onClick={() => extArea?.foldup(true)}
@@ -258,7 +258,7 @@ export const AiPanelComp = observer(() => {
           aria-label="收起面板"
           style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', padding: 2 }}
         >
-          <CaretDoubleRightIcon size={14} />
+          <SvgIcon name="svg_arrow_double_right" width={16} />
         </button>
 
         {/* 历史下拉 */}
@@ -304,7 +304,7 @@ export const AiPanelComp = observer(() => {
                   title="从列表里删掉这一段（agent 侧会话不动）"
                   style={{ display: 'inline-flex', alignItems: 'center', color: muted, padding: '0 4px' }}
                 >
-                  <XIcon size={11} />
+              <SvgIcon name="svg_close" width={11} />
                 </span>
               </div>
             ))}
@@ -446,7 +446,7 @@ export const AiPanelComp = observer(() => {
                 cursor: 'pointer',
               }}
             >
-              <ArrowDownIcon size={12} />
+              <SvgIcon name="svg_arrow_down" width={14} />
             </button>
           </div>
         )}
@@ -481,7 +481,7 @@ export const AiPanelComp = observer(() => {
                 cursor: 'pointer',
               }}
             >
-              <StopIcon size={13} />
+              <SvgIcon name="svg_stop" width={14} />
             </button>
           ) : (
             <button
@@ -501,7 +501,7 @@ export const AiPanelComp = observer(() => {
                 cursor: 'pointer',
               }}
             >
-              <PaperPlaneTiltIcon size={14} />
+              <SvgIcon name="svg_send" width={16} />
             </button>
           )}
         </div>
@@ -527,7 +527,7 @@ export const AiPanelComp = observer(() => {
                 cursor: 'pointer',
               }}
             >
-              <ArrowCounterClockwiseIcon size={12} />
+              <SvgIcon name="svg_restore" width={14} />
               撤销改动<span style={{ color: muted }}>{S.snapCount}</span>
             </button>
           )}
