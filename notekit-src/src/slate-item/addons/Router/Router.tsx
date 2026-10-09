@@ -27,7 +27,7 @@ export type RouteMaps = {
 
 export type RouteToResult = 'floatView' | 'andy' | 'side' | 'main' 
 
-const urlMatch = /https?:\/\/.+?\/([^/]+)/.exec(window.location.href)
+const urlMatch = /https?:\/\/.+?\/([^/?#]+)/.exec(window.location.href)
 export const ROUTE_KEY = urlMatch ? urlMatch[1] : 'v2'
 const styleBackToTop = cls`
 position: fixed;
