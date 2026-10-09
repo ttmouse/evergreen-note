@@ -95,7 +95,7 @@ export function MonthCalendar(props: MonthCalendarProps) {
 
   const wk: JSX.Element[] = [];
   let comp: JSX.Element = <></>;
-  if (Array.isArray(weekbar)) {
+  if (Array.isArray(weekbar) && weekbar.length > 0) {
     for (const w of weekbar) {
       wk.push(<li key={w}>{w}</li>);
     }

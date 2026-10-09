@@ -26,7 +26,8 @@ export function HeatmapElementComp(
   const {
     start,
     end,
-    weekbar = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    // 笔记内嵌热力图不渲染周几标题行（该行文字因全局 color:transparent 不可见，只剩一行空白——2026-10-09 用户反馈「额外空白」的根因）
+    weekbar,
   } = element;
 
   const renderCellContent = (cellProps: CellProps) => {

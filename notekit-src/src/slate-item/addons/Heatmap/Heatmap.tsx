@@ -43,9 +43,10 @@ export function createHeatmapAddon({ app, $ }: NewAddonParams) {
       [STRATEGIES.updatedNodes]: new HeatMapStrategyUpdatedNodes(),
     };
 
+    // 黑白灰配色：浅灰 → 近黑（与主界面黑白灰一致，2026-10-09 用户反馈）
     colorRange: [RGBColor, RGBColor] = [
-      [227, 255, 227],
-      [15, 115, 0],
+      [224, 224, 224],
+      [24, 24, 24],
     ];
 
     fieldset() {
