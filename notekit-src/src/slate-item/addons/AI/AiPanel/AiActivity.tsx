@@ -160,7 +160,13 @@ const ToolRow = ({
 }) => {
   const row = rowForTool(it)
   const locs = Array.isArray(it.locations) ? (it.locations as any[]) : []
-  const canOpen = locs.length > 0
+  // rawInput 也当明细：没有 locations 的工具（如 bash）原本点不动、点开也空，
+  // 看起来就是「框架有了但里面是空的」。
+  const rawText =
+    it.rawInput && typeof it.rawInput === 'object' && Object.keys(it.rawInput as object).length
+      ? JSON.stringify(it.rawInput, null, 2)
+      : ''
+  const canOpen = locs.length > 0 || !!rawText
   return (
     <div>
       <button
@@ -219,10 +225,28 @@ const ToolRow = ({
         )}
       </button>
       {open && canOpen && (
-        <div style={{ fontSize: 11, color: muted, padding: '2px 0 4px 12px', lineHeight: 1.7, wordBreak: 'break-all' }}>
+        <div style={{ fontSize: 11, color: muted, padding: '2px 0 6px 12px', lineHeight: 1.7, wordBreak: 'break-all' }}>
           {locs.map((l, i) => (
             <div key={i}>{typeof l === 'string' ? l : l?.path || JSON.stringify(l)}</div>
           ))}
+          {rawText && (
+            <pre
+              style={{
+                margin: '4px 0 0',
+                padding: '6px 8px',
+                borderRadius: 5,
+                border: `1px solid ${line}`,
+                background: 'var(--nk-canvas)',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                fontSize: 11,
+                maxHeight: 220,
+                overflow: 'auto',
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              {rawText}
+            </pre>
+          )}
         </div>
       )}
     </div>

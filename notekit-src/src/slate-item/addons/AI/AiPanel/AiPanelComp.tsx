@@ -54,6 +54,7 @@ export const AiPanelComp = observer(() => {
   const [histOpen, setHistOpen] = useState(false)
   const bodyRef = useRef<HTMLDivElement>(null)
   const stickRef = useRef(true)
+  const [atBottom, setAtBottom] = useState(true)
 
   useEffect(() => {
     S.connect()
@@ -61,10 +62,19 @@ export const AiPanelComp = observer(() => {
     S.ensureSession().catch(() => {})
   }, [])
 
+  // 只在「本来就贴底」时跟随新内容。用户一旦往上滚，就不再抢滚动条。
   useEffect(() => {
     const el = bodyRef.current
     if (el && stickRef.current) el.scrollTop = el.scrollHeight
   })
+
+  const jumpToBottom = () => {
+    const el = bodyRef.current
+    if (!el) return
+    stickRef.current = true
+    setAtBottom(true)
+    el.scrollTop = el.scrollHeight
+  }
 
   const currentNote = (): NoteRef => {
     try {
@@ -98,8 +108,14 @@ export const AiPanelComp = observer(() => {
       style={{
         display: 'flex',
         flexDirection: 'column',
+        // 输入区必须永远钉在底部：根节点不许比宿主高、不许被内容顶开。
+        // minHeight: 0 是 flex 子项的关键（min-height:auto 会让滚动区拒绝收缩），
+        // overflow:hidden 是第二道闸 —— 宁可裁掉也不许把输入框推出视口。
         height: '100%',
-        minHeight: 320,
+        minHeight: 0,
+        maxHeight: '100%',
+        overflow: 'hidden',
+        position: 'relative',
         background: 'var(--nk-surface)',
       }}
     >
@@ -189,9 +205,20 @@ export const AiPanelComp = observer(() => {
         ref={bodyRef}
         onScroll={(e) => {
           const el = e.currentTarget
-          stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+          const near = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+          stickRef.current = near
+          if (near !== atBottom) setAtBottom(near)
         }}
-        style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}
+        style={{
+          flex: '1 1 auto',
+          minHeight: 0, // 同上：不给这一条，flex 子项会拒绝收缩，把输入区顶出面板
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          padding: '10px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
       >
         {!viewingHist && S.items.length === 0 && (
           <div style={{ color: muted, fontSize: 13, lineHeight: 1.9 }}>
@@ -278,7 +305,26 @@ export const AiPanelComp = observer(() => {
       </div>
 
       {/* 输入区（回看历史时隐藏，避免误发到当前会话） */}
-      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', display: viewingHist ? 'none' : 'block' }}>
+      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', display: viewingHist ? 'none' : 'block', flexShrink: 0 }}>
+        {/* 离底了就给个明确出口，别让人靠反复滚找输入框 */}
+        {!atBottom && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+            <button
+              onClick={jumpToBottom}
+              style={{
+                fontSize: 12,
+                padding: '2px 12px',
+                borderRadius: 12,
+                border: `1px solid ${line}`,
+                background: 'var(--nk-surface)',
+                color: muted,
+                cursor: 'pointer',
+              }}
+            >
+              ↓ 回到最新
+            </button>
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={draft}

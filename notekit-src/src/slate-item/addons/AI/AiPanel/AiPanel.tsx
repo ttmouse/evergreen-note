@@ -61,6 +61,11 @@ const AiPanelHost = observer(() => {
         flex: `0 0 ${width}px`,
         width,
         height: '100%',
+        // 这一层是面板的宿主：不许被父级顶高、也不许超出父级 ——
+        // 否则标题栏那点高度就能把底部的输入框推出窗口（且窗口本身不会滚）。
+        minHeight: 0,
+        maxHeight: '100%',
+        overflow: 'hidden',
         borderLeft: '1px solid var(--nk-line)',
         background: 'var(--nk-surface)',
         display: 'flex',
