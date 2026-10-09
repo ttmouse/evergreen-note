@@ -214,6 +214,21 @@ export function countUnits(phases: Phase[]): number {
 
 export const allThinking = (phases: Phase[]): boolean => phases.every((p) => p.kind === 'thinking')
 
+/**
+ * 相位是否已收敛（没有任何一件还在跑）。**这是扫光的开关** —— 与 Alma 的 `phaseSettled` 同义。
+ *
+ * 我早先把它当死代码删过一次，是错的：Alma 用 `livePhaseActive = isLive && !phaseSettled(last)`
+ * 决定「扫光继续扫」还是「换成稳定文字」。少了它，扫光会在会话说仍忙、相位却已收敛的窗口里一直扫。
+ */
+export function phaseSettled(phase: Phase): boolean {
+  return phase.items.every((it) => {
+    // 工具：pending / in_progress 之外都算收敛（对应 Alma 的 output-available/error/denied）
+    if (it.kind === 'tool') return it.status !== 'pending' && it.status !== 'in_progress'
+    // 推理：ACP 一次交付整段，没有流式态，到达即收敛
+    return true
+  })
+}
+
 // ------------------------------------------------------------------ 文案
 
 /** rawInput 的两种形状：直接给，或包一层 `{args:{...}}`（ACP 两种都见过） */

@@ -41,7 +41,7 @@ const eq = (name, got, want) =>
 
 const phasesPath = await bundle('src/slate-item/addons/AI/AiPanel/phases.ts', 'phases.mjs')
 const {
-  buildPhases, groupBlocks, phaseKindOf, phaseKindOfName, phaseLabel, rowForTool,
+  buildPhases, groupBlocks, phaseKindOf, phaseKindOfName, phaseLabel, phaseSettled, rowForTool,
   countUnits, allThinking, MAX_VISIBLE_PHASES,
 } = await import(pathToFileURL(phasesPath).href)
 
@@ -230,6 +230,17 @@ const tool = (title, toolKind, status = 'completed', rawInput) =>
   eq('skill 相位是 generic', phaseKindOfName('skill'), 'generic')
   eq('skill 行动词具体', rowForTool(tool('skill', 'other')).verb, '用了技能')
   eq('skill 相位文案', only('skill'), { verb: '已使用', rest: '' })
+}
+
+{
+  // ---- phaseSettled：扫光的开关 ----
+  // 我早先把它当死代码删过，是错的。Alma: livePhaseActive = isLive && !phaseSettled(最后相位)
+  const ph = (items) => buildPhases(items)[0]
+  eq('settled：全部完成 → 收敛', phaseSettled(ph([tool('a', 'other', 'completed'), tool('b', 'other', 'completed')])), true)
+  eq('settled：有一个在进行 → 未收敛', phaseSettled(ph([tool('a', 'other', 'completed'), tool('b', 'other', 'in_progress')])), false)
+  eq('settled：有一个待运行 → 未收敛', phaseSettled(ph([tool('a', 'other', 'pending')])), false)
+  eq('settled：失败也算收敛（不会再变了）', phaseSettled(ph([tool('a', 'other', 'failed')])), true)
+  eq('settled：纯推理相位 → 收敛', phaseSettled(ph([{ kind: 'thought', at: 1, text: '想', open: false }])), true)
 }
 
 {

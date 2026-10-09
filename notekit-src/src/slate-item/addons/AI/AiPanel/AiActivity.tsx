@@ -18,6 +18,7 @@ import {
   countUnits,
   PHASE_NOUN,
   phaseLabel,
+  phaseSettled,
   rowForTool,
 } from './phases'
 
@@ -117,9 +118,14 @@ export const AI_ACTIVITY_CSS = `
   background-clip: text;
   animation: nkShimmer 1.8s linear infinite;
 }
+/* ⚠️ 位置必须留在 0%→100% 之内。
+   background-clip:text 下字的可见性 = 渐变有没有铺到它；
+   百分比位置把渐变**推出容器**时，没被铺到的那段字是**透明的**（看着像被白块盖住，
+   其实是字没了露出底色）。旧版用 130% / -130%，半程里整条标签会消失。
+   0%→100% 恒覆盖：图宽 2.2W、左边界 -1.2XW，X≥0 保证左边、X≤1 保证右边。 */
 @keyframes nkShimmer {
-  from { background-position: 130% 0; }
-  to   { background-position: -130% 0; }
+  from { background-position: 0% 0; }
+  to   { background-position: 100% 0; }
 }
 
 /* 呼吸行：2×4 点阵 */
@@ -142,6 +148,11 @@ export const AI_ACTIVITY_CSS = `
 
 /* 行 hover */
 .nk-arow:hover { background: var(--nk-hover); }
+
+/* ⚠️ 对齐 Alma：箭头默认**不可见**，悬停标题行或展开时才现。
+   Alma 原码：railOpen ? "rotate-180 opacity-100" : "opacity-0 group-hover/ahdr:opacity-100" */
+.nk-chev { opacity: 0; transition: opacity .15s ease, transform .15s ease; }
+.nk-arow:hover .nk-chev, .nk-chev.on { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   .nk-av-alive, .nk-shimmer, .nk-dotgrid > i, .nk-deck-deal { animation: none; }
@@ -405,6 +416,8 @@ export const AiActivityTrack = ({
   const railOpen = live || open || selected != null
   const openPhaseIndex = live ? lastIndex : selected
   const livePhase = live ? phases[lastIndex] : null
+  // 对齐 Alma：扫光只在「相位确实还在跑」时挂；收敛后换成稳定文字（动词=正文色，余量=弱化色）
+  const livePhaseActive = livePhase !== null && !phaseSettled(livePhase)
 
   const toggleRail = () => {
     anchorBefore()
@@ -561,13 +574,15 @@ export const AiActivityTrack = ({
     livePhase != null ? (
       (() => {
         const l = phaseLabel(livePhase, true)
+        // 对齐 Alma：动词走正文色、余量走弱化色，两层嵌在**同一个**扫光容器里
+        // （扫光在容器上，background-clip:text 会盖过子元素的颜色）
         return (
           <span
-            className="nk-shimmer"
-            style={{ fontSize: 13, fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            className={livePhaseActive ? 'nk-shimmer' : undefined}
+            style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}
           >
-            {l.verb}
-            {l.rest ? ` ${l.rest}` : ''}
+            <span style={{ fontWeight: 600, color: ink }}>{l.verb}</span>
+            {l.rest ? <span style={{ fontWeight: 400, color: muted }}>{' '}{l.rest}</span> : null}
           </span>
         )
       })()
@@ -576,6 +591,7 @@ export const AiActivityTrack = ({
         <button
           type="button"
           aria-expanded={railOpen}
+          aria-label={railOpen ? '收起活动' : '展开活动'}
           onClick={toggleRail}
           className="nk-arow"
           style={{
@@ -599,12 +615,12 @@ export const AiActivityTrack = ({
             {allThinking(phases) ? '已思考' : `用了 ${countUnits(phases)} 个工具`}
           </span>
           <span
+            className={railOpen ? 'nk-chev on' : 'nk-chev'}
             style={{
               display: 'flex',
               color: muted,
               flexShrink: 0,
               transform: railOpen ? 'rotate(180deg)' : 'none',
-              transition: 'transform .15s',
             }}
           >
             <Chevron />
