@@ -107,8 +107,41 @@ const tool = (title, toolKind, status = 'completed', rawInput) =>
   eq('文案：思考中', phaseLabel(buildPhases([th('a')])[0], true), { verb: '思考中', rest: '' })
   eq('文案：已思考', phaseLabel(buildPhases([th('a')])[0], false), { verb: '已思考', rest: '' })
   eq('文案：探索中', phaseLabel(buildPhases([tool('a', 'read')])[0], true), { verb: '探索中', rest: '1 处' })
-  eq('文案：修改中', phaseLabel(buildPhases([tool('a', 'edit')])[0], true), { verb: '修改中', rest: '1 处改动' })
+  eq('文案：修改中', phaseLabel(buildPhases([tool('a', 'edit')])[0], true), { verb: '修改中', rest: '编辑 1' })
   eq('文案：generic live', phaseLabel(buildPhases([tool('a', 'weird')])[0], true), { verb: '使用中', rest: '' })
+}
+
+{
+  // 与 Alma 对齐的两条细分（2026-10-09）
+  const f = (t, raw) => tool(t, 'other', 'completed', raw)
+  eq('文案：全是读文件 → 「N 个文件」',
+    phaseLabel(buildPhases([
+      f('read_file', { file_path: '/a/1.md' }),
+      f('read_file', { file_path: '/a/2.md' }),
+    ])[0], false),
+    { verb: '已探索', rest: '2 个文件' })
+  eq('文案：混了非读文件 → 「N 处」',
+    phaseLabel(buildPhases([
+      f('read_file', { file_path: '/a/1.md' }),
+      f('grep', { pattern: 'TODO' }),
+    ])[0], false),
+    { verb: '已探索', rest: '2 处' })
+  eq('文案：读文件但没有 file_path → 仍是「N 处」',
+    phaseLabel(buildPhases([f('read_file', {})])[0], false),
+    { verb: '已探索', rest: '1 处' })
+  eq('文案：新建与编辑分开计',
+    phaseLabel(buildPhases([
+      f('write_file', { file_path: '/a/new.md' }),
+      f('edit_file', { file_path: '/a/old.md' }),
+      f('edit_file', { file_path: '/a/old2.md' }),
+    ])[0], false),
+    { verb: '已修改', rest: '新建 1 · 编辑 2' })
+  eq('文案：只有新建',
+    phaseLabel(buildPhases([f('write_file', { file_path: '/a/new.md' })])[0], false),
+    { verb: '已修改', rest: '新建 1' })
+  eq('文案：只有编辑',
+    phaseLabel(buildPhases([f('edit_file', { file_path: '/a/old.md' })])[0], false),
+    { verb: '已修改', rest: '编辑 1' })
 }
 
 {

@@ -268,50 +268,28 @@ const PhaseBody = ({
 }) => (
   <>
     {phase.items.map((it, idx) => {
+      const key = `${baseKey}-r${phase.startIndex}-${idx}`
+      // 推理直接以弱化文字铺出来，**不折叠**（与 Alma 一致）。
+      // 之前那版折成一行「它在想…（N 字）▸」是我自己加的，Alma 没有 —— 已于 2026-10-09 对齐。
       if (it.kind === 'thought') {
-        const key = `${baseKey}-r${phase.startIndex}-${idx}`
         return (
-          <button
+          <div
             key={key}
-            type="button"
-            onClick={() => toggleRow(key)}
-            className="nk-arow"
             style={{
-              display: 'flex',
-              gap: 6,
-              width: '100%',
-              textAlign: 'left',
-              background: 'none',
-              border: 'none',
-              padding: '2px 6px',
-              margin: '0 -6px',
-              borderRadius: 4,
-              font: 'inherit',
-              cursor: 'pointer',
+              fontSize: 13,
+              lineHeight: 1.85,
               color: muted,
-              fontSize: 12,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              padding: '2px 0 6px',
             }}
           >
-            <span style={{ flexShrink: 0 }}>
-              它在想…（{it.text.length} 字）{openRows[key] ? ' ▾' : ' ▸'}
-            </span>
-          </button>
-        )
-      }
-      const key = `${baseKey}-r${phase.startIndex}-${idx}`
-      return <ToolRow key={key} it={it} rowKey={key} open={!!openRows[key]} onToggle={() => toggleRow(key)} />
-    })}
-    {phase.items
-      .filter((it): it is Extract<Part, { kind: 'thought' }> => it.kind === 'thought')
-      .map((it) => {
-        const key = `${baseKey}-r${phase.startIndex}-${phase.items.indexOf(it)}`
-        if (!openRows[key]) return null
-        return (
-          <div key={key + '-t'} style={{ fontSize: 12, color: muted, lineHeight: 1.7, whiteSpace: 'pre-wrap', padding: '2px 0 6px 12px' }}>
             {it.text}
           </div>
         )
-      })}
+      }
+      return <ToolRow key={key} it={it} rowKey={key} open={!!openRows[key]} onToggle={() => toggleRow(key)} />
+    })}
   </>
 )
 
@@ -533,29 +511,36 @@ export const AiActivityTrack = ({
       <div style={{ marginLeft: 11, paddingLeft: 16, borderLeft: `1px solid ${line}`, paddingTop: 6, paddingBottom: 2, marginTop: 4 }}>
         {phases.map((phase, i) => {
           const l = phaseLabel(phase, false)
+          // 与 Alma 一致：时间线里**只有 thinking 相位**另起一行标签，
+          // 其余相位的语义由各行自身的动词承担（「执行 bash」已经说明是执行相位了）。
           return (
             <div key={`tl-${i}`} style={{ marginBottom: 4 }}>
-              <div style={{ fontSize: 12, color: muted, fontWeight: phase.kind === 'thinking' ? 500 : 400 }}>
-                {l.verb}
-                {l.rest ? ` ${l.rest}` : ''}
-              </div>
-              {phase.kind !== 'thinking' && (
-                <PhaseBody
-                  phase={phase}
-                  baseKey={`${trackKey}-tl${i}`}
-                  openRows={openRows}
-                  toggleRow={toggleRow}
-                />
+              {phase.kind === 'thinking' && (
+                <div style={{ fontSize: 12, color: muted, fontWeight: 500 }}>
+                  {l.verb}
+                  {l.rest ? ` ${l.rest}` : ''}
+                </div>
               )}
+              <PhaseBody
+                phase={phase}
+                baseKey={`${trackKey}-tl${i}`}
+                openRows={openRows}
+                toggleRow={toggleRow}
+              />
             </div>
           )
         })}
       </div>
     )
   } else if (selected != null && phases[selected]) {
-    // 单相位：只点开一个头像时
+    // 单相位：只点开一个头像时（Alma：只有 thinking 相位在这里补一行标签）
     body = (
       <div style={{ marginLeft: 11, paddingLeft: 16, borderLeft: `1px solid ${line}`, paddingTop: 6, marginTop: 4 }}>
+        {phases[selected].kind === 'thinking' && (
+          <div style={{ fontSize: 12, color: muted, fontWeight: 500, marginBottom: 2 }}>
+            {phaseLabel(phases[selected], false).verb}
+          </div>
+        )}
         <PhaseBody
           phase={phases[selected]}
           baseKey={`${trackKey}-sel${selected}`}

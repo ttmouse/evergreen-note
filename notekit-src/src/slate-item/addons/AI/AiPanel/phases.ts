@@ -114,20 +114,43 @@ export function countUnits(phases: Phase[]): number {
 
 export const allThinking = (phases: Phase[]): boolean => phases.every((p) => p.kind === 'thinking')
 
+const isFileRead = (it: Part): boolean => {
+  if (it.kind !== 'tool') return false
+  if (!/(read|view|cat|get)/.test(String(it.title || '').toLowerCase())) return false
+  const raw = it.rawInput && typeof it.rawInput === 'object' ? (it.rawInput as Record<string, any>) : {}
+  const args = raw.args && typeof raw.args === 'object' ? raw.args : raw
+  return typeof args.file_path === 'string' || typeof args.path === 'string'
+}
+
+const isCreate = (it: Part): boolean =>
+  it.kind === 'tool' && /(write|create|new)/.test(String(it.title || '').toLowerCase())
+
 /**
  * 相位的「动词 + 剩余」。同一个相位有进行/完成两态 —— 整棵树看起来「活着」全靠它。
- *   思考中 / 已思考     探索中 / 已探索 · N 处     修改中 / 已修改 · N 处改动
- *   执行中 / 已执行 · N 条命令                     使用中 / 已使用 · N 步
+ * 文案与 Alma 逐条对齐：
+ *   思考中 / 已思考       探索中 / 已探索 · N 个文件 或 N 处
+ *   修改中 / 已修改 · 新建 N · 编辑 M      执行中 / 已执行 · N 条命令
+ *   使用中 / 已使用 · N 步
  */
 export function phaseLabel(phase: Phase, live: boolean): { verb: string; rest: string } {
   const n = phase.items.length
   switch (phase.kind) {
     case 'thinking':
       return { verb: live ? '思考中' : '已思考', rest: '' }
-    case 'exploring':
-      return { verb: live ? '探索中' : '已探索', rest: `${n} 处` }
-    case 'making':
-      return { verb: live ? '修改中' : '已修改', rest: `${n} 处改动` }
+    case 'exploring': {
+      // 全是「读文件」才说「N 个文件」，否则一律「N 处」（同 Alma：reads === n ? files : places）
+      const files = phase.items.filter(isFileRead).length
+      return { verb: live ? '探索中' : '已探索', rest: `${n} ${files === n && n > 0 ? '个文件' : '处'}` }
+    }
+    case 'making': {
+      // 新建与编辑分开计（同 Alma：Write 记新建，其余记编辑）
+      const creates = phase.items.filter(isCreate).length
+      const edits = n - creates
+      const pieces: string[] = []
+      if (creates) pieces.push(`新建 ${creates}`)
+      if (edits) pieces.push(`编辑 ${edits}`)
+      return { verb: live ? '修改中' : '已修改', rest: pieces.join(' · ') }
+    }
     case 'running':
       return { verb: live ? '执行中' : '已执行', rest: `${n} 条命令` }
     default:
