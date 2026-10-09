@@ -1389,7 +1389,14 @@ body .workspace-tab {
   -webkit-app-region: no-drag;
 }
 body .workspace-tab:active { cursor: grabbing; }
-body .workspace-tab.is-dragging { opacity: .45; }
+body .workspace-tab { transition: transform 120ms ease; }
+body .workspace-tab.is-dragging {
+  opacity: 1;
+  min-width: 90px;
+  border: 1.5px dashed var(--nk-line-strong);
+  background: transparent;
+}
+body .workspace-tab.is-dragging > * { visibility: hidden; }
 body .workspace-tab-close { cursor: pointer; }
 body .workspace-tab.is-active,
 body .workspace-tab:hover { background: var(--nk-tab-hover); }

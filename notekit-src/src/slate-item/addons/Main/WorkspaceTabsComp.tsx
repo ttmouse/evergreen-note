@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { observer } from 'mobx-react'
 import { FileTextIcon, XIcon } from '@phosphor-icons/react'
 import { useAddons } from '../../hooks/useAddons'
@@ -11,6 +11,8 @@ export const WorkspaceTabsComp = observer(() => {
   const listRef = useRef<HTMLDivElement>(null)
   const dragKeyRef = useRef<string | null>(null)
   const [draggingKey, setDraggingKey] = useState<string | null>(null)
+  const tabNodesRef = useRef(new Map<string, HTMLDivElement>())
+  const tabRectsRef = useRef(new Map<string, DOMRect>())
   const activeKey = main.workspaceActiveKey
   const single = floatViewerMode !== 'andy' && main.workspaceTabs.length <= 1
 
@@ -20,6 +22,34 @@ export const WorkspaceTabsComp = observer(() => {
   useEffect(() => {
     listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [activeKey, main.workspaceTabs.length])
+
+  // FLIP 平滑让位：顺序变化后，把每个 Tab（含被拖 Tab 的虚线占位槽）从旧位置补间到新位置。
+  // 用 offsetLeft 取布局位置，避免 rect 被上一次动画未释放的 transform 污染。
+  const tabOrder = main.workspaceTabs.map(tab => tab.key).join('|')
+  useLayoutEffect(() => {
+    if (dragKeyRef.current === null) return // 只在拖拽期间补帧，其余重排不做动画
+    const first = tabRectsRef.current
+    for (const [key, el] of tabNodesRef.current) {
+      const prev = first.get(key)
+      const now = el.offsetLeft
+      if (prev !== undefined && Math.abs(prev - now) > 1) {
+        el.style.transition = 'none'
+        el.style.transform = `translateX(${prev - now}px)`
+        void el.offsetWidth
+        el.style.transition = ''
+        el.style.transform = ''
+      }
+      first.set(key, now)
+    }
+  }, [tabOrder])
+
+  // 拖拽开始时基线化各 Tab 位置（保证第一次换位也有动画），结束时清表
+  useEffect(() => {
+    if (draggingKey === null) { tabRectsRef.current.clear(); return }
+    if (tabRectsRef.current.size === 0) {
+      for (const [key, el] of tabNodesRef.current) tabRectsRef.current.set(key, el.offsetLeft)
+    }
+  }, [draggingKey])
 
   if (single) {
     const title = main.workspaceTabs[0]?.title || main.pageTitle || 'Evergreen note'
@@ -40,6 +70,10 @@ export const WorkspaceTabsComp = observer(() => {
   >
     {main.workspaceTabs.map((tab, index) => <div
       key={tab.key}
+      ref={el => {
+        if (el) tabNodesRef.current.set(tab.key, el)
+        else tabNodesRef.current.delete(tab.key)
+      }}
       draggable
       onDragStart={event => {
         dragKeyRef.current = tab.key
@@ -48,11 +82,14 @@ export const WorkspaceTabsComp = observer(() => {
         event.dataTransfer.setData('text/plain', tab.key)
       }}
       onDragOver={event => {
-        if (dragKeyRef.current === null || dragKeyRef.current === tab.key) return
+        const dragKey = dragKeyRef.current
+        if (dragKey === null || dragKey === tab.key) return
         event.preventDefault()
         event.dataTransfer.dropEffect = 'move'
-        // 自动让位：悬停到其他 Tab 上时，被拖的 Tab 实时移到该位置，其余 Tab 顺势腾开
-        main.moveWorkspaceTab(dragKeyRef.current, index)
+        // 让位触发：指针一越过该 Tab 边缘就重排；按悬停在哪半边决定插到前/后
+        const rect = event.currentTarget.getBoundingClientRect()
+        const after = event.clientX > rect.left + rect.width / 2
+        main.moveWorkspaceTab(dragKey, after ? index + 1 : index)
       }}
       onDrop={event => {
         event.preventDefault()
