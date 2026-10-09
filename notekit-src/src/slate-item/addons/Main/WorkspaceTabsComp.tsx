@@ -51,14 +51,12 @@ export const WorkspaceTabsComp = observer(() => {
         if (dragKeyRef.current === null || dragKeyRef.current === tab.key) return
         event.preventDefault()
         event.dataTransfer.dropEffect = 'move'
+        // 自动让位：悬停到其他 Tab 上时，被拖的 Tab 实时移到该位置，其余 Tab 顺势腾开
+        main.moveWorkspaceTab(dragKeyRef.current, index)
       }}
       onDrop={event => {
         event.preventDefault()
         event.stopPropagation()
-        if (dragKeyRef.current !== null && dragKeyRef.current !== tab.key) {
-          main.moveWorkspaceTab(dragKeyRef.current, index)
-        }
-        dragKeyRef.current = null
       }}
       onDragEnd={() => { dragKeyRef.current = null; setDraggingKey(null) }}
       className={`workspace-tab${tab.key === activeKey ? ' is-active' : ''}${draggingKey === tab.key ? ' is-dragging' : ''}`}
