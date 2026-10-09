@@ -35,8 +35,8 @@ export class AiPanelStore {
   undoing = false
   private undoImpl: { undoTurn: () => Promise<number>; beginTurn: () => void } | null = null
 
-  /** 历史档（清空时自动归档）。viewing 非空表示正在只读回看某一档。 */
-  history: { at: number; preview: string; items: AiItem[] }[] = []
+  /** 历史档（每轮自动归档；清空时也归档）。viewing 非空表示正在只读回看某一档。 */
+  history: { at: number; preview: string; items: AiItem[]; sid?: number }[] = []
   viewing: number | null = null
 
   private es: EventSource | null = null
@@ -49,6 +49,7 @@ export class AiPanelStore {
   // ------------------------------------------------------------------ 历史
 
   private static HISTORY_KEY = 'nk-ai-panel-history'
+  private static CURRENT_KEY = 'nk-ai-panel-current'
   private static HISTORY_MAX = 30
 
   private loadHistory() {
@@ -58,6 +59,14 @@ export class AiPanelStore {
     } catch {
       this.history = []
     }
+    // 上次没点「清空」就退出/刷新的对话：从 current 快照并回历史，保证历史完整。
+    try {
+      const raw = localStorage.getItem(AiPanelStore.CURRENT_KEY)
+      if (raw) {
+        const snap = JSON.parse(raw)
+        if (snap && Array.isArray(snap.items) && snap.items.length > 0) this.mergeSnap(snap)
+      }
+    } catch {}
   }
 
   private saveHistory() {
@@ -66,13 +75,48 @@ export class AiPanelStore {
     } catch {}
   }
 
-  /** 把当前流水归档进历史（清空/回看切换时调用；空流水不归档） */
-  archive() {
-    if (this.items.length === 0) return
+  /** 当前对话的稳定 id：首行的时间戳（clear 后从零重开，天然区分不同对话） */
+  private get currentSid(): number | undefined {
+    return this.items.length > 0 ? this.items[0].at : undefined
+  }
+
+  private makeSnap() {
     const firstUser = this.items.find((x) => x.kind === 'user') as any
     const preview = (firstUser?.text || this.items[0]?.text || '').slice(0, 40)
-    this.history = [{ at: Date.now(), preview, items: this.items }, ...this.history].slice(0, AiPanelStore.HISTORY_MAX)
+    return { sid: this.currentSid, at: this.items[0].at, preview, items: this.items }
+  }
+
+  /** 快照并入历史：同 sid 替换（对话进行中每轮刷新同一条），否则插到最前 */
+  private mergeSnap(snap: { sid?: number; at: number; preview: string; items: AiItem[] }) {
+    this.history = [snap, ...this.history.filter((h) => h.sid == null || h.sid !== snap.sid)].slice(
+      0,
+      AiPanelStore.HISTORY_MAX,
+    )
     this.saveHistory()
+  }
+
+  /** 把当前流水持久化到 localStorage（每轮调用），退出/刷新后可并回历史 */
+  private persistCurrent() {
+    try {
+      if (this.items.length === 0) localStorage.removeItem(AiPanelStore.CURRENT_KEY)
+      else localStorage.setItem(AiPanelStore.CURRENT_KEY, JSON.stringify(this.makeSnap()))
+    } catch {}
+  }
+
+  /** 每轮结束后同步刷新历史档（同一条对话只更新历史里同一条目，不产生重复） */
+  syncHistory() {
+    if (this.items.length === 0) return
+    this.mergeSnap(this.makeSnap())
+    this.persistCurrent()
+  }
+
+  /** 把当前流水归档进历史（clear 时调用；空流水不归档） */
+  archive() {
+    if (this.items.length === 0) return
+    this.mergeSnap(this.makeSnap())
+    try {
+      localStorage.removeItem(AiPanelStore.CURRENT_KEY)
+    } catch {}
   }
 
   removeHistory(at: number) {
@@ -139,6 +183,7 @@ export class AiPanelStore {
           this.state = 'busy'
           this.undoImpl?.beginTurn()
           this.items.push({ kind: 'user', at: ev.at, text: ev.text ?? '' })
+          this.persistCurrent()
           break
         case 'text': {
           const i = this.lastIndex('text')
@@ -192,20 +237,24 @@ export class AiPanelStore {
         case 'turn_end':
           this.busy = false
           this.state = 'ready'
+          this.syncHistory()
           break
         case 'cancel_sent':
           this.busy = false
+          this.syncHistory()
           break
         case 'agent_exit':
           this.busy = false
           this.state = 'stopped'
           this.sessionId = null
           this.items.push({ kind: 'exit', at: ev.at, text: ev.message || 'agent 已退出' })
+          this.syncHistory()
           break
         case 'error':
           this.busy = false
           this.error = ev.message ?? '未知错误'
           this.items.push({ kind: 'error', at: ev.at ?? Date.now(), text: this.error! })
+          this.syncHistory()
           break
       }
     })
