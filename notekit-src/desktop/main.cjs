@@ -273,13 +273,12 @@ function flushPendingNoteKeys() {
   for (const ky of queue) void dispatchNoteKey(ky)
 }
 
-// 必须在 app.whenReady 前注册。macOS 打包 App 直接生效；
-// dev 模式（process.defaultApp）要显式传 execPath + argv，Electron 标准写法。
-if (process.defaultApp) {
-  if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('evergreen', process.execPath, [path.resolve(process.argv[1])])
-  }
-} else {
+// 只在打包 App 里注册 evergreen:// 处理器，必须在 app.whenReady 前。
+// dev 模式（electron main.cjs，process.defaultApp 为真）绝不能注册：那会把
+// LaunchServices 的默认处理器抢到 node_modules 的裸 Electron 上，实测表现为
+// 点 evergreen:// 链接只弹出一个空 Electron。方案声明已写进打包 Info.plist
+// 的 CFBundleURLTypes（见 tools/build-dmg.mjs），打包 App 不靠这行也能被关联。
+if (!process.defaultApp) {
   app.setAsDefaultProtocolClient('evergreen')
 }
 

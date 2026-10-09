@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url'
 import { DatabaseSync } from 'node:sqlite'
 import { SqliteStore } from './storage.mjs'
 import { callNoteCommand, verifySaved } from './note-command.mjs'
+import { createAiAcpService } from './ai-acp-routes.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
@@ -37,6 +38,29 @@ for (const d of [DATA_DIR, path.join(DATA_DIR, 'files'), path.join(DATA_DIR, 'im
 
 const db = new DatabaseSync(path.join(DATA_DIR, 'notekit.db'))
 const storage = new SqliteStore(db)
+
+// AI 侧边栏：把 dsh --profile acp 拉成子进程，事件经 /api/ai/acp/stream 以 SSE 推给渲染层。
+// 方案正本：notes/AI侧边栏ACP接入方案-20261009.md
+const aiAcp = createAiAcpService({
+  dataDir: DATA_DIR,
+  readBody,
+  writeJson: sendJson,
+  log: (m) => console.log(m),
+})
+// 应用退出时先收干净子进程（SIGTERM → 宽限 → SIGKILL），避免留僵尸
+for (const sig of ['SIGINT', 'SIGTERM']) {
+  process.on(sig, async () => {
+    try {
+      await aiAcp.stop()
+    } catch {}
+    process.exit(0)
+  })
+}
+process.on('exit', () => {
+  try {
+    aiAcp.stop()
+  } catch {}
+})
 
 /** 表名规则与实测原版一致：`<dbid>-<tbName>` */
 function tableName(dbid, tbName) {
@@ -376,6 +400,9 @@ const server = createServer(async (req, res) => {
       log(`-> ${safe}`)
       return sendJson(res, { code: 0 })
     }
+
+    // ---------- AI 侧边栏（必须在下面的 /api/* 兜底之前） ----------
+    if (await aiAcp.handle(req, res, p)) return
 
     // ---------- 其余接口：占位但不报错 ----------
     if (p.startsWith('/api/')) {

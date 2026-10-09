@@ -103,6 +103,7 @@ import { createPlaceholderAddon } from './slate-item/addons/Placeholder/Placehol
 import { createPathHighlightAddon } from './slate-item/addons/PathHighlight/PathHighlight'
 import { createSync2Addon } from './slate-item/addons/Sync2/Sync2'
 import { createAiAssistantAddon } from './slate-item/addons/AI/AiAssistant/AiAssistant'
+import { createAiPanelAddon } from './slate-item/addons/AI/AiPanel/AiPanel'
 import { createItemToolbarAddon } from './slate-item/addons/ItemToolbar/ItemToolbar'
 import { createMirrorItemAddon } from './slate-item/addons/MirrorItem/MirrorItem'
 import { createDocverAddon } from './slate-item/addons/Docver/Docver'
@@ -184,6 +185,7 @@ export function createAddons(params: NewAddonParams) {
 
   const ai = {
     ...createAiAssistantAddon(params),
+    ...createAiPanelAddon(params),
   }
 
   return {

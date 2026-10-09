@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791497433607-27617",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791497433607,
+  "sessionId": "claim-d125f26f-cd9a2c15",
+  "finishedAt": 1791497685836,
+  "durationMs": 252229,
+  "exitCode": 0,
+  "digest": "本轮完成，议题已移到 in_review（version 3），总结评论（含解释卡附件）已回。\n\n**为什么看到那个提示（大白话版）**\n\n1. **弹窗不是正式 App 报的**：它来自一个放在 `/private/tmp/ev-heatmap-verify` 的隔离测试实例（端口 11901），是某轮验证任务启动的，和你日常用的 Evergreen note.app 无关。\n2. **机制**：App 壳每次启动都会先拉起一个本地服务（server.mjs），30 秒内连不上就弹「本地服务启动失败」并附日志（源码在 `notekit-src/desktop/main.cjs` L503-516）。\n3. **为什么失败**：那次启动的瞬间 `server.mjs` 还不存在（测试目录只拷了一半）→ Node 直接退出（`MODULE_NOT_FOUND`，`requireStack: []` 说明缺的就是入口文件本身）→ 等满 30 秒弹窗。纯属启动时序问题。\n4. **当前状态（已实测）**：`server.mjs` 已就位，11901 服务进程在跑、HTTP 有响应，正式 App 不受影响，**无需处理**。小遗留：该测试实例页面显示乱码的「dist/ 请先运行一次 pnpm build」，因为 hookapp 没放构建产物。\n\n本轮纯答疑、无源码改动，故未提交 commi"
+}

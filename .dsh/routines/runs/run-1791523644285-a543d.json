@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791523644285-a543d",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791523644285,
+  "sessionId": "claim-d125f26f-bbf1bf18",
+  "finishedAt": 1791524772258,
+  "durationMs": 1127973,
+  "exitCode": 0,
+  "digest": "本轮完成，议题已回 `in_review`，等你验收。\n\n**改了什么**\n1. **移除上方空白**：那行空白是「周几标题行」——文字被全局 `color: transparent` 规则吃掉，只剩一行高度。现在笔记内嵌热力图不再渲染这行；侧边栏整页热力图保留标题但改为可见的灰色小字（[MonthCalendar.tsx](notekit-src/src/slate-item/components/MonthCalendar/MonthCalendar.tsx#L98)、[HeatmapElementComp.tsx](notekit-src/src/slate-item/addons/Heatmap/HeatmapElementComp.tsx#L26-L31)）。\n2. **配色改黑白灰**：色带从绿系改为灰阶 rgb(224,224,224)→rgb(24,24,24)，日记越多格子越深、今日格近黑（[Heatmap.tsx](notekit-src/src/slate-item/addons/Heatmap/Heatmap.tsx#L46-L51)）。\n\n**验证与交付**\n- `pnpm build` 通过；已发布到正在运行的 App（窗口自动刷新），并直读运行中的 App 渲染核验：112 格、有内容的格子全部呈灰阶、热力图紧贴上文无空白行。\n- 对比图（左改前/右改"
+}

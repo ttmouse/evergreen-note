@@ -203,13 +203,14 @@ export const ExtAreaComp = observer(() => {
       <EleHead>&nbsp;</EleHead>
       <EleBody>
         <EleSubitems classChild={cls`flex-wrap: wrap;`}>
-          {app.states.extAreaItems!.map((extItem) => {
-            if (['topic', 'item'].includes(extItem.type)) {
-              const k = `topic-${extItem.key}`
-              return <ExtAreaItem key={k} ky={extItem.key} />
-            }
-            return null
-          })}
+          {app.states.extAreaItems!
+            .map((extItem: any) => {
+              if (['topic', 'item'].includes(extItem.type)) {
+                const k = `topic-${extItem.key}`
+                return <ExtAreaItem key={k} ky={extItem.key} />
+              }
+              return null
+            })}
         </EleSubitems>
       </EleBody>
     </PartOuter>

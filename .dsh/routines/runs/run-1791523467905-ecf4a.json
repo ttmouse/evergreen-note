@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791523467905-ecf4a",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791523467905,
+  "sessionId": "claim-d125f26f-fc5b6ee1",
+  "finishedAt": 1791524547257,
+  "durationMs": 1079352,
+  "exitCode": 0,
+  "digest": "本轮已完成，议题已移到 in_review，等你验收。\n\n![拖拽前后对比](</tmp/ai-panel-drag-compare.png>)\n\n**做了什么**：AI「就地助手」侧边栏现在可以拖左缘调宽了——\n- 按住面板左边拖即可调整宽度（320–900px 之间），把手悬停会显示一条强调色细线提示可拖；\n- **双击把手一键恢复默认 500px**；\n- 宽度会记住（存 localStorage），收起再打开、重启应用都保留。\n\n**验证**（隔离实例 CDP 实测）：默认 500px → 拖到 801px 并持久化；双击复位回 500px；`pnpm build` 通过，已用 live-app.mjs 发布进打包 App 并触发热更新（11820 端口已在跑新构建），窗口刷新即可体验。\n\n**改动文件**：[AiPanel.tsx](notekit-src/src/slate-item/addons/AI/AiPanel/AiPanel.tsx)（仅此一个文件，已按议题号 commit：`db9bd10`）。\n\n看板评论已附同一张对比图，议题停在 **in_review**——你说「验收通过」我才会移到 done。"
+}

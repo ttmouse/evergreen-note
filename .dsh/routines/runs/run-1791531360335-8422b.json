@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791531360335-8422b",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791531360335,
+  "sessionId": "claim-d125f26f-d6f1fbce",
+  "finishedAt": 1791532570248,
+  "durationMs": 1209913,
+  "exitCode": 0,
+  "digest": "好的，先把代码机制讲清楚。我把这条链路完整读了一遍（`HeatmapElementComp.tsx` → `InlineOuterComp.tsx` → slate-react 的 void 渲染与 `Editable` 事件 → `$.heatmap.route` → `$.daily.route` → `$.router.to`），结论如下。\n\n## 根因分析\n\n**热力图在笔记里是一个 Slate inline void 节点，点击日期格的 `onClick` 永远等不到触发——因为 mousedown 阶段节点就被换掉了。**\n\n完整时序：\n\n1. 内嵌热力图的日期格确实挂了 `onClick`（HeatmapElementComp.tsx:62 `onClick={() => $.heatmap.route(date, {}, useEditor())}`），事件注册本身没问题；\n2. 但组件里有这段（:70-72）：\n   ```tsx\n   const selected = useSelected();\n   const focused = useFocused();\n   const showSource = Boolean(selected && focused);\n   ```\n   `showSource=true` 时，整个色块图会被**替换**成一行原始文"
+}

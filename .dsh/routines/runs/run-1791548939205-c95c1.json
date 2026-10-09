@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791548939205-c95c1",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791548939205,
+  "sessionId": "claim-d125f26f-0f255da0",
+  "finishedAt": 1791549477926,
+  "durationMs": 538721,
+  "exitCode": 0,
+  "digest": "本轮完成，议题 D125F26FCF5E-14 已回总结评论并移到 in_review。\n\n**改动**（commit `95df4c6`，只含本轮文件，工作区里另一会话遗留的 styles.css 改动未混入）：\n- 新建议题时底部低频属性（优先级 / 指派 / 标签 / 工作流 / 分支·Worktree / 截止与重复日期）默认折叠为一行：仅留「状态」胶囊 + 附件入口 + 右侧「⋯」；点「⋯」展开全部属性、再点收起。\n- 附件入口移出底部按钮区，不再贴着「创建议题 / 创建并执行」。\n- 编辑既有议题保持原完整布局。\n\n**验证**：`pnpm build` 通过，运行中的看板服务已返回新 bundle（index-DHCmpAkw.js）；Playwright 实开弹窗自测了折叠 / 展开 / 再收起三个状态。\n\n![前后对比](<file:///tmp/d125f14-compare.png>)\n\n提醒：桌面 App 内嵌看板不会自动更新，请刷新看板页面（关开面板）或重启 App 后体验。议题停在 in_review 等你验收，未动 done。"
+}

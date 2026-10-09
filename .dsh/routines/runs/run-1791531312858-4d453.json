@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791531312858-4d453",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791531312858,
+  "sessionId": "claim-d125f26f-22d1d282",
+  "finishedAt": 1791532203223,
+  "durationMs": 890365,
+  "exitCode": 0,
+  "digest": "本轮已按「评论即执行」完成，议题已回总结评论并移到 in_review。\n\n**你说的问题是真的，原因很直白**：上一版的历史只在点「清空」那一刻才保存——平时对话只存在内存里。所以那几段没点「清空」就直接关掉/重启的对话，从头到尾没存过盘，历史里自然看不到。\n\n**本轮修法**（只改 [AiPanelStore.ts](notekit-src/src/slate-item/addons/AI/AiPanel/AiPanelStore.ts) 一个文件，界面不变）：\n- 每轮对话结束就自动存进历史，同一段对话只更新历史里同一条，不会越聊越乱；\n- 当前对话同时写到本机存储，就算没点「清空」就退出/刷新，下次打开也会自动并回历史列表。\n\n**验证**：`pnpm build` 通过，已发布进运行中的 App 并确认热更生效（哈希 index-C74gOahd.js 一致，窗口会自动刷新）。本会话没有桌面截图工具没法实拍点击链路，请你按 ⌥⇧9 打开面板试一下：发一轮对话→不点清空直接重启 App→点「历史」，应该能看到它。\n\n两点说明：①修复**之前**已经丢的那几段对话当时没落盘，找不回来了，抱歉；②回看历史后继续提问，AI 仍不记得历史档内容（这是只读回看，不是接续会话）。\n\ncommit：37bb772（仅本轮一个文件）。看板评论已附对比图（即上面这张），议题停在 in_rev"
+}

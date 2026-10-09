@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791524044739-9067f",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791524044739,
+  "sessionId": "claim-d125f26f-3782258a",
+  "finishedAt": 1791524329161,
+  "durationMs": 284422,
+  "exitCode": 0,
+  "digest": "构建并发布到正在运行的 App（热更新交付），然后截图自测："
+}

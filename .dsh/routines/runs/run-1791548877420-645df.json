@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791548877420-645df",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791548877420,
+  "sessionId": "claim-d125f26f-862cb24f",
+  "finishedAt": 1791549859943,
+  "durationMs": 982523,
+  "exitCode": 0,
+  "digest": "这条是我本轮发到看板的总结评论回显，无新增指令，无需再处理。议题 D125F26FCF5E-13 已停在 **in_review** 等人工验收：改动已发布到运行中的 App（新 bundle `index-9bi9Hu00.js`），请在顶部按住任意 Tab 拖到目标位置实测；验收通过后评论「验收通过」我再移 done。"
+}

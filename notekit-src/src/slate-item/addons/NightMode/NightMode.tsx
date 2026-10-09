@@ -432,9 +432,13 @@ export function createNightModeAddon(params: NewAddonParams) {
     }
 
     addonBeforeRun() {
+      const inShell = typeof (window as any).notekitShell !== 'undefined';
       const systemNightMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       const storedVal = localStorage.getItem('nightMode');
-      if (storedVal === 'on' || (storedVal === null && systemNightMode)) {
+      // 桌面 App（有 notekitShell）保持原行为：没存过偏好时跟随系统深浅色。
+      // 浏览器直开的网页版默认浅色：系统深色不再自动拉黑，
+      // 只有显式切过夜间模式（localStorage 存了 'on'）才进深色。
+      if (storedVal === 'on' || (storedVal === null && inShell && systemNightMode)) {
         this.isNightMode = true;
       } else {
         this.isNightMode = false;

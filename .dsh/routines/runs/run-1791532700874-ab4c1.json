@@ -1,0 +1,12 @@
+{
+  "runId": "run-1791532700874-ab4c1",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791532700874,
+  "sessionId": "claim-d125f26f-df0d38e9",
+  "finishedAt": 1791532719169,
+  "durationMs": 18295,
+  "exitCode": 0
+}

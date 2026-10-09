@@ -68,3 +68,4 @@ __pycache__/
 
 # Probe output (local-only)
 notekit-src/test-runs/
+.alma-snapshots

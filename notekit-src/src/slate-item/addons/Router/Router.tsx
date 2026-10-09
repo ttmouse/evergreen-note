@@ -9,6 +9,7 @@ import { composeId } from '../DbDisk/helper'
 import { isEmpty } from '../../utils/isEmpty'
 import { showSnack } from '../../utils/msg/showSnack'
 import { parseAddonUrlScheme } from './helper'
+import { resolveLinkTarget } from './linkTarget'
 import { ItemEditor, ItemNode } from '@/slate-item'
 import { keyState } from '../KeyClick/helper'
 import { cls } from '@/slate-item/styles'
@@ -491,28 +492,53 @@ export function createRouterAddon({ app, $ }: NewAddonParams) {
         // }
       })
 
-      // 编一对页面内的链接进行处理
+      // 编一对页面内的链接进行处理。
+      //
+      // 判定收进 resolveLinkTarget（见 ./linkTarget）：只放行三类 —— 相对链接、re: 插件命令、
+      // 以及**归一后的同源绝对链接**。最后这一类是 2026-10-09 的报障来源：AI 面板的
+      // Markdown 里写着 `[…](http://127.0.0.1:11820/static/?open=<ky>)`，旧的
+      // `!url.includes(':')` 判定带 scheme 就放过，点击于是成了真正的页面跳转 ——
+      // 整个 App 重新加载，而不是在左侧主视图打开那篇笔记。
+      // 上一次由 mousedown 路由过的链接：click 那次就别再路由一遍
+      // （否则一次点击会压两条 history，后退要按两次）
+      let routedEl: Element | null = null
+      let routedAt = 0
+
       document.addEventListener('mousedown', (e) => {
-        const target = e.target as HTMLElement
-        const a = target.closest('a')
-        if (a) {
-          const url = a.getAttribute('href')
-          if (!url) {
-            return
-          }
-          if (url.startsWith('re:')) {
-            $.router.to(url, {}, a)
-            a.blur?.()
-            e.preventDefault()
-            e.stopPropagation()
-          } else if (!url.includes(':')) {
-            // 非 https://、file:// 之类的协议，只是 RE 内部链接
-            $.router.to(url, {}, a)
-            e.preventDefault()
-            e.stopPropagation()
-          }
-        }
+        const el = e.target as HTMLElement
+        const a = el?.closest?.('a')
+        if (!a) return
+        const link = resolveLinkTarget(a.getAttribute('href'), window.location.origin, window.location.href)
+        if (link.kind !== 'inApp') return
+        routedEl = a
+        routedAt = Date.now()
+        $.router.to(link.path, {}, a)
+        if (link.path.startsWith('re:')) a.blur?.()
+        e.preventDefault()
+        e.stopPropagation()
       })
+
+      // 真正取消浏览器跳转的是这里。
+      // 实测（headless Chrome，2026-10-09）：只在 mousedown 里 preventDefault **拦不住** ——
+      // <a href> 的默认跳转发生在 click 上，于是同源绝对链接照样把整个 App 重载了一遍。
+      // 放捕获阶段，面板/编辑器内部的 stopPropagation 不该让我们漏掉这次默认行为。
+      document.addEventListener(
+        'click',
+        (e) => {
+          const el = e.target as HTMLElement
+          const a = el?.closest?.('a')
+          if (!a) return
+          const link = resolveLinkTarget(a.getAttribute('href'), window.location.origin, window.location.href)
+          if (link.kind !== 'inApp') return
+          e.preventDefault()
+          // 键盘回车 / 脚本触发没有 mousedown，这里补一次路由
+          if (a === routedEl && Date.now() - routedAt < 1000) return
+          routedEl = a
+          routedAt = Date.now()
+          $.router.to(link.path, {}, a)
+        },
+        true
+      )
     }
   }
 

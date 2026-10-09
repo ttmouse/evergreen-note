@@ -1,0 +1,16 @@
+{
+  "runId": "run-1791515496190-36c89",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "skipped",
+  "startedAt": 1791515496190,
+  "finishedAt": 1791515496190,
+  "durationMs": 0,
+  "exitCode": 2,
+  "check": {
+    "command": "builtin:pick-next-task",
+    "todo": 0
+  },
+  "error": "skipped: no eligible todo tasks (unblocked, priority order)"
+}

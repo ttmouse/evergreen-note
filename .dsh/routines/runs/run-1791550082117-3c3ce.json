@@ -1,0 +1,13 @@
+{
+  "runId": "run-1791550082117-3c3ce",
+  "routine": "taskboard-claim-d125f26f-cf5",
+  "profile": "headless",
+  "cwd": "/Users/douba/Projects/Evergreen-Note",
+  "status": "ok",
+  "startedAt": 1791550082117,
+  "sessionId": "claim-d125f26f-32117d30",
+  "finishedAt": 1791550232405,
+  "durationMs": 150288,
+  "exitCode": 0,
+  "digest": "本轮已核实并收尾完毕（议题保持 in_review，未动 done）：\n\n**核实结论**（评论所述工作已全部落地，无需返工）\n- commit ec159f2 就是当前 HEAD：`WorkspaceTabsComp.tsx` 的 onDragOver 里已调用 `moveWorkspaceTab(dragKeyRef.current, index)`，onDrop 的重复移动已删除——拖动中悬停即实时让位、松手落位。\n- 11820 端口实际服务的 bundle 就是 index-C1WBE7vp.js，与最新构建一致，打包 App 已在跑新版。\n\n**收尾动作**：已在看板回总结评论（附前后对比图），议题已移到 in_review 等你拖一次实测验收；看板如显示旧内容请刷新页面（关开面板）或重启 App。"
+}
