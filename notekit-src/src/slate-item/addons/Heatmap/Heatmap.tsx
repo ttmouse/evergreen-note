@@ -141,7 +141,7 @@ export function createHeatmapAddon({ app, $ }: NewAddonParams) {
       const percent = Math.round(n * 100) / 100;
       const bg =
         percent === 0
-          ? 'transparent'
+          ? '' // 空格不写内联背景，交给 CSS 给极浅灰底（浅/夜各一档，2026-10-09）
           : $.heatmap.calcColor(
               $.heatmap.colorRange[0],
               $.heatmap.colorRange[1],
