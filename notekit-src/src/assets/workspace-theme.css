@@ -1425,8 +1425,8 @@ body .workspace-tab--floating {
 body .workspace-tab-close { cursor: pointer; }
 body .workspace-tab.is-active,
 body .workspace-tab:hover { background: var(--nk-tab-hover); }
-/* 激活标签文字加深一档（未激活用 muted），浅色/夜间各有对应变量 */
-body .workspace-tab.is-active { color: var(--nk-ink); }
+/* 激活或悬停时文字加深一档（未激活保持 muted），浅色/夜间各有对应变量 */
+body .workspace-tab:is(.is-active, :hover) { color: var(--nk-ink); }
 body .workspace-tab-title {
   flex: 1 1 auto;
   min-width: 0;
