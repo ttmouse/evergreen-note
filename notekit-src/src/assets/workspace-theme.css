@@ -1386,7 +1386,7 @@ body .workspace-tab {
   max-width: 155px;
   padding: 0 4px 0 10px;
   border-radius: 9px;
-  color: var(--nk-ink);
+  color: var(--nk-muted);
   cursor: grab;
   -webkit-app-region: no-drag;
 }
@@ -1425,6 +1425,8 @@ body .workspace-tab--floating {
 body .workspace-tab-close { cursor: pointer; }
 body .workspace-tab.is-active,
 body .workspace-tab:hover { background: var(--nk-tab-hover); }
+/* 激活标签文字加深一档（未激活用 muted），浅色/夜间各有对应变量 */
+body .workspace-tab.is-active { color: var(--nk-ink); }
 body .workspace-tab-title {
   flex: 1 1 auto;
   min-width: 0;
