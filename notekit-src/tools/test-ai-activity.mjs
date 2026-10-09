@@ -41,8 +41,8 @@ const eq = (name, got, want) =>
 
 const phasesPath = await bundle('src/slate-item/addons/AI/AiPanel/phases.ts', 'phases.mjs')
 const {
-  buildPhases, groupBlocks, phaseKindOf, phaseLabel, rowForTool,
-  countUnits, allThinking, phaseSettled, MAX_VISIBLE_PHASES,
+  buildPhases, groupBlocks, phaseKindOf, phaseKindOfName, phaseLabel, rowForTool,
+  countUnits, allThinking, MAX_VISIBLE_PHASES,
 } = await import(pathToFileURL(phasesPath).href)
 
 const seq = { n: 0 }
@@ -139,9 +139,62 @@ const tool = (title, toolKind, status = 'completed', rawInput) =>
   eq('文案：只有新建',
     phaseLabel(buildPhases([f('write_file', { file_path: '/a/new.md' })])[0], false),
     { verb: '已修改', rest: '新建 1' })
+  eq('文案：删除单独报，不混进「编辑」',
+    phaseLabel(buildPhases([
+      f('edit_file', { file_path: '/a/1.md' }),
+      f('delete_file', { file_path: '/a/2.md' }),
+      f('delete_file', { file_path: '/a/3.md' }),
+    ])[0], false),
+    { verb: '已修改', rest: '编辑 1 · 删除 2' })
+  eq('文案：移动单独报',
+    phaseLabel(buildPhases([f('move_file', { file_path: '/a/1.md' })])[0], false),
+    { verb: '已修改', rest: '移动 1' })
+  eq('文案：四类齐全的顺序是 新建/编辑/删除/移动',
+    phaseLabel(buildPhases([
+      f('write_file', { file_path: '/a/n.md' }),
+      f('edit_file', { file_path: '/a/e.md' }),
+      f('delete_file', { file_path: '/a/d.md' }),
+      f('move_file', { file_path: '/a/m.md' }),
+    ])[0], false),
+    { verb: '已修改', rest: '新建 1 · 编辑 1 · 删除 1 · 移动 1' })
   eq('文案：只有编辑',
     phaseLabel(buildPhases([f('edit_file', { file_path: '/a/old.md' })])[0], false),
     { verb: '已修改', rest: '编辑 1' })
+}
+
+{
+  // ---- 负面用例：证明「猜错」不会发生（旧版是子串匹配，下面这些全会判错）----
+  eq('无子串猜：renew_license 不是「修改」', phaseKindOf(tool('renew_license', 'other')), 'generic')
+  eq('无子串猜：budget_report 不是「探索」', phaseKindOf(tool('budget_report', 'other')), 'generic')
+  eq('无子串猜：spreadsheet 不是「探索」', phaseKindOf(tool('spreadsheet', 'other')), 'generic')
+  eq('无子串猜：category_sync 不触发「查看」动词', rowForTool(tool('category_sync', 'other')).verb, '调用')
+  eq('无子串猜：target_deploy 不触发「查看」动词', rowForTool(tool('target_deploy', 'other')).verb, '调用')
+  eq('无子串猜：forget 不触发「查看」动词', rowForTool(tool('forget_cache', 'other')).verb, '调用')
+
+  // 非法 / 认不出的输入：不猜、不炸
+  eq('中文工具名 → 认不出，返回 null（不猜）', phaseKindOfName('查看文件'), null)
+  eq('空名 → null', phaseKindOfName(''), null)
+  eq('undefined → null', phaseKindOfName(undefined), null)
+  eq('数字名 → null（不炸）', phaseKindOfName(123), null)
+  eq('对象名 → null（不炸）', phaseKindOfName({ a: 1 }), null)
+  eq('认不出的工具 → generic（诚实显示为「调用」）', phaseKindOf(tool('zzz_yolo', 'other')), 'generic')
+  eq('下划线连写名走别名表', phaseKindOf(tool('web_search', 'other')), 'exploring')
+  eq('camelCase 走别名表', phaseKindOf(tool('webSearch', 'other')), 'exploring')
+
+  // rawInput 形状异常：一律退回工具名，不崩
+  eq('rawInput 是字符串 → 退回工具名', rowForTool(tool('bash', 'other', 'completed', 'oops')).object, 'bash')
+  eq('rawInput 是 null → 退回工具名', rowForTool(tool('bash', 'other', 'completed', null)).object, 'bash')
+  eq('rawInput 是数组 → 不炸且退回工具名', rowForTool(tool('bash', 'other', 'completed', [1, 2])).object, 'bash')
+  eq('command 是数字 → 视为无内容', rowForTool(tool('bash', 'other', 'completed', { command: 42 })).object, 'bash')
+  eq('title 缺失 → 宾语兜底', rowForTool(tool('', 'other')).object, '…')
+
+  // 路径：只折叠，不篡改
+  eq('1 段路径原样', rowForTool(tool('read_file', 'other', 'completed', { file_path: '/a' })).object, '/a')
+  eq('3 段路径原样（保留前导 /）', rowForTool(tool('read_file', 'other', 'completed', { file_path: '/a/b/c' })).object, '/a/b/c')
+  eq('4 段路径折叠中间', rowForTool(tool('read_file', 'other', 'completed', { file_path: '/a/b/c/d' })).object, '/…/b/c/d')
+  eq('相对深路径也折叠', rowForTool(tool('read_file', 'other', 'completed', { file_path: 'x/y/z/w' })).object, '…/y/z/w')
+  eq('带空格的命令不当路径处理', rowForTool(tool('bash', 'other', 'completed', { command: 'ls /a /b' })).object, 'ls /a /b')
+  eq('多行命令挤成单行', rowForTool(tool('bash', 'other', 'completed', { command: 'a\n\n  b' })).object, 'a b')
 }
 
 {
@@ -152,9 +205,12 @@ const tool = (title, toolKind, status = 'completed', rawInput) =>
   eq('行：rawInput 取不到时退回工具名',
     rowForTool(tool('bash', 'other')),
     { verb: '执行', object: 'bash', running: false, error: false })
-  eq('行：read_file + file_path 长路径只留末 3 段',
+  eq('行：深路径折叠中间段，保留前导 /',
     rowForTool(tool('read_file', 'other', 'completed', { file_path: '/Users/x/a/b/c/d/e.txt' })).object,
-    '…/c/d/e.txt')
+    '/…/c/d/e.txt')
+  eq('行：浅路径原样不动（不篡改数据）',
+    rowForTool(tool('read_file', 'other', 'completed', { file_path: '/a/b/c.md' })).object,
+    '/a/b/c.md')
   eq('行：command 优先于 description（DSH 的 description 是英文样板）',
     rowForTool(tool('bash', 'other', 'completed', {
       command: 'pnpm test',
@@ -178,9 +234,6 @@ const tool = (title, toolKind, status = 'completed', rawInput) =>
   eq('计数：thinking 相位按 1 计', countUnits(ps), 2)
   ok('汇总：非全思考', allThinking(ps) === false)
   ok('汇总：全思考', allThinking(buildPhases([th('a'), th('b')])) === true)
-  ok('收尾：全 completed → settled', phaseSettled(buildPhases([tool('a', 'execute')])[0]) === true)
-  ok('收尾：有 in_progress → 未 settled', phaseSettled(buildPhases([tool('a', 'execute', 'in_progress')])[0]) === false)
-  ok('收尾：thinking 相位不阻塞', phaseSettled(buildPhases([th('a')])[0]) === true)
   eq('常量：最多显示 8 个头像', MAX_VISIBLE_PHASES, 8)
 }
 
@@ -257,7 +310,7 @@ eq('store：update 里的 rawInput 覆盖', t2b.rawInput, { command: 'ls -la' })
   eq('接缝：store items → 相位种类', ps.map((p) => p.kind), ['thinking', 'exploring', 'running'])
   eq('接缝：活标签', phaseLabel(ps[2], true), { verb: '执行中', rest: '1 条命令' })
   eq('接缝：行 = 动词 + rawInput 宾语', rowForTool(t2b), { verb: '执行', object: 'ls -la', running: false, error: false })
-  eq('接缝：长路径缩略', rowForTool(t1b).object, '…/b/c/d.txt')
+  eq('接缝：深路径缩略保留前导 /', rowForTool(t1b).object, '/…/b/c/d.txt')
 }
 
 rmSync(work, { recursive: true, force: true })

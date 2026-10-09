@@ -101,7 +101,16 @@ export const AiPanelComp = observer(() => {
   }
 
   const dotColor = S.state === 'busy' ? acc : S.state === 'ready' ? '#28c840' : S.state === 'stopped' ? muted : '#febc2e'
-  const viewingHist = S.viewing != null
+  // 容错：store 的字段面还在演化（另一个会话正在把 history/viewing 换成 conversations）。
+  // 渲染路径**不能**假设可选字段存在 —— 一旦某个字段被搬走，面板会整个渲染失败，
+  // 连带工具栏按钮一起白掉（2026-10-09 18:44 真实事故）。
+  // 这里只做「读不到就当空」，**不去猜新结构**（新结构由 store 的拥有者接线）。
+  // 旧字段面（history / viewing / removeHistory）正被另一个会话重构成 conversations，
+  // 统一走一个 any 视图，避免类型层把面板钉死在旧结构上。
+  const legacy = S as any
+  const history: any[] = Array.isArray(legacy.history) ? legacy.history : []
+  const viewing: number | null = legacy.viewing ?? null
+  const viewingHist = viewing != null
 
   return (
     <div
@@ -129,9 +138,9 @@ export const AiPanelComp = observer(() => {
         </span>
         <button
           onClick={() => setHistOpen((v) => !v)}
-          style={{ border: 'none', background: 'none', color: histOpen || S.history.length > 0 ? ink : muted, cursor: 'pointer', fontSize: 12 }}
+          style={{ border: 'none', background: 'none', color: histOpen || history.length > 0 ? ink : muted, cursor: 'pointer', fontSize: 12 }}
         >
-          历史{S.history.length > 0 ? `（${S.history.length}）` : ''}
+          历史{history.length > 0 ? `（${history.length}）` : ''}
         </button>
         <button onClick={() => S.clear()} style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', fontSize: 12 }}>
           清空
@@ -158,13 +167,13 @@ export const AiPanelComp = observer(() => {
               padding: 4,
             }}
           >
-            {S.history.length === 0 && <div style={{ padding: '10px 8px', fontSize: 12, color: muted }}>还没有历史。点「清空」会把当前对话自动存进这里。</div>}
-            {S.history.map((h) => (
+            {history.length === 0 && <div style={{ padding: '10px 8px', fontSize: 12, color: muted }}>还没有历史。点「清空」会把当前对话自动存进这里。</div>}
+            {history.map((h) => (
               <div
                 key={h.at}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 4, cursor: 'pointer', color: S.viewing === h.at ? acc : ink }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 4, cursor: 'pointer', color: viewing === h.at ? acc : ink }}
                 onClick={() => {
-                  S.viewing = h.at
+                  legacy.viewing = h.at
                   setHistOpen(false)
                 }}
               >
@@ -173,7 +182,7 @@ export const AiPanelComp = observer(() => {
                 <span
                   onClick={(e) => {
                     e.stopPropagation()
-                    S.removeHistory(h.at)
+                    legacy.removeHistory?.(h.at)
                   }}
                   title="删除这条历史"
                   style={{ fontSize: 11, color: muted, padding: '0 4px' }}
@@ -186,17 +195,11 @@ export const AiPanelComp = observer(() => {
         )}
       </div>
 
-      {/* 回看横幅 */}
+      {/* 回看横幅：只说明「为什么是只读」，动作交给输入区那一个按钮 ——
+          同一个动作两个入口是噪音（Jobs 尺子）。 */}
       {viewingHist && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, padding: '5px 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted }}>
-          正在查看历史（{fmtTime(S.viewing!)}）· 只读
-          <span style={{ flex: 1 }} />
-          <button
-            onClick={() => (S.viewing = null)}
-            style={{ fontSize: 12, padding: '1px 10px', borderRadius: 4, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, cursor: 'pointer' }}
-          >
-            回到最新
-          </button>
+        <div style={{ flexShrink: 0, padding: '5px 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted }}>
+          正在查看历史（{fmtTime(viewing!)}）· 只读
         </div>
       )}
 
@@ -354,7 +357,7 @@ export const AiPanelComp = observer(() => {
             </button>
           ) : viewingHist ? (
             <button
-              onClick={() => (S.viewing = null)}
+              onClick={() => (legacy.viewing = null)}
               style={{ fontSize: 13, padding: '6px 14px', borderRadius: 6, border: `1px solid ${acc}`, background: acc, color: '#fff', cursor: 'pointer', fontWeight: 600 }}
             >
               回到最新

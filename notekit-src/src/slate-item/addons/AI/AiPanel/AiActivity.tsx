@@ -499,9 +499,6 @@ export const AiActivityTrack = ({
     }
     body = (
       <div style={{ position: 'relative', paddingTop: DECK_PEEK, marginTop: 2 }}>
-        <span style={{ position: 'absolute', right: 0, top: -6, fontSize: 10, color: muted, opacity: 0.7 }}>
-          {phases.length > 1 ? `${phases.length} 个相位` : ''}
-        </span>
         {deck}
       </div>
     )
