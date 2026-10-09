@@ -202,11 +202,17 @@ export const AiPanelComp = observer(() => {
       <style>{AI_MD_CSS}{AI_ACTIVITY_CSS}</style>
       {/* 头 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, boxSizing: 'border-box', flexShrink: 0, padding: '0 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted, position: 'relative' }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'block' }} />
+        <span
+          title={S.agent || ''}
+          style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'block', flexShrink: 0 }}
+        />
         <span style={{ flex: 1 }} />
-        <span title={S.agent || ''} style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {S.agent || (S.connected ? '连接中…' : '未连接')}
-        </span>
+        {/* agent 名+版本（deepseek-harness-acp v0.0.1）是内部实现细节，不进界面 ——
+            那正是「别把 internals 露给用户」这条的正面例子。名字挪到状态点的 title 上（悬停可查），
+            文字只保留真正对用户有用的两种非就绪态。 */}
+        {S.state !== 'ready' && S.state !== 'busy' ? (
+          <span style={{ color: muted }}>{S.connected ? '连接中…' : '未连接'}</span>
+        ) : null}
         <button
           onClick={() => setHistOpen((v) => !v)}
           title={`切换会话：点任意一段都能直接接着聊${convs.length > 1 ? `（共 ${convs.length} 段）` : ''}`}
