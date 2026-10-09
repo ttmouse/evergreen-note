@@ -1426,6 +1426,8 @@ body .workspace-tab-close { cursor: pointer; }
 body .workspace-tab.is-active,
 body .workspace-tab:hover { background: var(--nk-tab-hover); }
 body .workspace-tab-title {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   /* 文字过长不用省略号硬切，右缘 14px 柔和渐隐（渐隐到透明即跟随标签自身背景色） */
