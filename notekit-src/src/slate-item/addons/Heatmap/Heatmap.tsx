@@ -217,17 +217,8 @@ export function createHeatmapAddon({ app, $ }: NewAddonParams) {
         },
       });
 
-      $.nav?.addItems({
-        heatmap: {
-          size: 18,
-          order: 1500,
-          title: $t`heatmap.title`,
-          icon: 'svg_heatmap',
-          onClick() {
-            $.router?.to('/heatmap');
-          },
-        },
-      });
+      // 2026-10-10 用户反馈：左侧边栏单独的热力图入口奇怪，已移除；
+      // 热力图仍可通过笔记内嵌 {{heatmap}} 查看，/heatmap 路由保留但无入口。
     }
   }
 
