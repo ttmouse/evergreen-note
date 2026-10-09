@@ -19,7 +19,7 @@ const mdToHtml = (src: string): string => {
 }
 
 const AiMarkdown = ({ text }: { text: string }) => (
-  <div className="ai-md" dangerouslySetInnerHTML={{ __html: mdToHtml(text) }} />
+  <div className="ai-md nk-settle" dangerouslySetInnerHTML={{ __html: mdToHtml(text) }} />
 )
 
 const ink = 'var(--nk-ink)'
@@ -46,6 +46,12 @@ const AI_MD_CSS = `
 .ai-md hr { border: none; border-top: 1px solid ${line}; margin: 12px 0; }
 .ai-md a { color: ${acc}; }
 .ai-md img { max-width: 100%; }
+
+/* 正文落定：ACP 是一次性交付（实测整段 410 字 = 1 个事件、跨度 0.0s），没有 token 流可渲染。
+   这条不是假打字机，只是让新到的一整块内容"落下来"而不是硬邦邦地糊上去。 */
+.ai-md.nk-settle { animation: nkSettle .3s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes nkSettle { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ai-md.nk-settle { animation: none; } }
 `
 
 export const AiPanelComp = observer(() => {
@@ -101,16 +107,14 @@ export const AiPanelComp = observer(() => {
   }
 
   const dotColor = S.state === 'busy' ? acc : S.state === 'ready' ? '#28c840' : S.state === 'stopped' ? muted : '#febc2e'
-  // 容错：store 的字段面还在演化（另一个会话正在把 history/viewing 换成 conversations）。
-  // 渲染路径**不能**假设可选字段存在 —— 一旦某个字段被搬走，面板会整个渲染失败，
-  // 连带工具栏按钮一起白掉（2026-10-09 18:44 真实事故）。
-  // 这里只做「读不到就当空」，**不去猜新结构**（新结构由 store 的拥有者接线）。
-  // 旧字段面（history / viewing / removeHistory）正被另一个会话重构成 conversations，
-  // 统一走一个 any 视图，避免类型层把面板钉死在旧结构上。
-  const legacy = S as any
-  const history: any[] = Array.isArray(legacy.history) ? legacy.history : []
-  const viewing: number | null = legacy.viewing ?? null
-  const viewingHist = viewing != null
+  // 数据源接线（2026-10-09 19:3x，store 拥有者落地）：旧的 history/viewing「只读快照」已换成
+  // 真会话列表 —— 每段对应 agent 侧一条 ACP 会话，切过去可以直接接着聊。
+  // 仍然只做「读不到就当空」：面板宁可少一块，也不能整片白掉（18:44 的事故）。
+  const convs: any[] = Array.isArray(S.list) ? S.list : []
+  const activeConv: any = S.active ?? null
+  const viewing: number | null = activeConv?.id ?? null
+  // 当前不是在最新的那段上（列表按最近活动排序）→ 给一条横幅说明你在看哪一段
+  const isOlder = convs.length > 1 && !!activeConv && convs[0]?.id !== activeConv.id
 
   return (
     <div
@@ -138,9 +142,10 @@ export const AiPanelComp = observer(() => {
         </span>
         <button
           onClick={() => setHistOpen((v) => !v)}
-          style={{ border: 'none', background: 'none', color: histOpen || history.length > 0 ? ink : muted, cursor: 'pointer', fontSize: 12 }}
+          title="切换会话：点任意一段都能直接接着聊"
+          style={{ border: 'none', background: 'none', color: histOpen || convs.length > 1 ? ink : muted, cursor: 'pointer', fontSize: 12 }}
         >
-          历史{history.length > 0 ? `（${history.length}）` : ''}
+          历史{convs.length > 1 ? `（${convs.length - 1}）` : ''}
         </button>
         <button onClick={() => S.clear()} style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', fontSize: 12 }}>
           清空
@@ -167,24 +172,29 @@ export const AiPanelComp = observer(() => {
               padding: 4,
             }}
           >
-            {history.length === 0 && <div style={{ padding: '10px 8px', fontSize: 12, color: muted }}>还没有历史。点「清空」会把当前对话自动存进这里。</div>}
-            {history.map((h) => (
+            {convs.length <= 1 && (
+              <div style={{ padding: '10px 8px', fontSize: 12, color: muted }}>
+                还没有别的会话。点「清空」会把当前这段留在列表里，另起一段新的；每段各有自己的上下文，切过去可以直接接着聊。
+              </div>
+            )}
+            {convs.map((c) => (
               <div
-                key={h.at}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 4, cursor: 'pointer', color: viewing === h.at ? acc : ink }}
+                key={c.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 4, cursor: 'pointer', color: viewing === c.id ? acc : ink }}
                 onClick={() => {
-                  legacy.viewing = h.at
+                  S.switchTo(c.id)
                   setHistOpen(false)
                 }}
               >
-                <span style={{ fontSize: 11, color: muted, whiteSpace: 'nowrap' }}>{fmtTime(h.at)}</span>
-                <span style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{h.preview || '（空）'}</span>
+                <span style={{ fontSize: 11, color: muted, whiteSpace: 'nowrap' }}>{fmtTime(c.at)}</span>
+                <span style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{c.preview || '（新会话）'}</span>
+                {S.isBusy(c) && <span title="它正在这一段里干活" style={{ width: 6, height: 6, borderRadius: '50%', background: acc, flexShrink: 0 }} />}
                 <span
                   onClick={(e) => {
                     e.stopPropagation()
-                    legacy.removeHistory?.(h.at)
+                    S.removeConversation(c.id)
                   }}
-                  title="删除这条历史"
+                  title="从列表里删掉这一段（agent 侧会话不动）"
                   style={{ fontSize: 11, color: muted, padding: '0 4px' }}
                 >
                   ✕
@@ -195,11 +205,11 @@ export const AiPanelComp = observer(() => {
         )}
       </div>
 
-      {/* 回看横幅：只说明「为什么是只读」，动作交给输入区那一个按钮 ——
-          同一个动作两个入口是噪音（Jobs 尺子）。 */}
-      {viewingHist && (
+      {/* 较早会话横幅：只说清「你在看哪一段」+ 能继续聊，
+          切换动作只留在「历史」那一个入口（Jobs 尺子：同一个动作两个入口是噪音）。 */}
+      {isOlder && (
         <div style={{ flexShrink: 0, padding: '5px 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted }}>
-          正在查看历史（{fmtTime(viewing!)}）· 只读
+          正在看较早的一段会话（{fmtTime(activeConv.at)}）· 可以直接接着聊
         </div>
       )}
 
@@ -223,7 +233,7 @@ export const AiPanelComp = observer(() => {
           gap: 10,
         }}
       >
-        {!viewingHist && S.items.length === 0 && (
+        {S.items.length === 0 && (
           <div style={{ color: muted, fontSize: 13, lineHeight: 1.9 }}>
             光标所在的那篇笔记，它看得见（靠 ky 自己用 ev 去读）。
             <br />
@@ -248,7 +258,7 @@ export const AiPanelComp = observer(() => {
           // 引用不变会让 memo 永不失效 —— 每次渲染重算，几十条的量级可以忽略。
           const blocks = groupBlocks(S.displayItems)
           const lastIdx = blocks.length - 1
-          const lastIsActivity = !viewingHist && S.busy && lastIdx >= 0 && blocks[lastIdx].type === 'activity'
+          const lastIsActivity = S.busy && lastIdx >= 0 && blocks[lastIdx].type === 'activity'
           return (
             <>
               {blocks.map((b, bi) => {
@@ -301,17 +311,16 @@ export const AiPanelComp = observer(() => {
                 return null
               })}
               {/* 活着但还没有活相位（比如正在出正文）—— 底部一行呼吸，别让面板看着卡住 */}
-              {!viewingHist && S.busy && !lastIsActivity && <ActivityOrb label="跟进中" />}
+              {S.busy && !lastIsActivity && <ActivityOrb label="跟进中" />}
             </>
           )
         })()}
       </div>
 
-      {/* 输入区
-          这里**永远不隐藏**。原先回看历史时是 display:none —— 那是代码里唯一能让
-          输入框整个消失的路径，而症状（输入框不见 + 底下空白）跟「面板坏了」无法区分。
-          改成可见但禁用：意图一样（不误发到当前会话），但用户永远看得见它在哪。 */}
-      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', flexShrink: 0, opacity: viewingHist ? 0.55 : 1 }}>
+      {/* 输入区：**永远可见、永远可输入**。
+          历史已从「只读快照」改成真会话 —— 切到哪一段，发的话就进那一段自己的 ACP 会话，
+          所以没有"回看时不能打字"这回事了（旧的两态一并删掉）。 */}
+      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', flexShrink: 0 }}>
         {/* 离底了就给个明确出口，别让人靠反复滚找输入框 */}
         {!atBottom && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
@@ -341,26 +350,12 @@ export const AiPanelComp = observer(() => {
                 send()
               }
             }}
-            disabled={viewingHist}
-            placeholder={
-              viewingHist
-                ? '正在回看历史（只读）—— 点上方「回到最新」继续'
-                : S.busy
-                  ? '它正在干活…（可点停止）'
-                  : '让它改这篇笔记，或问它点什么'
-            }
+            placeholder={S.busy ? '它正在这一段里干活…（可点停止）' : '让它改这篇笔记，或问它点什么'}
             style={{ flex: 1, font: 'inherit', fontSize: 13, padding: '6px 10px', borderRadius: 6, border: `1px solid var(--nk-line-strong)`, background: 'var(--nk-canvas)', color: ink, outline: 'none' }}
           />
           {S.busy ? (
             <button onClick={() => S.cancel()} style={{ fontSize: 13, padding: '6px 14px', borderRadius: 6, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, cursor: 'pointer' }}>
               停止
-            </button>
-          ) : viewingHist ? (
-            <button
-              onClick={() => (legacy.viewing = null)}
-              style={{ fontSize: 13, padding: '6px 14px', borderRadius: 6, border: `1px solid ${acc}`, background: acc, color: '#fff', cursor: 'pointer', fontWeight: 600 }}
-            >
-              回到最新
             </button>
           ) : (
             <button onClick={send} style={{ fontSize: 13, padding: '6px 14px', borderRadius: 6, border: `1px solid ${acc}`, background: acc, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>

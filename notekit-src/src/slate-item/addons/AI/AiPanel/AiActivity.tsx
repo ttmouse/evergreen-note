@@ -9,7 +9,7 @@
  *
  * 全部内联样式 + 一份局部 CSS，不引入 Tailwind / 图标库。
  */
-import React, { useState } from 'react'
+import React, { useLayoutEffect, useRef, useState } from 'react'
 import {
   type Phase,
   type ToolItem,
@@ -61,6 +61,23 @@ const PhaseIcon = ({ kind }: { kind: Phase['kind'] }) => {
     </svg>
   )
 }
+
+const ListTree = () => (
+  <svg
+    width={12}
+    height={12}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    style={{ flexShrink: 0, display: 'block' }}
+  >
+    <path d="M4 7h16M4 12h16M4 17h9" />
+  </svg>
+)
 
 const Chevron = () => (
   <svg
@@ -343,8 +360,38 @@ export const AiActivityTrack = ({
   trackKey: string
 }) => {
   const [open, setOpen] = useState(false)
+  const [timelineMode, setTimelineMode] = useState(true)
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({})
   const [selected, setSelected] = useState<number | null>(null)
+  const [overflowHover, setOverflowHover] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const pendingAnchor = useRef<number | null>(null)
+
+  /**
+   * 展开/收起会改变轨道**上方**的高度，不补偿画面就会跳。
+   * 手法：状态变更前记下轨道顶边的视口坐标，渲染后（useLayoutEffect）把最近的滚动
+   * 祖先的 scrollTop 补上差值 —— 轨道在屏幕上原地不动。（Alma 用同样的做法）
+   */
+  const anchorBefore = () => {
+    pendingAnchor.current = rootRef.current?.getBoundingClientRect().top ?? null
+  }
+
+  useLayoutEffect(() => {
+    const before = pendingAnchor.current
+    if (before == null) return
+    pendingAnchor.current = null
+    const el = rootRef.current
+    if (!el) return
+    const delta = el.getBoundingClientRect().top - before
+    if (!delta) return
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      const oy = getComputedStyle(p).overflowY
+      if (oy === 'auto' || oy === 'scroll') {
+        p.scrollTop += delta
+        return
+      }
+    }
+  })
 
   if (phases.length === 0) return null
 
@@ -353,41 +400,133 @@ export const AiActivityTrack = ({
   const lastIndex = phases.length - 1
   const hiddenCount = Math.max(0, phases.length - MAX_VISIBLE_PHASES)
   const stacked = phases.length > 1
-  const railOpen = live || open
+  const overlap = hiddenCount > 12 ? -16 : -7
+  const showDroplets = overflowHover && !live && hiddenCount > 0
+  const railOpen = live || open || selected != null
   const openPhaseIndex = live ? lastIndex : selected
   const livePhase = live ? phases[lastIndex] : null
+
+  const toggleRail = () => {
+    anchorBefore()
+    if (railOpen) {
+      setOpen(false)
+      setSelected(null)
+    } else {
+      setOpen(true)
+      setTimelineMode(true)
+    }
+  }
+
+  const avatarBase = (i: number, isOpen: boolean, isAlive: boolean): React.CSSProperties => ({
+    position: 'relative',
+    // App 有全局 button 样式（padding 1px 6px）。固定尺寸的圆头像不该有 padding：
+    // border-box 下 padding 12 + border 2 会把 width:0 的盒子撑成 14px（实测）
+    padding: 0,
+    zIndex: isOpen || isAlive ? 50 : i + 1,
+    height: 24,
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+    border: `1px solid ${isOpen ? 'var(--nk-line-strong)' : line}`,
+    background: isOpen ? canvas : surface,
+    color: isOpen ? ink : muted,
+    cursor: live ? 'default' : 'pointer',
+    boxShadow: isAlive ? undefined : stacked ? `0 0 0 2px ${surface}` : undefined,
+  })
 
   // ---- 头像轨道
   const avatars: React.ReactNode[] = []
   if (hiddenCount > 0) {
-    avatars.push(
+    // 胶囊与水滴必须共用一个 hover 容器：胶囊塌到 0 宽后，光标会落到水滴上，
+    // 若 hover 挂在胶囊自己身上就会 mouseleave → 重新展开 → 来回拉锯（实测抓到 maxWidth 停在 16px 抖动）。
+    // Alma 的做法也是外面裹一层 span 接管 enter/leave。
+    const overflowKids: React.ReactNode[] = []
+    overflowKids.push(
       <button
         key="ovf"
         type="button"
         disabled={live}
         title={`更早的 ${hiddenCount} 个相位`}
+        onFocus={() => setOverflowHover(true)}
+        onBlur={() => setOverflowHover(false)}
         onClick={() => {
+          anchorBefore()
           setOpen(true)
+          setTimelineMode(true)
           setSelected(null)
         }}
         style={{
           position: 'relative',
           zIndex: hiddenCount + 2,
           height: 24,
-          padding: '0 8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
           borderRadius: 12,
-          border: `1px solid ${line}`,
+          border: `1px solid ${showDroplets ? 'transparent' : line}`,
           background: surface,
           color: muted,
           fontSize: 10,
           fontWeight: 600,
           fontVariantNumeric: 'tabular-nums',
           cursor: live ? 'default' : 'pointer',
-          boxShadow: `0 0 0 2px ${surface}`,
+          boxShadow: showDroplets ? 'none' : `0 0 0 2px ${surface}`,
+          maxWidth: showDroplets ? 0 : 56,
+          padding: showDroplets ? 0 : '0 8px',
+          opacity: showDroplets ? 0 : 1,
+          transition: 'max-width .28s ease-out, padding .28s ease-out, opacity .22s, border-color .22s, box-shadow .22s',
         }}
       >
         +{hiddenCount}
       </button>,
+    )
+    // 悬停时胶囊塌成 0 宽，隐藏的相位逐个错峰挤出来（Alma 是 18ms 递进）
+    for (let hi = 0; hi < hiddenCount; hi++) {
+      const phase = phases[hi]
+      const isOpen = openPhaseIndex === hi
+      overflowKids.push(
+        <button
+          key={`dp-${hi}`}
+          type="button"
+          disabled={live}
+          tabIndex={showDroplets ? 0 : -1}
+          title={PHASE_NOUN[phase.kind]}
+          onClick={() => {
+            anchorBefore()
+            setSelected((prev) => (prev === hi ? null : hi))
+            setTimelineMode(false)
+          }}
+          style={{
+            ...avatarBase(hi, isOpen, false),
+            width: showDroplets ? 24 : 0,
+            // 收起来时必须是**真的 0 宽**：0 宽的盒子仍会被 padding/border 撑开，
+            // 留下 14px×N 的隐形占位把可见头像推开（实测踩到）
+            minWidth: 0,
+            borderWidth: showDroplets ? 1 : 0,
+            marginLeft: showDroplets ? (hi === 0 ? 2 : overlap) : 0,
+            opacity: showDroplets ? 1 : 0,
+            overflow: 'hidden',
+            pointerEvents: showDroplets ? 'auto' : 'none',
+            transition: 'width .28s ease-out, margin .28s ease-out, opacity .22s, border-width .28s, border-color .15s, color .15s',
+            transitionDelay: showDroplets ? `${hi * 18}ms` : `${(hiddenCount - hi) * 12}ms`,
+          }}
+        >
+          <PhaseIcon kind={phase.kind} />
+        </button>,
+      )
+    }
+    avatars.push(
+      <span
+        key="ovf-group"
+        style={{ display: 'flex', alignItems: 'center', position: 'relative' }}
+        onMouseEnter={() => !live && setOverflowHover(true)}
+        onMouseLeave={() => setOverflowHover(false)}
+      >
+        {overflowKids}
+      </span>,
     )
   }
   phases.slice(hiddenCount).forEach((phase, vi) => {
@@ -401,25 +540,14 @@ export const AiActivityTrack = ({
         disabled={live}
         title={PHASE_NOUN[phase.kind]}
         onClick={() => {
+          anchorBefore()
           setSelected((prev) => (prev === i ? null : i))
-          setOpen(false)
+          setTimelineMode(false)
         }}
         style={{
-          position: 'relative',
-          zIndex: isOpen || isAlive ? 50 : vi + 1,
+          ...avatarBase(i, isOpen, isAlive),
           width: 24,
-          height: 24,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '50%',
-          border: `1px solid ${isOpen ? 'var(--nk-line-strong)' : line}`,
-          background: isOpen ? canvas : surface,
-          color: isOpen ? ink : muted,
-          cursor: live ? 'default' : 'pointer',
-          marginLeft: vi === 0 && hiddenCount === 0 ? 0 : -7,
-          boxShadow: isAlive ? undefined : stacked ? `0 0 0 2px ${surface}` : undefined,
+          marginLeft: vi === 0 && hiddenCount === 0 ? 0 : overlap,
         }}
         className={isAlive ? 'nk-av-alive' : undefined}
       >
@@ -434,45 +562,86 @@ export const AiActivityTrack = ({
       (() => {
         const l = phaseLabel(livePhase, true)
         return (
-          <span className="nk-shimmer" style={{ fontSize: 13, fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span
+            className="nk-shimmer"
+            style={{ fontSize: 13, fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
             {l.verb}
             {l.rest ? ` ${l.rest}` : ''}
           </span>
         )
       })()
     ) : (
-      <button
-        type="button"
-        aria-expanded={railOpen}
-        onClick={() => {
-          setOpen((v) => !v)
-          setSelected(null)
-        }}
-        className="nk-arow"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          minWidth: 0,
-          background: 'none',
-          border: 'none',
-          padding: '2px 5px',
-          margin: '0 -5px',
-          borderRadius: 4,
-          font: 'inherit',
-          fontSize: 13,
-          color: ink,
-          cursor: 'pointer',
-          textAlign: 'left',
-        }}
-      >
-        <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {allThinking(phases) ? '已思考' : `用了 ${countUnits(phases)} 个工具`}
-        </span>
-        <span style={{ display: 'flex', color: muted, flexShrink: 0, transform: railOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>
-          <Chevron />
-        </span>
-      </button>
+      <>
+        <button
+          type="button"
+          aria-expanded={railOpen}
+          onClick={toggleRail}
+          className="nk-arow"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            minWidth: 0,
+            background: 'none',
+            border: 'none',
+            padding: '2px 5px',
+            margin: '0 -5px',
+            borderRadius: 4,
+            font: 'inherit',
+            fontSize: 13,
+            color: ink,
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {allThinking(phases) ? '已思考' : `用了 ${countUnits(phases)} 个工具`}
+          </span>
+          <span
+            style={{
+              display: 'flex',
+              color: muted,
+              flexShrink: 0,
+              transform: railOpen ? 'rotate(180deg)' : 'none',
+              transition: 'transform .15s',
+            }}
+          >
+            <Chevron />
+          </span>
+        </button>
+        {/* 时间线视图开关：全部相位 ↔ 只看一个（Alma 标题行右侧那个列表图标） */}
+        {railOpen && phases.length > 1 && (
+          <button
+            type="button"
+            aria-pressed={timelineMode}
+            title={timelineMode ? '只看一个相位' : '时间线视图（全部相位）'}
+            onClick={() => {
+              anchorBefore()
+              const next = !timelineMode
+              setTimelineMode(next)
+              setSelected(next ? null : lastIndex)
+            }}
+            className="nk-arow"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 24,
+              height: 24,
+              flexShrink: 0,
+              borderRadius: 4,
+              border: 'none',
+              cursor: 'pointer',
+              background: timelineMode ? canvas : 'transparent',
+              color: timelineMode ? ink : muted,
+            }}
+          >
+            <ListTree />
+          </button>
+        )}
+        <span style={{ flex: 1 }} />
+      </>
     )
 
   // ---- 展开体
@@ -496,12 +665,10 @@ export const AiActivityTrack = ({
       )
     }
     body = (
-      <div style={{ position: 'relative', paddingTop: DECK_PEEK, marginTop: 2 }}>
-        {deck}
-      </div>
+      <div style={{ position: 'relative', paddingTop: DECK_PEEK, marginTop: 2 }}>{deck}</div>
     )
-  } else if (railOpen) {
-    // 时间线：竖线 + 缩进，settled 之后点开看的就是这个
+  } else if (railOpen && (timelineMode || selected == null)) {
+    // 时间线：竖线 + 缩进，全部相位
     body = (
       <div style={{ marginLeft: 11, paddingLeft: 16, borderLeft: `1px solid ${line}`, paddingTop: 6, paddingBottom: 2, marginTop: 4 }}>
         {phases.map((phase, i) => {
@@ -516,19 +683,14 @@ export const AiActivityTrack = ({
                   {l.rest ? ` ${l.rest}` : ''}
                 </div>
               )}
-              <PhaseBody
-                phase={phase}
-                baseKey={`${trackKey}-tl${i}`}
-                openRows={openRows}
-                toggleRow={toggleRow}
-              />
+              <PhaseBody phase={phase} baseKey={`${trackKey}-tl${i}`} openRows={openRows} toggleRow={toggleRow} />
             </div>
           )
         })}
       </div>
     )
-  } else if (selected != null && phases[selected]) {
-    // 单相位：只点开一个头像时（Alma：只有 thinking 相位在这里补一行标签）
+  } else if (railOpen && selected != null && phases[selected]) {
+    // 单相位：只看一个（Alma：只有 thinking 相位在这里补一行标签）
     body = (
       <div style={{ marginLeft: 11, paddingLeft: 16, borderLeft: `1px solid ${line}`, paddingTop: 6, marginTop: 4 }}>
         {phases[selected].kind === 'thinking' && (
@@ -536,22 +698,16 @@ export const AiActivityTrack = ({
             {phaseLabel(phases[selected], false).verb}
           </div>
         )}
-        <PhaseBody
-          phase={phases[selected]}
-          baseKey={`${trackKey}-sel${selected}`}
-          openRows={openRows}
-          toggleRow={toggleRow}
-        />
+        <PhaseBody phase={phases[selected]} baseKey={`${trackKey}-sel${selected}`} openRows={openRows} toggleRow={toggleRow} />
       </div>
     )
   }
 
   return (
-    <div style={{ minWidth: 260, fontSize: 13 }}>
+    <div ref={rootRef} style={{ minWidth: 260, fontSize: 13 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{avatars}</div>
         {header}
-        {!live && <span style={{ flex: 1 }} />}
       </div>
       {body}
     </div>
@@ -559,3 +715,4 @@ export const AiActivityTrack = ({
 }
 
 export default AiActivityTrack
+
