@@ -7,9 +7,10 @@
  *   ③ 展开体    live → 卡片堆（最多 3 层错位叠放）；settled → 点开是竖线时间线
  *   ④ 呼吸行    2×4 点阵 + 文字，只在「没有活相位」时露出来
  *
- * 全部内联样式 + 一份局部 CSS，不引入 Tailwind / 图标库。
+ * 全部内联样式 + 一份局部 CSS（不引入 Tailwind）；图标统一用项目的 SvgIcon。
  */
 import React, { useLayoutEffect, useRef, useState } from 'react'
+import { SvgIcon, type SvgIconName } from '../../../../components/SvgIcon'
 import {
   type Phase,
   type ToolItem,
@@ -33,69 +34,16 @@ const red = '#d9534f'
 
 // ------------------------------------------------------------------ 相位图标
 
-const ICONS = {
-  thinking: { circle: undefined as [number, number, number] | undefined, d: 'M12 3.5l1.7 4.8 4.8 1.7-4.8 1.7L12 16.5l-1.7-4.8L5.5 10l4.8-1.7z' },
-  exploring: { circle: [11, 11, 7] as [number, number, number], d: 'M20.5 20.5l-4.3-4.3' },
-  making: { circle: undefined, d: 'M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z' },
-  running: { circle: undefined, d: 'M4 17l6-6-6-6M12 19h8' },
-  generic: { circle: undefined, d: 'M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.8-3.8a6 6 0 01-7.9 7.9l-6.9 6.9a2.1 2.1 0 01-3-3l6.9-6.9a6 6 0 017.9-7.9l-3.8 3.8z' },
+// 相位头像的图标 —— 原先是手写 <path>，跟项目其它图标不是同一套字形/字重。
+const PHASE_ICON: Record<Phase['kind'], SvgIconName> = {
+  thinking: 'svg_magic', // MagicWand
+  exploring: 'svg_search', // MagnifyingGlass
+  making: 'svg_edit', // PencilSimple
+  running: 'svg_code', // Code
+  generic: 'svg_more', // DotsThree
 }
 
-const PhaseIcon = ({ kind }: { kind: Phase['kind'] }) => {
-  const ico = ICONS[kind] || ICONS.generic
-  return (
-    <svg
-      width={12}
-      height={12}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      // 头像按钮是 flex 容器，默认 flex-shrink 会把 12px 的图标压成 10px。
-      style={{ flexShrink: 0, display: 'block' }}
-    >
-      {ico.circle && <circle cx={ico.circle[0]} cy={ico.circle[1]} r={ico.circle[2]} />}
-      <path d={ico.d} />
-    </svg>
-  )
-}
-
-const ListTree = () => (
-  <svg
-    width={12}
-    height={12}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    style={{ flexShrink: 0, display: 'block' }}
-  >
-    <path d="M4 7h16M4 12h16M4 17h9" />
-  </svg>
-)
-
-const Chevron = () => (
-  <svg
-    width={12}
-    height={12}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    style={{ flexShrink: 0, display: 'block' }}
-  >
-    <path d="M6 9l6 6 6-6" />
-  </svg>
-)
+const PhaseIcon = ({ kind }: { kind: Phase['kind'] }) => <SvgIcon name={PHASE_ICON[kind] || 'svg_more'} width={12} />
 
 // ------------------------------------------------------------------ 局部 CSS
 
@@ -246,7 +194,7 @@ const ToolRow = ({
         </span>
         {canOpen && (
           <span style={{ flexShrink: 0, color: muted, opacity: open ? 1 : 0.5, display: 'flex', alignSelf: 'center', transform: open ? 'rotate(180deg)' : 'none' }}>
-            <Chevron />
+            <SvgIcon name="svg_fold" width={12} />
           </span>
         )}
       </button>
@@ -623,7 +571,7 @@ export const AiActivityTrack = ({
               transform: railOpen ? 'rotate(180deg)' : 'none',
             }}
           >
-            <Chevron />
+            <SvgIcon name="svg_fold" width={12} />
           </span>
         </button>
         {/* 时间线视图开关：全部相位 ↔ 只看一个（Alma 标题行右侧那个列表图标） */}
@@ -653,7 +601,7 @@ export const AiActivityTrack = ({
               color: timelineMode ? ink : muted,
             }}
           >
-            <ListTree />
+            <SvgIcon name="svg_list" width={12} />
           </button>
         )}
         <span style={{ flex: 1 }} />
