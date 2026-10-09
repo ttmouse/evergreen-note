@@ -1390,13 +1390,26 @@ body .workspace-tab {
 }
 body .workspace-tab:active { cursor: grabbing; }
 body .workspace-tab { transition: transform 120ms ease; }
-body .workspace-tab.is-dragging {
-  opacity: 1;
-  min-width: 90px;
+/* 拖拽中的被拖标签原位留下的虚线占位槽：预告落点，随顺序滑动，不响应事件 */
+body .workspace-tab-slot {
+  flex: 0 0 auto;
+  height: 32px;
   border: 1.5px dashed var(--nk-line-strong);
+  border-radius: 9px;
   background: transparent;
+  pointer-events: none;
+  transition: transform 120ms ease;
 }
-body .workspace-tab.is-dragging > * { visibility: hidden; }
+/* 跟手浮层：脱离布局、不吃事件，保持标签原本样式与宽度 */
+body .workspace-tab--floating {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  background: var(--nk-tab-hover);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
+  -webkit-app-region: no-drag;
+  transition: none;
+}
 body .workspace-tab-close { cursor: pointer; }
 body .workspace-tab.is-active,
 body .workspace-tab:hover { background: var(--nk-tab-hover); }
