@@ -31,9 +31,30 @@ export const MAX_VISIBLE_PHASES = 8
 export const isPart = (it: AiItem): it is Part => it.kind === 'thought' || it.kind === 'tool'
 
 /**
- * ACP 的 tool_call.kind 本身就够用（不像 Alma 要拿工具名去查表）：
- * read/search/fetch → 探索，edit/delete/move → 修改，execute → 执行，其余归 generic。
+ * ⚠️ 实测（2026-10-09 真机）：DSH 对**所有**工具都发 `kind: "other"`。
+ * 所以相位**不能**只看 ACP 的 kind —— 那会把一切都压成 generic（"使用中 / 调用"）。
+ * 这也正是 Alma 按工具名查表、而不是按 ACP kind 分类的原因。
+ *
+ * 分类顺序：① 工具名的分词命中 → ② 工具名的子串命中 → ③ ACP 的 kind。
  */
+const TOKEN_TO_PHASE: Record<string, PhaseKind> = {
+  bash: 'running', shell: 'running', sh: 'running', zsh: 'running', terminal: 'running',
+  exec: 'running', execute: 'running', run: 'running', command: 'running', script: 'running',
+  read: 'exploring', view: 'exploring', cat: 'exploring', get: 'exploring', glob: 'exploring',
+  grep: 'exploring', search: 'exploring', find: 'exploring', list: 'exploring', ls: 'exploring',
+  fetch: 'exploring', web: 'exploring', browse: 'exploring', query: 'exploring', inspect: 'exploring',
+  write: 'making', edit: 'making', create: 'making', delete: 'making', remove: 'making',
+  move: 'making', rename: 'making', patch: 'making', apply: 'making', update: 'making',
+  append: 'making', insert: 'making',
+}
+
+/** 分词没命中时的兜底：整名子串匹配（工具名可能完全没分隔符，如 todowrite） */
+const SUBSTRING_RULES: Array<[RegExp, PhaseKind]> = [
+  [/(bash|shell|terminal|exec|command|script)/, 'running'],
+  [/(read|view|cat|glob|grep|search|find|list|fetch|web|browse|inspect)/, 'exploring'],
+  [/(write|edit|create|delete|remove|move|rename|patch|apply|todo)/, 'making'],
+]
+
 const ACP_KIND_TO_PHASE: Record<string, PhaseKind> = {
   read: 'exploring',
   search: 'exploring',
@@ -45,9 +66,24 @@ const ACP_KIND_TO_PHASE: Record<string, PhaseKind> = {
   think: 'thinking',
 }
 
+/** 工具名 → 相位（导出以便单测） */
+export function phaseKindOfName(name: string): PhaseKind | null {
+  const n = String(name || '').toLowerCase().trim()
+  if (!n) return null
+  const tokens = n.split(/[^a-z0-9]+/).filter(Boolean)
+  for (const t of tokens) if (TOKEN_TO_PHASE[t]) return TOKEN_TO_PHASE[t]
+  for (const t of tokens) for (const s of Object.keys(TOKEN_TO_PHASE)) if (t.includes(s)) return TOKEN_TO_PHASE[s]
+  for (const [re, kind] of SUBSTRING_RULES) if (re.test(n)) return kind
+  return null
+}
+
 export function phaseKindOf(it: Part): PhaseKind {
   if (it.kind === 'thought') return 'thinking'
-  return ACP_KIND_TO_PHASE[String(it.toolKind || '').toLowerCase()] || 'generic'
+  return (
+    phaseKindOfName(it.title) ??                       // DSH 把原始工具名放在 title 里
+    ACP_KIND_TO_PHASE[String(it.toolKind || '').toLowerCase()] ??
+    'generic'
+  )
 }
 
 /** 相邻同类合并成相位；非 thought/tool 的条目直接跳过（不进轨道） */
@@ -99,30 +135,71 @@ export function phaseLabel(phase: Phase, live: boolean): { verb: string; rest: s
   }
 }
 
-/** 动词按 ACP kind 细分（比相位粗粒度再细一档） */
-const VERB_BY_KIND: Record<string, string> = {
-  read: '查看',
-  search: '搜索',
-  fetch: '抓取',
-  edit: '编辑',
-  delete: '删除',
-  move: '移动',
-  execute: '执行',
-  think: '思考',
+/** 动词：同样按工具名细分（ACP kind 不可靠，见上） */
+const VERB_RULES: Array<[RegExp, string]> = [
+  [/(bash|shell|terminal|exec|command|script|run)/, '执行'],
+  [/(glob|grep|search|find|query)/, '搜索'],
+  [/(fetch|web|browse|http|url)/, '抓取'],
+  [/(write|create|new)/, '新建'],
+  [/(delete|remove)/, '删除'],
+  [/(move|rename)/, '移动'],
+  [/(edit|patch|apply|update|append|insert|replace)/, '编辑'],
+  [/(read|view|cat|get|glob|list)/, '查看'],
+  [/(todo|task|plan)/, '计划'],
+  [/(skill)/, '用了技能'],
+]
+
+const VERB_BY_ACP_KIND: Record<string, string> = {
+  read: '查看', search: '搜索', fetch: '抓取', edit: '编辑',
+  delete: '删除', move: '移动', execute: '执行', think: '思考',
 }
 
 export type ToolRow = { verb: string; object: string; running: boolean; error: boolean }
 
+const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+
+/** 长路径只留末 3 段；其他文本截到 80 字（一行放不下就没意义了） */
+export function shorten(v: string): string {
+  const s = v.replace(/\s+/g, ' ').trim()
+  if (!s) return ''
+  if (s.includes('/') && !s.includes(' ')) {
+    const parts = s.split('/').filter(Boolean)
+    return parts.length <= 3 ? s.replace(/^\//, '') : '…/' + parts.slice(-3).join('/')
+  }
+  return s.length > 80 ? s.slice(0, 79) + '…' : s
+}
+
 /**
  * 一行 = 动词 + 宾语。
- * ACP 的 tool_call.title 本来就是人话（如「查看 Alma 应用资源目录」），直接当宾语——
- * 等于白送 Alma 自己拼的 verb + object。
+ * 宾语优先取 rawInput 里最有信息量的那个字段（命令 / 路径 / 模式 / 查询词），
+ * 取不到才退回 title —— DSH 的 title 只有工具名（"bash"），单用它读起来没有内容。
  */
 export function rowForTool(it: ToolItem): ToolRow {
+  const name = String(it.title || '').trim()
   const kind = String(it.toolKind || '').toLowerCase()
+
+  const raw = it.rawInput && typeof it.rawInput === 'object' ? (it.rawInput as Record<string, any>) : {}
+  const args = raw.args && typeof raw.args === 'object' ? raw.args : raw
+  // command 优先于 description：DSH 的 description 是自动生成的英文样板
+  // （"List all files in current directory"），当宾语还不如命令本身。
+  const detail =
+    str(args.command) ||
+    str(args.description) ||
+    str(args.file_path) ||
+    str(args.path) ||
+    str(args.pattern) ||
+    str(args.query) ||
+    str(args.url) ||
+    ''
+
+  const verb =
+    VERB_RULES.find(([re]) => re.test(name.toLowerCase()))?.[1] ||
+    VERB_BY_ACP_KIND[kind] ||
+    '调用'
+
   return {
-    verb: VERB_BY_KIND[kind] || '调用',
-    object: String(it.title || '').trim() || '…',
+    verb,
+    object: shorten(detail) || shorten(name) || '…',
     running: it.status === 'pending' || it.status === 'in_progress',
     error: it.status === 'failed',
   }

@@ -6,10 +6,20 @@ export type AiItem =
   | { kind: 'text'; at: number; text: string }
   | { kind: 'thought'; at: number; text: string; open: boolean }
   /**
-   * toolKind = ACP 原生的 tool_call.kind（read / edit / execute / search / fetch / …）。
-   * 活动轨道靠它把工具调用折成相位，别再丢掉。
+   * toolKind = ACP 原生的 tool_call.kind。⚠️ 实测 DSH 一律发 "other"，不可靠 ——
+   * 相位分类以 title（工具名，如 "bash"）为主，toolKind 只作兜底。
+   * rawInput 用来拼行的宾语（command / file_path / pattern …）。
    */
-  | { kind: 'tool'; at: number; id: string; title: string; status: string; toolKind?: string; locations?: unknown }
+  | {
+      kind: 'tool'
+      at: number
+      id: string
+      title: string
+      status: string
+      toolKind?: string
+      rawInput?: unknown
+      locations?: unknown
+    }
   | { kind: 'permission'; at: number; requestId: string; toolCall: unknown; decided?: string }
   | { kind: 'error'; at: number; text: string }
   | { kind: 'exit'; at: number; text: string }
@@ -210,6 +220,7 @@ export class AiPanelStore {
             title: ev.title ?? 'tool',
             status: ev.status ?? 'pending',
             toolKind: ev.kind,
+            rawInput: ev.rawInput,
             locations: ev.locations,
           })
           break
@@ -224,6 +235,7 @@ export class AiPanelStore {
                 status: ev.status ?? it.status,
                 title: ev.title || it.title,
                 toolKind: ev.kind || it.toolKind,
+                rawInput: ev.rawInput || it.rawInput,
                 locations: ev.locations || it.locations,
               }
               break

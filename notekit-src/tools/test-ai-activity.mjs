@@ -47,8 +47,8 @@ const {
 
 const seq = { n: 0 }
 const th = (text) => ({ kind: 'thought', at: ++seq.n, text, open: false })
-const tool = (title, toolKind, status = 'completed') =>
-  ({ kind: 'tool', at: ++seq.n, id: 't' + seq.n, title, status, toolKind })
+const tool = (title, toolKind, status = 'completed', rawInput) =>
+  ({ kind: 'tool', at: ++seq.n, id: 't' + seq.n, title, status, toolKind, rawInput })
 
 {
   // 切分：思考 → 读 → 执行 = 三个相位
@@ -85,12 +85,19 @@ const tool = (title, toolKind, status = 'completed') =>
 }
 
 {
-  eq('kind 映射：未知 → generic', phaseKindOf(tool('x', 'teleport')), 'generic')
-  eq('kind 映射：缺省 → generic', phaseKindOf(tool('x', undefined)), 'generic')
-  eq('kind 映射：think → thinking', phaseKindOf(tool('x', 'think')), 'thinking')
-  eq('kind 映射：thought → thinking', phaseKindOf(th('x')), 'thinking')
-  eq('kind 映射：search → exploring', phaseKindOf(tool('x', 'search')), 'exploring')
-  eq('kind 映射：delete → making', phaseKindOf(tool('x', 'delete')), 'making')
+  // ⚠️ 真机实测：DSH 对所有工具都发 kind="other"，所以分类必须看工具名。
+  // 下面第一组全是 other，只有名字能区分 —— 这正是回归点。
+  eq('分类：bash + kind=other → running', phaseKindOf(tool('bash', 'other')), 'running')
+  eq('分类：shell + other → running', phaseKindOf(tool('shell', 'other')), 'running')
+  eq('分类：read_file + other → exploring', phaseKindOf(tool('read_file', 'other')), 'exploring')
+  eq('分类：web_search + other → exploring', phaseKindOf(tool('web_search', 'other')), 'exploring')
+  eq('分类：str_replace_editor + other → making', phaseKindOf(tool('str_replace_editor', 'other')), 'making')
+  eq('分类：todowrite + other → making', phaseKindOf(tool('todowrite', 'other')), 'making')
+  eq('分类：工具名识别不出时用 kind 兜底', phaseKindOf(tool('zzz_unknown', 'read')), 'exploring')
+  eq('分类：名字和 kind 都不认 → generic', phaseKindOf(tool('zzz_unknown', 'other')), 'generic')
+  eq('分类：kind 缺省 + 名字不认 → generic', phaseKindOf(tool('zzz', undefined)), 'generic')
+  eq('分类：thought → thinking', phaseKindOf(th('x')), 'thinking')
+  eq('分类：名字优先于 kind（bash + kind=read 仍算 running）', phaseKindOf(tool('bash', 'read')), 'running')
 }
 
 {
@@ -105,15 +112,32 @@ const tool = (title, toolKind, status = 'completed') =>
 }
 
 {
-  eq('行：动词+宾语（宾语取 ACP title）',
-    rowForTool(tool('查看 Alma 应用资源目录', 'read', 'in_progress')),
-    { verb: '查看', object: '查看 Alma 应用资源目录', running: true, error: false })
-  const r2 = rowForTool(tool('跑测试', 'execute'))
-  eq('行：completed 不算 running', [r2.verb, r2.object, r2.running, r2.error], ['执行', '跑测试', false, false])
-  ok('行：failed → error', rowForTool(tool('炸了', 'execute', 'failed')).error === true)
-  eq('行：pending 也算 running', rowForTool(tool('排队', 'read', 'pending')).running, true)
-  eq('行：空 title 兜底', rowForTool(tool('   ', 'read')).object, '…')
-  eq('行：无 kind 动词兜底', rowForTool(tool('x', undefined)).verb, '调用')
+  // 真机形状：DSH 的 title 只有工具名，内容在 rawInput 里
+  eq('行：bash + rawInput.command → 执行 <命令>',
+    rowForTool(tool('bash', 'other', 'in_progress', { command: 'pwd && ls -la' })),
+    { verb: '执行', object: 'pwd && ls -la', running: true, error: false })
+  eq('行：rawInput 取不到时退回工具名',
+    rowForTool(tool('bash', 'other')),
+    { verb: '执行', object: 'bash', running: false, error: false })
+  eq('行：read_file + file_path 长路径只留末 3 段',
+    rowForTool(tool('read_file', 'other', 'completed', { file_path: '/Users/x/a/b/c/d/e.txt' })).object,
+    '…/c/d/e.txt')
+  eq('行：command 优先于 description（DSH 的 description 是英文样板）',
+    rowForTool(tool('bash', 'other', 'completed', {
+      command: 'pnpm test',
+      description: 'List all files in current directory',
+    })).object,
+    'pnpm test')
+  eq('行：兼容嵌套 args', rowForTool(tool('bash', 'other', 'completed', { args: { command: 'echo hi' } })).object, 'echo hi')
+  eq('行：grep + pattern', rowForTool(tool('grep', 'other', 'completed', { pattern: 'TODO' })).object, 'TODO')
+  eq('行：超长文本截断到 80 字',
+    rowForTool(tool('bash', 'other', 'completed', { command: 'x'.repeat(200) })).object.length, 80)
+  eq('行：completed 不算 running', rowForTool(tool('bash', 'other')).running, false)
+  ok('行：failed → error', rowForTool(tool('bash', 'other', 'failed')).error === true)
+  eq('行：pending 也算 running', rowForTool(tool('bash', 'other', 'pending')).running, true)
+  eq('行：无 title 无 rawInput 兜底', rowForTool(tool('   ', 'other')).object, '…')
+  eq('行：名字不认时动词用 kind 兜底', rowForTool(tool('zzz', 'read')).verb, '查看')
+  eq('行：名字和 kind 都不认 → 调用', rowForTool(tool('zzz', 'other')).verb, '调用')
 }
 
 {
@@ -161,41 +185,46 @@ globalThis.EventSource = class {
 const { AiPanelStore } = await import(pathToFileURL(storePath).href)
 const S = new AiPanelStore()
 
+// 事件形状照抄真机抓到的：DSH 的 title 是工具名、kind 一律 "other"、内容在 rawInput
 S.apply({ type: 'turn_start', at: 1, text: '合并重复的两条' })
 S.apply({ type: 'thought', at: 2, text: '先看看' })
 S.apply({
   type: 'tool', at: 3, toolCallId: 'call_1',
-  title: '查看 Evergreen note 主题列表', kind: 'read', status: 'pending', locations: [{ path: 'k1' }],
+  title: 'read_file', kind: 'other', status: 'pending',
+  rawInput: { file_path: '/Users/x/a/b/c/d.txt' }, locations: [{ path: 'k1' }],
 })
 S.apply({
   type: 'tool', at: 4, toolCallId: 'call_2',
-  title: '跑一下 ev get --ky k123', kind: 'execute', status: 'in_progress',
+  title: 'bash', kind: 'other', status: 'in_progress',
+  rawInput: { command: 'ev get --ky k123' },
 })
 
 const t1 = S.items.find((x) => x.kind === 'tool' && x.id === 'call_1')
 const t2 = S.items.find((x) => x.kind === 'tool' && x.id === 'call_2')
-eq('store：tool 事件收下 kind（read）', t1.toolKind, 'read')
-eq('store：tool 事件收下 kind（execute）', t2.toolKind, 'execute')
-eq('store：title 原样保留', t1.title, '查看 Evergreen note 主题列表')
+eq('store：tool 事件收下 toolKind', t1.toolKind, 'other')
+eq('store：tool 事件收下 rawInput', t1.rawInput, { file_path: '/Users/x/a/b/c/d.txt' })
+eq('store：title 原样保留', t1.title, 'read_file')
 eq('store：locations 保留', t1.locations, [{ path: 'k1' }])
 eq('store：初始 status', t1.status, 'pending')
 
 S.apply({ type: 'tool_update', at: 5, toolCallId: 'call_1', status: 'completed' })
 const t1b = S.items.find((x) => x.kind === 'tool' && x.id === 'call_1')
 eq('store：状态跟随 update', t1b.status, 'completed')
-eq('store：update 不带 kind 时不清空 toolKind', t1b.toolKind, 'read')
-eq('store：update 不带 title 时不清空 title', t1b.title, '查看 Evergreen note 主题列表')
+eq('store：update 不带 kind 时不清空 toolKind', t1b.toolKind, 'other')
+eq('store：update 不带 title 时不清空 title', t1b.title, 'read_file')
+eq('store：update 不带 rawInput 时不清空 rawInput', t1b.rawInput, { file_path: '/Users/x/a/b/c/d.txt' })
 
-S.apply({ type: 'tool_update', at: 6, toolCallId: 'call_2', status: 'completed', kind: 'execute', title: '解析线程引用卡片' })
+S.apply({ type: 'tool_update', at: 6, toolCallId: 'call_2', status: 'completed', rawInput: { command: 'ls -la' } })
 const t2b = S.items.find((x) => x.kind === 'tool' && x.id === 'call_2')
-eq('store：update 里的 title 覆盖', t2b.title, '解析线程引用卡片')
-eq('store：update 里的 kind 覆盖', t2b.toolKind, 'execute')
+eq('store：update 里的 rawInput 覆盖', t2b.rawInput, { command: 'ls -la' })
 
 {
   // 两条接缝合起来：store 出来的流水能直接折成相位
   const ps = buildPhases(S.items)
   eq('接缝：store items → 相位种类', ps.map((p) => p.kind), ['thinking', 'exploring', 'running'])
   eq('接缝：活标签', phaseLabel(ps[2], true), { verb: '执行中', rest: '1 条命令' })
+  eq('接缝：行 = 动词 + rawInput 宾语', rowForTool(t2b), { verb: '执行', object: 'ls -la', running: false, error: false })
+  eq('接缝：长路径缩略', rowForTool(t1b).object, '…/b/c/d.txt')
 }
 
 rmSync(work, { recursive: true, force: true })
