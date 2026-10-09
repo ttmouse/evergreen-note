@@ -26,7 +26,39 @@ export type AiItem =
 
 export type NoteRef = { ky?: string; title?: string } | null
 
+/**
+ * 一段对话。
+ *
+ * 2026-10-09 重做：以前「历史」只是本地只读快照，切过去看得到、聊不了。
+ * 现在每段对话**真的对应 agent 侧一条 ACP 会话**（acpSessionId），于是：
+ *   - 切回任意一段都能继续聊；
+ *   - 各段上下文互不污染（实测：A 里埋的暗号，B 里问不出来）；
+ *   - App / agent 重启后，服务端会自动 session/resume 把旧会话接回来（实测：重启后拿旧
+ *     sessionId 直接发消息，仍答得出重启前埋的暗号）。
+ *
+ * legacy=true 是从旧「只读历史」迁移来的档：它们本来就是同一条会话的切片，
+ * 所以共享同一个 acpSessionId；事件分流时优先落到"当前正在看的那条"。
+ */
+export type AiConversation = {
+  /** 本地 id（= 本段首条消息的 at；沿用旧 history 条目的时间戳语义） */
+  id: number
+  /** 最近一次活动时间：列表排序用 */
+  at: number
+  preview: string
+  /** agent 侧会话 id；null = 还没开，首次发送时新建 */
+  acpSessionId: string | null
+  items: AiItem[]
+  legacy?: boolean
+}
+
 const API = '/api/ai/acp'
+
+/** 新格式（会话列表） */
+const KEY = 'nk-ai-panel-conversations'
+/** 旧格式：只读历史快照数组 + 当前流水快照 */
+const OLD_HISTORY_KEY = 'nk-ai-panel-history'
+const OLD_CURRENT_KEY = 'nk-ai-panel-current'
+const MAX_CONVERSATIONS = 30
 
 /**
  * AI 面板的唯一状态源。
@@ -35,114 +67,196 @@ const API = '/api/ai/acp'
 export class AiPanelStore {
   /** 面板是否打开（宿主组件据此决定要不要占一列） */
   open = false
-  items: AiItem[] = []
-  busy = false
-  /** stopped | starting | ready | busy */
-  state = 'stopped'
+
+  /** 所有对话，最新的在前（列表展示用 list 排序） */
+  conversations: AiConversation[] = []
+  activeId: number | null = null
+
+  /**
+   * 会话级忙标记。多会话下不能用单个 bool：A 在跑不该把 B 的输入也锁住。
+   * 键是 acpSessionId。
+   */
+  busyBy: Record<string, boolean> = {}
+  /** 会话级用量（底部进度条） */
+  usageBy: Record<string, { used: number; size: number }> = {}
+
+  /** agent 进程级状态（与具体会话无关） */
+  agentState: 'stopped' | 'starting' | 'ready' = 'stopped'
+  /** 服务端"当前默认"会话 id（旧接口的兼容值） */
   sessionId: string | null = null
   agent: string | null = null
-  usage = { used: 0, size: 0 }
-  error: string | null = null
   connected = false
+  error: string | null = null
+
   /** 本回合 AI 改动的节点数（>0 且不在 busy 时，可撤销） */
   snapCount = 0
   undoing = false
   private undoImpl: { undoTurn: () => Promise<number>; beginTurn: () => void } | null = null
 
-  /** 历史档（每轮自动归档；清空时也归档）。viewing 非空表示正在只读回看某一档。 */
-  history: { at: number; preview: string; items: AiItem[]; sid?: number }[] = []
-  viewing: number | null = null
-
   private es: EventSource | null = null
 
   constructor() {
     makeAutoObservable(this, { es: false })
-    this.loadHistory()
+    this.load()
   }
 
-  // ------------------------------------------------------------------ 历史
+  // ------------------------------------------------------------------ 派生
 
-  private static HISTORY_KEY = 'nk-ai-panel-history'
-  private static CURRENT_KEY = 'nk-ai-panel-current'
-  private static HISTORY_MAX = 30
+  get active(): AiConversation | null {
+    if (this.activeId == null) return this.conversations[0] ?? null
+    return this.conversations.find((c) => c.id === this.activeId) ?? this.conversations[0] ?? null
+  }
 
-  private loadHistory() {
-    try {
-      const raw = localStorage.getItem(AiPanelStore.HISTORY_KEY)
-      if (raw) this.history = JSON.parse(raw)
-    } catch {
-      this.history = []
+  /** 正在展示的行 = 当前会话的行（组件沿用旧名，改动面最小） */
+  get items(): AiItem[] {
+    return this.active?.items ?? []
+  }
+
+  get displayItems(): AiItem[] {
+    return this.items
+  }
+
+  /** 列表：按最近活动排序 */
+  get list(): AiConversation[] {
+    return [...this.conversations].sort((a, b) => b.at - a.at)
+  }
+
+  /** 当前会话是否在跑 */
+  get busy(): boolean {
+    const sid = this.active?.acpSessionId
+    return !!sid && !!this.busyBy[sid]
+  }
+
+  /** 有没有任何一条会话在跑（列表上打点用） */
+  isBusy(conv: AiConversation): boolean {
+    return !!conv.acpSessionId && !!this.busyBy[conv.acpSessionId]
+  }
+
+  get usage(): { used: number; size: number } {
+    const sid = this.active?.acpSessionId
+    return (sid && this.usageBy[sid]) || { used: 0, size: 0 }
+  }
+
+  get state(): 'stopped' | 'starting' | 'ready' | 'busy' {
+    if (this.busy) return 'busy'
+    return this.agentState
+  }
+
+  // ------------------------------------------------------------- 持久化/迁移
+
+  private load() {
+    const saved = this.readSaved()
+    this.conversations = saved?.conversations ?? []
+    this.activeId = saved && typeof saved.activeId === 'number' ? saved.activeId : null
+
+    // 旧「只读快照」永远再兜一次底：新键可能是**迁移半途**写下的（早于历史重建），
+    // 只信新键会让用户的历史整片消失。按 id 去重，重复跑无副作用。
+    const legacy = this.readLegacyConversations()
+    if (legacy.length > 0) {
+      const have = new Set(this.conversations.map((c) => c.id))
+      const add = legacy.filter((c) => !have.has(c.id))
+      if (add.length > 0) this.conversations = [...this.conversations, ...add]
     }
-    // 上次没点「清空」就退出/刷新的对话：从 current 快照并回历史，保证历史完整。
+
+    this.conversations.sort((a, b) => b.at - a.at)
+    this.conversations = this.conversations.slice(0, MAX_CONVERSATIONS)
+    if (this.conversations.length === 0) this.conversations = [this.createConversation()]
+    if (this.activeId == null || !this.conversations.some((c) => c.id === this.activeId)) {
+      this.activeId = this.conversations[0].id
+    }
+    this.persist()
+  }
+
+  private readSaved(): { activeId?: number; conversations: AiConversation[] } | null {
     try {
-      const raw = localStorage.getItem(AiPanelStore.CURRENT_KEY)
-      if (raw) {
-        const snap = JSON.parse(raw)
-        if (snap && Array.isArray(snap.items) && snap.items.length > 0) this.mergeSnap(snap)
+      const raw = localStorage.getItem(KEY)
+      if (!raw) return null
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed?.conversations)) return null
+      return { activeId: parsed.activeId, conversations: parsed.conversations }
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 旧格式（只读快照）→ 会话。它们本来就是同一条 ACP 会话的切片，
+   * 标 legacy 后由 ensureSession() 绑上当前会话，于是"切过去就能接着聊"。
+   */
+  private readLegacyConversations(): AiConversation[] {
+    const out: AiConversation[] = []
+    const push = (at: number, preview: string, items: AiItem[]) => {
+      if (!items || items.length === 0) return
+      out.push({ id: at, at, preview: preview || '(无摘要)', acpSessionId: null, items, legacy: true })
+    }
+    try {
+      const cur = localStorage.getItem(OLD_CURRENT_KEY)
+      if (cur) {
+        const snap = JSON.parse(cur)
+        if (snap?.items?.length) push(snap.at ?? Date.now(), snap.preview ?? '', snap.items)
+      }
+      const hist = localStorage.getItem(OLD_HISTORY_KEY)
+      if (hist) {
+        const arr = JSON.parse(hist)
+        if (Array.isArray(arr)) for (const h of arr) push(h.at ?? Date.now(), h.preview ?? '', h.items)
       }
     } catch {}
+    const seen = new Set<number>()
+    return out.filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)))
   }
 
-  private saveHistory() {
+  private persist() {
     try {
-      localStorage.setItem(AiPanelStore.HISTORY_KEY, JSON.stringify(this.history.slice(0, AiPanelStore.HISTORY_MAX)))
+      localStorage.setItem(
+        KEY,
+        JSON.stringify({ activeId: this.activeId, conversations: this.conversations.slice(0, MAX_CONVERSATIONS) })
+      )
     } catch {}
   }
 
-  /** 当前对话的稳定 id：首行的时间戳（clear 后从零重开，天然区分不同对话） */
-  private get currentSid(): number | undefined {
-    return this.items.length > 0 ? this.items[0].at : undefined
+  // ------------------------------------------------------------------ 会话
+
+  private createConversation(): AiConversation {
+    let id = Date.now()
+    while (this.conversations.some((c) => c.id === id)) id += 1
+    return { id, at: id, preview: '', acpSessionId: null, items: [] }
   }
 
-  private makeSnap() {
-    const firstUser = this.items.find((x) => x.kind === 'user') as any
-    const preview = (firstUser?.text || this.items[0]?.text || '').slice(0, 40)
-    return { sid: this.currentSid, at: this.items[0].at, preview, items: this.items }
+  /** 切到某一段对话。切换是纯本地的（不发请求）—— 旧会话的接回由服务端在 prompt 时自动 resume。 */
+  switchTo(id: number) {
+    this.activeId = id
+    this.persist()
   }
 
-  /** 快照并入历史：同 sid 替换（对话进行中每轮刷新同一条），否则插到最前 */
-  private mergeSnap(snap: { sid?: number; at: number; preview: string; items: AiItem[] }) {
-    this.history = [snap, ...this.history.filter((h) => h.sid == null || h.sid !== snap.sid)].slice(
-      0,
-      AiPanelStore.HISTORY_MAX,
-    )
-    this.saveHistory()
+  /** 收工：当前这段留在列表里，另起一段空白的（这就是「清空」在新模型下的含义） */
+  clear() {
+    const cur = this.active
+    if (cur && cur.items.length === 0) {
+      this.error = null
+      return
+    }
+    this.newConversation()
   }
 
-  /** 把当前流水持久化到 localStorage（每轮调用），退出/刷新后可并回历史 */
-  private persistCurrent() {
-    try {
-      if (this.items.length === 0) localStorage.removeItem(AiPanelStore.CURRENT_KEY)
-      else localStorage.setItem(AiPanelStore.CURRENT_KEY, JSON.stringify(this.makeSnap()))
-    } catch {}
+  newConversation() {
+    const c = this.createConversation()
+    this.conversations = [c, ...this.conversations].slice(0, MAX_CONVERSATIONS)
+    this.activeId = c.id
+    this.persist()
+    return c
   }
 
-  /** 每轮结束后同步刷新历史档（同一条对话只更新历史里同一条目，不产生重复） */
-  syncHistory() {
-    if (this.items.length === 0) return
-    this.mergeSnap(this.makeSnap())
-    this.persistCurrent()
+  removeConversation(id: number) {
+    this.conversations = this.conversations.filter((c) => c.id !== id)
+    if (this.activeId === id) this.activeId = this.conversations[0]?.id ?? null
+    if (this.conversations.length === 0) this.newConversation()
+    this.persist()
   }
 
-  /** 把当前流水归档进历史（clear 时调用；空流水不归档） */
-  archive() {
-    if (this.items.length === 0) return
-    this.mergeSnap(this.makeSnap())
-    try {
-      localStorage.removeItem(AiPanelStore.CURRENT_KEY)
-    } catch {}
-  }
-
-  removeHistory(at: number) {
-    this.history = this.history.filter((h) => h.at !== at)
-    if (this.viewing === at) this.viewing = null
-    this.saveHistory()
-  }
-
-  /** 正在展示的行：回看时是历史档，否则是当前流水 */
-  get displayItems(): AiItem[] {
-    if (this.viewing != null) return this.history.find((h) => h.at === this.viewing)?.items ?? []
-    return this.items
+  private activeOrCreate(): AiConversation {
+    const c = this.active
+    if (c) return c
+    return this.newConversation()
   }
 
   // ------------------------------------------------------------------ SSE
@@ -175,48 +289,91 @@ export class AiPanelStore {
 
   // ---------------------------------------------------------------- 事件归并
 
-  private lastIndex(kind: AiItem['kind']) {
-    for (let i = this.items.length - 1; i >= 0; i--) {
-      if (this.items[i].kind === kind) return i
-      if (this.items[i].kind === 'user') return -1
+  /**
+   * 事件 → 会话。带 sessionId 的一律按会话分流；找不到归属的就丢掉
+   * （宁可少显示，也不能把 A 的回复串进 B）。
+   */
+  private conversationFor(sid?: string): AiConversation | null {
+    if (!sid) return this.active
+    const cur = this.active
+    if (cur && cur.acpSessionId === sid) return cur
+    return this.conversations.find((c) => c.acpSessionId === sid) ?? null
+  }
+
+  private lastIndex(items: AiItem[], kind: AiItem['kind']) {
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (items[i].kind === kind) return i
+      if (items[i].kind === 'user') return -1
     }
     return -1
   }
 
+  private touch(conv: AiConversation, at?: number) {
+    conv.at = at ?? Date.now()
+    if (!conv.preview) {
+      const firstUser = conv.items.find((x) => x.kind === 'user') as any
+      const t = firstUser?.text || (conv.items[0] as any)?.text || ''
+      conv.preview = String(t).slice(0, 40)
+    }
+  }
+
   apply(ev: any) {
+    const scoped = !!ev.sessionId
     runInAction(() => {
+      if (ev.type === 'hello' || ev.type === 'ready') {
+        this.agentState = ev.sessionId ? 'ready' : 'starting'
+        this.sessionId = ev.sessionId ?? this.sessionId
+        this.agent = ev.agent
+          ? typeof ev.agent === 'string'
+            ? ev.agent
+            : `${ev.agent.name} v${ev.agent.version}`
+          : this.agent
+        return
+      }
+      if (ev.type === 'agent_exit' || ev.type === 'stopped') {
+        this.busyBy = {}
+        if (ev.type === 'agent_exit') {
+          this.agentState = 'stopped'
+          this.sessionId = null
+          const c = this.active
+          if (c) c.items.push({ kind: 'exit', at: ev.at ?? Date.now(), text: ev.message || 'agent 已退出' })
+        }
+        return
+      }
+      // 服务端把某条会话换成了别的 id（resume 后拿到不同 id / 旧会话已不存在时降级）
+      if (ev.type === 'session_remap') {
+        for (const c of this.conversations) if (c.acpSessionId === ev.from) c.acpSessionId = ev.sessionId
+        return
+      }
+
+      const conv = this.conversationFor(ev.sessionId)
+      if (!conv) return
+
+      const sid: string | undefined = ev.sessionId
       switch (ev.type) {
-        case 'hello':
-        case 'ready':
-          this.state = ev.busy ? 'busy' : ev.sessionId ? 'ready' : 'starting'
-          this.sessionId = ev.sessionId ?? this.sessionId
-          this.agent = ev.agent ? (typeof ev.agent === 'string' ? ev.agent : `${ev.agent.name} v${ev.agent.version}`) : this.agent
-          break
         case 'turn_start':
-          this.busy = true
-          this.state = 'busy'
+          if (sid) this.busyBy = { ...this.busyBy, [sid]: true }
           this.undoImpl?.beginTurn()
-          this.items.push({ kind: 'user', at: ev.at, text: ev.text ?? '' })
-          this.persistCurrent()
+          conv.items.push({ kind: 'user', at: ev.at, text: ev.text ?? '' })
           break
         case 'text': {
-          const i = this.lastIndex('text')
+          const i = this.lastIndex(conv.items, 'text')
           const t = ev.text ?? ''
-          if (i >= 0) this.items[i] = { ...(this.items[i] as any), text: (this.items[i] as any).text + t }
-          else this.items.push({ kind: 'text', at: ev.at, text: t })
+          if (i >= 0) conv.items[i] = { ...(conv.items[i] as any), text: (conv.items[i] as any).text + t }
+          else conv.items.push({ kind: 'text', at: ev.at, text: t })
           break
         }
         case 'thought': {
-          const last = this.items[this.items.length - 1]
+          const last = conv.items[conv.items.length - 1]
           if (last && last.kind === 'thought') last.text += ev.text ?? ''
-          else this.items.push({ kind: 'thought', at: ev.at, text: ev.text ?? '', open: false })
+          else conv.items.push({ kind: 'thought', at: ev.at, text: ev.text ?? '', open: false })
           break
         }
         case 'tool':
-          this.items.push({
+          conv.items.push({
             kind: 'tool',
             at: ev.at,
-            id: ev.toolCallId ?? `t${this.items.length}`,
+            id: ev.toolCallId ?? `t${conv.items.length}`,
             title: ev.title ?? 'tool',
             status: ev.status ?? 'pending',
             toolKind: ev.kind,
@@ -225,12 +382,12 @@ export class AiPanelStore {
           })
           break
         case 'tool_update': {
-          for (let i = this.items.length - 1; i >= 0; i--) {
-            const it = this.items[i]
+          for (let i = conv.items.length - 1; i >= 0; i--) {
+            const it = conv.items[i]
             if (it.kind === 'tool' && it.id === ev.toolCallId) {
               // title / kind 只在首次 tool_call 里出现是常态，但 update 里也可能补上；
               // 状态无条件跟随，其余字段「有才覆盖」。
-              this.items[i] = {
+              conv.items[i] = {
                 ...it,
                 status: ev.status ?? it.status,
                 title: ev.title || it.title,
@@ -244,10 +401,10 @@ export class AiPanelStore {
           break
         }
         case 'usage':
-          this.usage = { used: ev.used ?? 0, size: ev.size ?? 0 }
+          if (sid) this.usageBy = { ...this.usageBy, [sid]: { used: ev.used ?? 0, size: ev.size ?? 0 } }
           break
         case 'permission_request':
-          this.items.push({
+          conv.items.push({
             kind: 'permission',
             at: ev.at,
             requestId: ev.requestId,
@@ -255,58 +412,90 @@ export class AiPanelStore {
           })
           break
         case 'permission_result':
-          for (const it of this.items) {
-            if (it.kind === 'permission' && it.requestId === ev.requestId) it.decided = ev.decision
+          for (const c of this.conversations) {
+            for (const it of c.items) {
+              if (it.kind === 'permission' && it.requestId === ev.requestId) it.decided = ev.decision
+            }
           }
           break
         case 'turn_end':
-          this.busy = false
-          this.state = 'ready'
-          this.syncHistory()
-          break
         case 'cancel_sent':
-          this.busy = false
-          this.syncHistory()
-          break
-        case 'agent_exit':
-          this.busy = false
-          this.state = 'stopped'
-          this.sessionId = null
-          this.items.push({ kind: 'exit', at: ev.at, text: ev.message || 'agent 已退出' })
-          this.syncHistory()
+          if (sid) this.busyBy = { ...this.busyBy, [sid]: false }
           break
         case 'error':
-          this.busy = false
+          if (sid) this.busyBy = { ...this.busyBy, [sid]: false }
           this.error = ev.message ?? '未知错误'
-          this.items.push({ kind: 'error', at: ev.at ?? Date.now(), text: this.error! })
-          this.syncHistory()
+          conv.items.push({ kind: 'error', at: ev.at ?? Date.now(), text: this.error! })
           break
+        default:
+          return
       }
+      this.touch(conv, ev.at)
     })
+
+    if (!scoped || ['turn_end', 'cancel_sent', 'error', 'permission_result'].includes(ev.type)) this.persist()
   }
 
   // ------------------------------------------------------------------ 动作
 
+  /**
+   * 确保 agent 就绪，并拿到服务端"当前会话"。首次调用时把旧历史迁来的档
+   * 绑到这条会话上 —— 它们本来就是它的切片，绑上就能接着聊。
+   */
   async ensureSession() {
     const r = await fetch(`${API}/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
     const j = await r.json()
-    if (j?.sessionId) runInAction(() => ((this.sessionId = j.sessionId), (this.state = j.busy ? 'busy' : 'ready'), (this.agent = j.agent ?? this.agent)))
+    runInAction(() => {
+      if (j?.sessionId) {
+        this.sessionId = j.sessionId
+        for (const c of this.conversations) if (c.legacy && !c.acpSessionId) c.acpSessionId = j.sessionId
+      }
+      if (j?.agent) this.agent = j.agent
+      if (j?.sessionId) this.agentState = 'ready'
+    })
+    this.persist()
     return j
   }
 
   async send(text: string, note: NoteRef) {
     const t = text.trim()
     if (!t || this.busy) return
+    const conv = this.activeOrCreate()
     this.error = null
+    // 这一段还没有自己的会话 → 现开一条（各段互不污染）
+    if (!conv.acpSessionId) {
+      try {
+        const r = await fetch(`${API}/session/new`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        const j = await r.json()
+        if (j?.sessionId) {
+          runInAction(() => {
+            conv.acpSessionId = j.sessionId
+            this.sessionId = j.sessionId
+            this.agentState = 'ready'
+          })
+          this.persist()
+        }
+      } catch (e: any) {
+        runInAction(() => {
+          this.error = `新会话创建失败：${e?.message ?? e}`
+          conv.items.push({ kind: 'error', at: Date.now(), text: this.error! })
+        })
+        return
+      }
+    }
     await fetch(`${API}/prompt`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: t, note }),
+      body: JSON.stringify({ text: t, note, sessionId: conv.acpSessionId }),
     })
   }
 
   async cancel() {
-    await fetch(`${API}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    await fetch(`${API}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: this.active?.acpSessionId ?? undefined }),
+    })
   }
 
   async answer(requestId: string, decision: 'allow' | 'always' | 'deny') {
@@ -315,13 +504,6 @@ export class AiPanelStore {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ requestId, decision }),
     })
-  }
-
-  clear() {
-    this.archive()
-    this.viewing = null
-    this.items = []
-    this.error = null
   }
 
   attachUndo(impl: { undoTurn: () => Promise<number>; beginTurn: () => void }) {
@@ -335,8 +517,13 @@ export class AiPanelStore {
   }
 
   toggleThought(at: number) {
-    const it = this.items.find((x) => x.kind === 'thought' && x.at === at)
-    if (it && it.kind === 'thought') it.open = !it.open
+    for (const c of this.conversations) {
+      const it = c.items.find((x) => x.kind === 'thought' && x.at === at)
+      if (it && it.kind === 'thought') {
+        it.open = !it.open
+        return
+      }
+    }
   }
 }
 

@@ -18,9 +18,73 @@ const mdToHtml = (src: string): string => {
     .replace(/javascript:/gi, '')
 }
 
-const AiMarkdown = ({ text }: { text: string }) => (
-  <div className="ai-md nk-settle" dangerouslySetInnerHTML={{ __html: mdToHtml(text) }} />
-)
+/**
+ * 正文的展开层。
+ *
+ * ACP 的 `agent_message_chunk` 是**整段提交**：实测一轮 582 字只发 1 个事件、跨度 0ms
+ * （见 notes/AI侧边栏ACP接入方案-20261009.md §5），所以没有 token 流可以直接渲染。
+ * 这一层负责把"整块到手"的文字按时间铺开，让它像流进来一样出现，而不是硬糊上去。
+ *
+ * 只对**刚到手**的正文展开（到手 2s 内）；历史回看、刷新重建的旧正文整段直出。
+ * 同一块只展开一次（animatedAts 记在页面存活期内），减少动态效果设置下完全不动画。
+ */
+const animatedAts = new Set<number>()
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+/** 展开时长随字数伸缩，夹在 220ms–1.5s：短答不拖，长答不让人等 */
+const revealDuration = (chars: number) => Math.min(1500, Math.max(220, (chars / 700) * 1000))
+
+const AiMarkdown = ({ text, at }: { text: string; at: number }) => {
+  const [animate] = useState(() => {
+    const on = !prefersReducedMotion() && !animatedAts.has(at) && Date.now() - at < 2000
+    if (on) animatedAts.add(at)
+    return on
+  })
+  const shownRef = useRef(animate ? 0 : text.length)
+  const [shown, setShown] = useState(shownRef.current)
+  const rafRef = useRef(0)
+
+  useEffect(() => {
+    const target = text.length
+    // 不展开（历史回看 / 已追平）：直接给全量
+    if (!animate || shownRef.current >= target) {
+      if (shownRef.current !== target) {
+        shownRef.current = target
+        setShown(target)
+      }
+      return
+    }
+    const from = shownRef.current
+    const dur = revealDuration(target - from)
+    const t0 = performance.now()
+    let lastCommit = 0
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / dur)
+      const n = from + Math.round((target - from) * p)
+      // 长正文下别每帧都重排 markdown：约 30fps 提交一次，收尾那一帧必提交
+      if (n !== shownRef.current && (p >= 1 || now - lastCommit >= 32)) {
+        lastCommit = now
+        shownRef.current = n
+        setShown(n)
+      }
+      if (p < 1) rafRef.current = requestAnimationFrame(tick)
+      else if (shownRef.current !== target) {
+        shownRef.current = target
+        setShown(target)
+      }
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [text, animate])
+
+  return (
+    <div
+      className={animate ? 'ai-md' : 'ai-md nk-settle'}
+      dangerouslySetInnerHTML={{ __html: mdToHtml(text.slice(0, shown)) }}
+    />
+  )
+}
 
 const ink = 'var(--nk-ink)'
 const muted = 'var(--nk-muted)'
@@ -47,8 +111,8 @@ const AI_MD_CSS = `
 .ai-md a { color: ${acc}; }
 .ai-md img { max-width: 100%; }
 
-/* 正文落定：ACP 是一次性交付（实测整段 410 字 = 1 个事件、跨度 0.0s），没有 token 流可渲染。
-   这条不是假打字机，只是让新到的一整块内容"落下来"而不是硬邦邦地糊上去。 */
+/* 正文落定：只用于**不展开**的那些（历史回看 / 刷新重建 / 已追平），让整块内容"落下来"
+   而不是硬邦邦地糊上去。新到手的正文走 AiMarkdown 的展开层，见上方注释。 */
 .ai-md.nk-settle { animation: nkSettle .3s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes nkSettle { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ai-md.nk-settle { animation: none; } }
@@ -291,7 +355,7 @@ export const AiPanelComp = observer(() => {
                     </div>
                   )
 
-                if (it.kind === 'text') return <AiMarkdown key={i} text={it.text} />
+                if (it.kind === 'text') return <AiMarkdown key={`t${it.at}`} text={it.text} at={it.at} />
 
                 if (it.kind === 'permission')
                   return (
