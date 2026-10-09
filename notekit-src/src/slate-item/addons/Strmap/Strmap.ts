@@ -318,14 +318,34 @@ class Strmap implements IAddon {
           return
         }
 
-        if (op.type === 'insert_text') {
+        // 触发条件：用户在光标处输入文本。insert_text 覆盖普通逐字符输入；
+        // insert_fragment 覆盖输入法组合输入/替换、粘贴式整段输入（Slate 会把这类
+        // 输入合成为 fragment 操作，此前只监听 insert_text 会导致这类输入不触发映射）。
+        const isCaretTypedText = (opLen: number) => {
           const sel = editor.selection
-          if (
+          return (
             sel &&
             Range.isCollapsed(sel) &&
             Path.equals(op.path, sel.anchor.path) &&
-            op.offset + op.text.length === sel.anchor.offset
-          ) {
+            op.offset + opLen === sel.anchor.offset
+          )
+        }
+
+        if (op.type === 'insert_text') {
+          if (isCaretTypedText(op.text.length)) {
+            strmap.isProcessing = true
+            try {
+              strmap.processTextChange(editor)
+            } finally {
+              strmap.isProcessing = false
+            }
+          }
+        } else if (op.type === 'insert_fragment') {
+          const fragLen = op.fragment.reduce(
+            (n, fragNode) => n + Node.string(fragNode).length,
+            0
+          )
+          if (fragLen > 0 && isCaretTypedText(fragLen)) {
             strmap.isProcessing = true
             try {
               strmap.processTextChange(editor)
