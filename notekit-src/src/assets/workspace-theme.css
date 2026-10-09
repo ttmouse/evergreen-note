@@ -1385,9 +1385,12 @@ body .workspace-tab {
   padding: 0 4px 0 10px;
   border-radius: 9px;
   color: var(--nk-ink);
-  cursor: pointer;
+  cursor: grab;
   -webkit-app-region: no-drag;
 }
+body .workspace-tab:active { cursor: grabbing; }
+body .workspace-tab.is-dragging { opacity: .45; }
+body .workspace-tab-close { cursor: pointer; }
 body .workspace-tab.is-active,
 body .workspace-tab:hover { background: var(--nk-tab-hover); }
 body .workspace-tab-title {

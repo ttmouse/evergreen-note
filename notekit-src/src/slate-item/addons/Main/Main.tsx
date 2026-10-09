@@ -72,6 +72,16 @@ export function createMainAddon({ app, $ }: NewAddonParams) {
       this.workspaceActiveKey = key
     }
 
+    /** 拖拽调整标签页顺序：把 key 对应的标签移到 toIndex 位置 */
+    moveWorkspaceTab(key: string, toIndex: number) {
+      const fromIndex = this.workspaceTabs.findIndex(tab => tab.key === key)
+      if (fromIndex < 0) return
+      const clamped = Math.max(0, Math.min(toIndex, this.workspaceTabs.length - 1))
+      if (clamped === fromIndex) return
+      const [moved] = this.workspaceTabs.splice(fromIndex, 1)
+      this.workspaceTabs.splice(clamped, 0, moved)
+    }
+
     trackWorkspaceRoute(title?: string) {
       if (app.states.floatViewerMode === 'andy') return
       const pathname = $.router.history.location.pathname
