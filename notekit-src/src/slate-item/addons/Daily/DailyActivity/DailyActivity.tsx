@@ -7,6 +7,7 @@ import { isEmpty, notEmpty } from '../../../utils/isEmpty'
 import { AddonInfo } from '../../AddonCenter/AddonCenterComp'
 import { readingPlainText } from '../../Backlink/LinkedReferenceComp'
 import { ItemMap } from '../../DbMemory/DbMemory'
+import { CaretRightIcon } from '@phosphor-icons/react'
 
 declare global {
   interface MemoryIndexed {
@@ -83,16 +84,7 @@ export function ActivityReadingComp(props: {
           }
         }}
       >
-        <svg
-          className="backlink-reading-caret"
-          data-open={String(sectionOpen)}
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          aria-hidden="true"
-        >
-          <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <CaretRightIcon weight="bold" className="backlink-reading-caret" size={12} />
         {title} <span>{groups.size}</span>
       </h2>
       {sectionOpen && (

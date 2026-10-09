@@ -18,6 +18,7 @@ import { UnitProps } from '@/slate-item/interfaces/unit'
 import { obj2list } from '../EditorView/helper'
 import { observer } from 'mobx-react'
 import { nodeString } from '../../utils/string/nodeString'
+import { CaretRightIcon, LinkSimpleIcon } from '@phosphor-icons/react'
 
 const cssStyle = cls`
   label: reference-component;
@@ -340,8 +341,9 @@ export const LinkedReferenceComp = observer((props: { item: UnitPersist }) => {
   const plainText = readingPlainText
 
   return <section className="backlink-reading" aria-label="链接到这篇笔记">
-    <h2 className="backlink-reading-head" onClick={() => setSectionOpen(v => !v)}>
-      <span className="backlink-reading-caret" data-open={String(sectionOpen)}>▸</span>
+    <h2 className="backlink-reading-head" aria-expanded={sectionOpen} onClick={() => setSectionOpen(v => !v)}>
+      <CaretRightIcon weight="bold" className="backlink-reading-caret" size={12} />
+      <LinkSimpleIcon size={14} className="backlink-reading-linkicon" aria-hidden />
       链接到这篇笔记 <span>{groups.size}</span></h2>
     {sectionOpen && (
     <div className="backlink-reading-grid">

@@ -1712,6 +1712,11 @@ body .backlink-reading-caret {
   color: var(--nk-muted, var(--node-crumbs-link, #666));
   transition: transform 120ms ease;
 }
+/* D125F26FCF5E-15：标题前链接语义图标（Phosphor），弱化为 muted 色 */
+body .backlink-reading-linkicon {
+  flex-shrink: 0;
+  color: var(--nk-muted, var(--node-crumbs-link, #666));
+}
 body .backlink-reading-head[aria-expanded='true'] .backlink-reading-caret {
   transform: rotate(90deg);
 }
