@@ -7,6 +7,7 @@ import { cls } from '../../styles';
 import { useAddons } from '../../hooks/useAddons';
 import { CellProps } from '../../components/MonthCalendar/MonthCalendar';
 import { isEmpty } from '../../utils/isEmpty';
+import type { YYYY_MM_DD } from '../../utils/date/datekit';
 import './heatmap.less';
 import { Tip } from '../../components/Tip/Tip';
 import { useEditor } from '@/slate-item/hooks/useEditor';
@@ -43,6 +44,21 @@ export function HeatmapElementComp(
     weekbar,
   } = element;
 
+  // 编辑器实例在组件顶层取一次（不要写在 renderCellContent 闭包里：
+  // 闭包会被下方 useMemo 缓存成旧值，且 hook 调用位置不合法）
+  const editor = useEditor();
+
+  // 日期格跳转必须挂在 mousedown 而非 click（2026-10-09 用户反馈「日期不能够点击」）：
+  // 点击日期格时 mousedown 的原生选区移动会让 Slate 选中本 void 节点 → selected+focused
+  // → showSource 把色块图替换成原始文本 div，日期格 span 在 mouseup 前被卸载，
+  // click 事件永远不会落在它身上。preventDefault 阻止选区移动、保住色块图，
+  // 在 mousedown 阶段直接路由跳当天日记。不挂 onClick，避免重复导航。
+  const openDayOnMouseDown = (date: YYYY_MM_DD) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    $.heatmap.route(date, {}, editor);
+  };
+
   const renderCellContent = (cellProps: CellProps) => {
     const { date } = cellProps;
     const classes = ['cell-text'];
@@ -59,7 +75,7 @@ export function HeatmapElementComp(
           className={classes.join(' ')}
           style={{ backgroundColor: bg }}
           title={date}
-          onClick={() => $.heatmap.route(date, {}, useEditor())}
+          onMouseDown={openDayOnMouseDown(date as YYYY_MM_DD)}
         >
           {day}
         </span>
