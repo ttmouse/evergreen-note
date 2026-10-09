@@ -71,6 +71,7 @@ class Strmap implements IAddon {
   rules = {} as { [key: string]: StrmapRuleInfo }
   customRules: Record<string, StrmapRuleInfo> = {}
   private isProcessing = false
+  private pendingProcess = false
   private isUndoing = false
 
   addonInfo() {
@@ -318,21 +319,39 @@ class Strmap implements IAddon {
           return
         }
 
-        // 触发条件：用户在光标处输入文本。insert_text 覆盖普通逐字符输入；
-        // insert_fragment 覆盖输入法组合输入/替换、粘贴式整段输入（Slate 会把这类
-        // 输入合成为 fragment 操作，此前只监听 insert_text 会导致这类输入不触发映射）。
-        const isCaretTypedText = (opLen: number) => {
-          const sel = editor.selection
-          return (
-            sel &&
-            Range.isCollapsed(sel) &&
-            Path.equals(op.path, sel.anchor.path) &&
-            op.offset + opLen === sel.anchor.offset
-          )
+        // 触发条件：用户在光标处输入了文本。不同输入路径产生不同操作类型：
+        // - 普通逐字符输入 → insert_text（保持原有的即时触发）
+        // - 粘贴单行纯文本 → insertFragment 产生 insert_node + merge_node + set_node
+        // - 输入法组合输入/替换 → insert_fragment
+        // 后两类在批量操作中途无法安全改写文档，因此登记一个微任务，
+        // 待本批操作（一个 action 的全部 op）落定后再统一做一次规则匹配。
+        const scheduleProcess = () => {
+          if (strmap.pendingProcess) {
+            return
+          }
+          strmap.pendingProcess = true
+          queueMicrotask(() => {
+            strmap.pendingProcess = false
+            if (strmap.isProcessing || strmap.isUndoing) {
+              return
+            }
+            strmap.isProcessing = true
+            try {
+              strmap.processTextChange(editor)
+            } finally {
+              strmap.isProcessing = false
+            }
+          })
         }
 
         if (op.type === 'insert_text') {
-          if (isCaretTypedText(op.text.length)) {
+          const sel = editor.selection
+          if (
+            sel &&
+            Range.isCollapsed(sel) &&
+            Path.equals(op.path, sel.anchor.path) &&
+            op.offset + op.text.length === sel.anchor.offset
+          ) {
             strmap.isProcessing = true
             try {
               strmap.processTextChange(editor)
@@ -340,19 +359,15 @@ class Strmap implements IAddon {
               strmap.isProcessing = false
             }
           }
-        } else if (op.type === 'insert_fragment') {
-          const fragLen = op.fragment.reduce(
-            (n, fragNode) => n + Node.string(fragNode).length,
-            0
-          )
-          if (fragLen > 0 && isCaretTypedText(fragLen)) {
-            strmap.isProcessing = true
-            try {
-              strmap.processTextChange(editor)
-            } finally {
-              strmap.isProcessing = false
-            }
-          }
+        } else if (
+          (op.type === 'insert_node' ||
+            op.type === 'insert_fragment' ||
+            op.type === 'set_node' ||
+            op.type === 'merge_node') &&
+          editor.selection &&
+          Range.isCollapsed(editor.selection)
+        ) {
+          scheduleProcess()
         }
       }
 
