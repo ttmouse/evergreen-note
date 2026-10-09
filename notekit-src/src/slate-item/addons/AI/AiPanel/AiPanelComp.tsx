@@ -65,6 +65,7 @@ const AI_MD_CSS = `
 export const AiPanelComp = observer(() => {
   const { extArea, editorView, app, dbMemory } = useAddons() as any
   const [draft, setDraft] = useState('')
+  const [histOpen, setHistOpen] = useState(false)
   const bodyRef = useRef<HTMLDivElement>(null)
   const stickRef = useRef(true)
 
@@ -97,7 +98,14 @@ export const AiPanelComp = observer(() => {
     await S.send(t, currentNote())
   }
 
+  const fmtTime = (at: number) => {
+    const d = new Date(at)
+    const p = (n: number) => String(n).padStart(2, '0')
+    return `${d.getMonth() + 1}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+  }
+
   const dotColor = S.state === 'busy' ? acc : S.state === 'ready' ? '#28c840' : S.state === 'stopped' ? muted : '#febc2e'
+  const viewingHist = S.viewing != null
 
   return (
     <div
@@ -111,20 +119,85 @@ export const AiPanelComp = observer(() => {
     >
       <style>{AI_MD_CSS}</style>
       {/* 头 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, boxSizing: 'border-box', flexShrink: 0, padding: '0 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, boxSizing: 'border-box', flexShrink: 0, padding: '0 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted, position: 'relative' }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'block' }} />
         <span style={{ letterSpacing: '.04em' }}>就地助手</span>
         <span style={{ flex: 1 }} />
         <span title={S.agent || ''} style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {S.agent || (S.connected ? '连接中…' : '未连接')}
         </span>
+        <button
+          onClick={() => setHistOpen((v) => !v)}
+          style={{ border: 'none', background: 'none', color: histOpen || S.history.length > 0 ? ink : muted, cursor: 'pointer', fontSize: 12 }}
+        >
+          历史{S.history.length > 0 ? `（${S.history.length}）` : ''}
+        </button>
         <button onClick={() => S.clear()} style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', fontSize: 12 }}>
           清空
         </button>
         <button onClick={() => extArea?.foldup(true)} style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', fontSize: 12 }}>
           收起
         </button>
+
+        {/* 历史下拉 */}
+        {histOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 40,
+              right: 8,
+              zIndex: 20,
+              width: 300,
+              maxHeight: 320,
+              overflowY: 'auto',
+              background: 'var(--nk-surface)',
+              border: `1px solid ${line}`,
+              borderRadius: 6,
+              boxShadow: '0 4px 16px rgba(0,0,0,.12)',
+              padding: 4,
+            }}
+          >
+            {S.history.length === 0 && <div style={{ padding: '10px 8px', fontSize: 12, color: muted }}>还没有历史。点「清空」会把当前对话自动存进这里。</div>}
+            {S.history.map((h) => (
+              <div
+                key={h.at}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 4, cursor: 'pointer', color: S.viewing === h.at ? acc : ink }}
+                onClick={() => {
+                  S.viewing = h.at
+                  setHistOpen(false)
+                }}
+              >
+                <span style={{ fontSize: 11, color: muted, whiteSpace: 'nowrap' }}>{fmtTime(h.at)}</span>
+                <span style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{h.preview || '（空）'}</span>
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    S.removeHistory(h.at)
+                  }}
+                  title="删除这条历史"
+                  style={{ fontSize: 11, color: muted, padding: '0 4px' }}
+                >
+                  ✕
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* 回看横幅 */}
+      {viewingHist && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, padding: '5px 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted }}>
+          正在查看历史（{fmtTime(S.viewing!)}）· 只读
+          <span style={{ flex: 1 }} />
+          <button
+            onClick={() => (S.viewing = null)}
+            style={{ fontSize: 12, padding: '1px 10px', borderRadius: 4, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, cursor: 'pointer' }}
+          >
+            回到最新
+          </button>
+        </div>
+      )}
 
       {/* 流水 */}
       <div
@@ -135,7 +208,7 @@ export const AiPanelComp = observer(() => {
         }}
         style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}
       >
-        {S.items.length === 0 && (
+        {!viewingHist && S.items.length === 0 && (
           <div style={{ color: muted, fontSize: 13, lineHeight: 1.9 }}>
             光标所在的那篇笔记，它看得见（靠 ky 自己用 ev 去读）。
             <br />
@@ -154,7 +227,7 @@ export const AiPanelComp = observer(() => {
           </div>
         )}
 
-        {S.items.map((it, i) => {
+        {S.displayItems.map((it, i) => {
           if (it.kind === 'user')
             return (
               <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '86%', background: 'var(--nk-accent-soft)', borderRadius: 10, padding: '6px 10px', fontSize: 14, color: ink, lineHeight: 1.7 }}>
@@ -225,8 +298,8 @@ export const AiPanelComp = observer(() => {
         })}
       </div>
 
-      {/* 输入区 */}
-      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px' }}>
+      {/* 输入区（回看历史时隐藏，避免误发到当前会话） */}
+      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', display: viewingHist ? 'none' : 'block' }}>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={draft}
