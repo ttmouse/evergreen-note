@@ -75,6 +75,7 @@ const phosphorIcons = {
   PaintBrushBroad: PaintBrushBroadIcon,
   Palette: PaletteIcon,
   Paperclip: PaperclipIcon,
+  PaperPlaneTilt: PaperPlaneTiltIcon,
   Paragraph: ParagraphIcon,
   PencilSimple: PencilSimpleIcon,
   Play: PlayIcon,
@@ -88,6 +89,7 @@ const phosphorIcons = {
   Scissors: ScissorsIcon,
   SidebarSimple: SidebarSimpleIcon,
   Sigma: SigmaIcon,
+  Stop: StopIcon,
   SignOut: SignOutIcon,
   SortAscending: SortAscendingIcon,
   SortDescending: SortDescendingIcon,
@@ -273,7 +275,9 @@ export type SvgIconName = keyof typeof iconMap
 export const icons = Object.fromEntries(Object.keys(iconMap).map((key) => [key, key])) as { [K in SvgIconName]: K }
 
 export function SvgIcon(props: { name?: SvgIconName; path?: string; width?: number; height?: number; color?: string }) {
-  const { name, width = 16, height = 16, color } = props
+  // height 默认跟随 width：写死 16 会让所有 width≠16 的调用拿到纵向拉伸的图标
+  // （实测 width={12} 渲染成 12x16；project 里还有 11/14 两处同样中招）
+  const { name, width = 16, height = width, color } = props
   if (!name) {
     throw new Error('SvgIcon: name is required')
   }
