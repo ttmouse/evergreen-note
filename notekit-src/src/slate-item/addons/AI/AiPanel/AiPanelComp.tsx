@@ -5,6 +5,7 @@ import { useAddons } from '../../../hooks/useAddons'
 import { aiPanelStore as S, NoteRef } from './AiPanelStore'
 import { groupBlocks } from './phases'
 import { AiActivityTrack, ActivityOrb, AI_ACTIVITY_CSS } from './AiActivity'
+import { XIcon, ClockCounterClockwiseIcon, PlusIcon, CaretDoubleRightIcon, ArrowDownIcon, ArrowCounterClockwiseIcon, PaperPlaneTiltIcon, StopIcon } from '@phosphor-icons/react'
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -208,10 +209,21 @@ export const AiPanelComp = observer(() => {
         </span>
         <button
           onClick={() => setHistOpen((v) => !v)}
-          title="切换会话：点任意一段都能直接接着聊"
-          style={{ border: 'none', background: 'none', color: histOpen || convs.length > 1 ? ink : muted, cursor: 'pointer', fontSize: 12 }}
+          title={`切换会话：点任意一段都能直接接着聊${convs.length > 1 ? `（共 ${convs.length} 段）` : ''}`}
+          aria-label="历史会话"
+          style={{
+            border: 'none',
+            background: 'none',
+            color: histOpen || convs.length > 1 ? ink : muted,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 2,
+            padding: 2,
+          }}
         >
-          历史{convs.length > 1 ? `（${convs.length - 1}）` : ''}
+          <ClockCounterClockwiseIcon size={14} weight={histOpen ? 'fill' : 'regular'} />
+          {convs.length > 1 && <span style={{ fontSize: 10, lineHeight: 1 }}>{convs.length - 1}</span>}
         </button>
         {/* 「清空」的语义收窄：它从来不删除任何东西，实际是「收工 + 另起一段」，
             名字却读着像删除。换成名副其实的入口，并把空段的静默 no-op 变成明确禁用
@@ -220,19 +232,27 @@ export const AiPanelComp = observer(() => {
           onClick={() => canNewConv && S.clear()}
           disabled={!canNewConv}
           title={canNewConv ? '新建对话：当前这段会留在历史里，另起一段空白的' : '当前已经是新对话了'}
+          aria-label="新对话"
           style={{
             border: 'none',
             background: 'none',
             color: canNewConv ? ink : muted,
-            opacity: canNewConv ? 1 : 0.5,
+            opacity: canNewConv ? 1 : 0.4,
             cursor: canNewConv ? 'pointer' : 'default',
-            fontSize: 12,
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: 2,
           }}
         >
-          ＋ 新对话
+          <PlusIcon size={14} />
         </button>
-        <button onClick={() => extArea?.foldup(true)} style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', fontSize: 12 }}>
-          收起
+        <button
+          onClick={() => extArea?.foldup(true)}
+          title="收起面板"
+          aria-label="收起面板"
+          style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', padding: 2 }}
+        >
+          <CaretDoubleRightIcon size={14} />
         </button>
 
         {/* 历史下拉 */}
@@ -276,9 +296,9 @@ export const AiPanelComp = observer(() => {
                     S.removeConversation(c.id)
                   }}
                   title="从列表里删掉这一段（agent 侧会话不动）"
-                  style={{ fontSize: 11, color: muted, padding: '0 4px' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', color: muted, padding: '0 4px' }}
                 >
-                  ✕
+                  <XIcon size={11} />
                 </span>
               </div>
             ))}
@@ -350,7 +370,7 @@ export const AiPanelComp = observer(() => {
 
                 if (it.kind === 'user')
                   return (
-                    <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '86%', background: 'var(--nk-accent-soft)', borderRadius: 10, padding: '6px 10px', fontSize: 14, color: ink, lineHeight: 1.7 }}>
+                    <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '86%', background: 'var(--nk-hover)', borderRadius: 10, padding: '6px 10px', fontSize: 14, color: ink, lineHeight: 1.7 }}>
                       {it.text}
                     </div>
                   )
@@ -367,7 +387,7 @@ export const AiPanelComp = observer(() => {
                   <div style={{ fontSize: 12, color: muted }}>已处理：{it.decided}</div>
                 ) : (
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => S.answer(it.requestId, 'allow')} style={{ fontSize: 13, padding: '3px 12px', borderRadius: 5, border: `1px solid ${acc}`, background: acc, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                    <button onClick={() => S.answer(it.requestId, 'allow')} style={{ fontSize: 13, padding: '3px 12px', borderRadius: 5, border: 'none', background: ink, color: 'var(--nk-surface)', cursor: 'pointer', fontWeight: 600 }}>
                       允许一次
                     </button>
                     <button onClick={() => S.answer(it.requestId, 'always')} style={{ fontSize: 13, padding: '3px 12px', borderRadius: 5, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, cursor: 'pointer' }}>
@@ -407,9 +427,12 @@ export const AiPanelComp = observer(() => {
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
             <button
               onClick={jumpToBottom}
+              title="回到最新"
+              aria-label="回到最新"
               style={{
-                fontSize: 12,
-                padding: '2px 12px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: 3,
                 borderRadius: 12,
                 border: `1px solid ${line}`,
                 background: 'var(--nk-surface)',
@@ -417,7 +440,7 @@ export const AiPanelComp = observer(() => {
                 cursor: 'pointer',
               }}
             >
-              ↓ 回到最新
+              <ArrowDownIcon size={12} />
             </button>
           </div>
         )}
@@ -435,12 +458,44 @@ export const AiPanelComp = observer(() => {
             style={{ flex: 1, font: 'inherit', fontSize: 13, padding: '6px 10px', borderRadius: 6, border: `1px solid var(--nk-line-strong)`, background: 'var(--nk-canvas)', color: ink, outline: 'none' }}
           />
           {S.busy ? (
-            <button onClick={() => S.cancel()} style={{ fontSize: 13, padding: '6px 14px', borderRadius: 6, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, cursor: 'pointer' }}>
-              停止
+            <button
+              onClick={() => S.cancel()}
+              title="停止"
+              aria-label="停止"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 30,
+                height: 30,
+                borderRadius: 6,
+                border: `1px solid ${line}`,
+                background: 'var(--nk-surface)',
+                color: ink,
+                cursor: 'pointer',
+              }}
+            >
+              <StopIcon size={13} />
             </button>
           ) : (
-            <button onClick={send} style={{ fontSize: 13, padding: '6px 14px', borderRadius: 6, border: `1px solid ${acc}`, background: acc, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-              发送
+            <button
+              onClick={send}
+              title="发送"
+              aria-label="发送"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 30,
+                height: 30,
+                borderRadius: 6,
+                border: 'none',
+                background: ink,
+                color: 'var(--nk-surface)',
+                cursor: 'pointer',
+              }}
+            >
+              <PaperPlaneTiltIcon size={14} />
             </button>
           )}
         </div>
@@ -451,9 +506,23 @@ export const AiPanelComp = observer(() => {
                 const n = await S.undoTurn()
                 if (n > 0) S.clear()
               }}
-              style={{ fontSize: 12, padding: '2px 10px', borderRadius: 5, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, cursor: 'pointer' }}
+              title={`撤销本次 AI 改动（${S.snapCount} 个节点）`}
+              aria-label={`撤销本次 AI 改动（${S.snapCount} 个节点）`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                fontSize: 12,
+                padding: '2px 8px',
+                borderRadius: 5,
+                border: `1px solid ${line}`,
+                background: 'var(--nk-surface)',
+                color: ink,
+                cursor: 'pointer',
+              }}
             >
-              撤销本次 AI 改动（{S.snapCount} 个节点）
+              <ArrowCounterClockwiseIcon size={12} />
+              撤销改动<span style={{ color: muted }}>{S.snapCount}</span>
             </button>
           )}
           <span>

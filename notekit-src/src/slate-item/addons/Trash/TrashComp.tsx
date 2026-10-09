@@ -13,6 +13,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import { useEditorProps } from '../EditorView/useEditorProps'
 import Chip from '@mui/material/Chip'
 import { Tip } from '../../components/Tip/Tip'
+import { CaretDownIcon } from '@phosphor-icons/react'
 import { $t } from '../../../i18n'
 import { ScrollLoad2 } from '../../notekit-ui/components/ScrollLoad/ScrollLoad'
 import { showSnack } from '../../utils/msg/showSnack'
@@ -111,7 +112,8 @@ function TrashGroupComp(props: { item: UnitPersist }) {
   return (
     <div key={date} className="trash-group">
       <div className="group-title">
-        ▼ {$t`trash.deleted_at`} {fromNow(date)}
+        <CaretDownIcon size={12} weight="bold" style={{ verticalAlign: '-1px', marginRight: 4 }} />
+        {$t`trash.deleted_at`} {fromNow(date)}
       </div>
       <Tip title={$t('trash.restore_below_items', { count })} placement="left">
         <Chip
