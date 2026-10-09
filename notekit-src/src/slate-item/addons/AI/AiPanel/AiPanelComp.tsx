@@ -115,6 +115,8 @@ export const AiPanelComp = observer(() => {
   const viewing: number | null = activeConv?.id ?? null
   // 当前不是在最新的那段上（列表按最近活动排序）→ 给一条横幅说明你在看哪一段
   const isOlder = convs.length > 1 && !!activeConv && convs[0]?.id !== activeConv.id
+  // 当前这段是不是空的 —— 空段本来就是个新对话，再按「新对话」没有意义
+  const canNewConv = (activeConv?.items?.length ?? 0) > 0
 
   return (
     <div
@@ -147,8 +149,23 @@ export const AiPanelComp = observer(() => {
         >
           历史{convs.length > 1 ? `（${convs.length - 1}）` : ''}
         </button>
-        <button onClick={() => S.clear()} style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', fontSize: 12 }}>
-          清空
+        {/* 「清空」的语义收窄：它从来不删除任何东西，实际是「收工 + 另起一段」，
+            名字却读着像删除。换成名副其实的入口，并把空段的静默 no-op 变成明确禁用
+            （原先在空白段上点，什么都不会发生 —— 那正是「没法新建对话」的由来）。 */}
+        <button
+          onClick={() => canNewConv && S.clear()}
+          disabled={!canNewConv}
+          title={canNewConv ? '新建对话：当前这段会留在历史里，另起一段空白的' : '当前已经是新对话了'}
+          style={{
+            border: 'none',
+            background: 'none',
+            color: canNewConv ? ink : muted,
+            opacity: canNewConv ? 1 : 0.5,
+            cursor: canNewConv ? 'pointer' : 'default',
+            fontSize: 12,
+          }}
+        >
+          ＋ 新对话
         </button>
         <button onClick={() => extArea?.foldup(true)} style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', fontSize: 12 }}>
           收起
@@ -174,7 +191,7 @@ export const AiPanelComp = observer(() => {
           >
             {convs.length <= 1 && (
               <div style={{ padding: '10px 8px', fontSize: 12, color: muted }}>
-                还没有别的会话。点「清空」会把当前这段留在列表里，另起一段新的；每段各有自己的上下文，切过去可以直接接着聊。
+                还没有别的会话。点「＋ 新对话」会把当前这段留在列表里，另起一段空白的；每段各有自己的上下文，切过去可以直接接着聊。
               </div>
             )}
             {convs.map((c) => (
