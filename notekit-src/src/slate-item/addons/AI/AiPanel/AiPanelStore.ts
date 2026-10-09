@@ -5,7 +5,11 @@ export type AiItem =
   | { kind: 'user'; at: number; text: string }
   | { kind: 'text'; at: number; text: string }
   | { kind: 'thought'; at: number; text: string; open: boolean }
-  | { kind: 'tool'; at: number; id: string; title: string; status: string; locations?: unknown }
+  /**
+   * toolKind = ACP 原生的 tool_call.kind（read / edit / execute / search / fetch / …）。
+   * 活动轨道靠它把工具调用折成相位，别再丢掉。
+   */
+  | { kind: 'tool'; at: number; id: string; title: string; status: string; toolKind?: string; locations?: unknown }
   | { kind: 'permission'; at: number; requestId: string; toolCall: unknown; decided?: string }
   | { kind: 'error'; at: number; text: string }
   | { kind: 'exit'; at: number; text: string }
@@ -205,6 +209,7 @@ export class AiPanelStore {
             id: ev.toolCallId ?? `t${this.items.length}`,
             title: ev.title ?? 'tool',
             status: ev.status ?? 'pending',
+            toolKind: ev.kind,
             locations: ev.locations,
           })
           break
@@ -212,7 +217,15 @@ export class AiPanelStore {
           for (let i = this.items.length - 1; i >= 0; i--) {
             const it = this.items[i]
             if (it.kind === 'tool' && it.id === ev.toolCallId) {
-              this.items[i] = { ...it, status: ev.status ?? it.status }
+              // title / kind 只在首次 tool_call 里出现是常态，但 update 里也可能补上；
+              // 状态无条件跟随，其余字段「有才覆盖」。
+              this.items[i] = {
+                ...it,
+                status: ev.status ?? it.status,
+                title: ev.title || it.title,
+                toolKind: ev.kind || it.toolKind,
+                locations: ev.locations || it.locations,
+              }
               break
             }
           }

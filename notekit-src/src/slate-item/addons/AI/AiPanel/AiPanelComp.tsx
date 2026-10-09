@@ -3,6 +3,8 @@ import { observer } from 'mobx-react'
 import { marked } from 'marked'
 import { useAddons } from '../../../hooks/useAddons'
 import { aiPanelStore as S, NoteRef } from './AiPanelStore'
+import { groupBlocks } from './phases'
+import { AiActivityTrack, ActivityOrb, AI_ACTIVITY_CSS } from './AiActivity'
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -24,22 +26,6 @@ const ink = 'var(--nk-ink)'
 const muted = 'var(--nk-muted)'
 const line = 'var(--nk-line)'
 const acc = 'var(--nk-accent)'
-
-const chip = (status: string): React.CSSProperties => {
-  const running = status === 'in_progress' || status === 'pending'
-  const failed = status === 'failed'
-  return {
-    fontSize: 12,
-    padding: '1px 7px',
-    borderRadius: 9,
-    border: `1px solid ${failed ? '#d9534f' : running ? acc : line}`,
-    color: failed ? '#d9534f' : running ? acc : muted,
-    background: running ? 'var(--nk-accent-soft)' : 'transparent',
-    whiteSpace: 'nowrap',
-  }
-}
-
-const label = (s: string) => ({ in_progress: '进行中', pending: '排队', completed: '完成', failed: '失败' } as any)[s] || s
 
 const AI_MD_CSS = `
 .ai-md { font-size: 14px; line-height: 1.85; color: ${ink}; word-break: break-word; }
@@ -117,7 +103,7 @@ export const AiPanelComp = observer(() => {
         background: 'var(--nk-surface)',
       }}
     >
-      <style>{AI_MD_CSS}</style>
+      <style>{AI_MD_CSS}{AI_ACTIVITY_CSS}</style>
       {/* 头 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, boxSizing: 'border-box', flexShrink: 0, padding: '0 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted, position: 'relative' }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'block' }} />
@@ -226,43 +212,32 @@ export const AiPanelComp = observer(() => {
           </div>
         )}
 
-        {S.displayItems.map((it, i) => {
-          if (it.kind === 'user')
-            return (
-              <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '86%', background: 'var(--nk-accent-soft)', borderRadius: 10, padding: '6px 10px', fontSize: 14, color: ink, lineHeight: 1.7 }}>
-                {it.text}
-              </div>
-            )
+        {(() => {
+          // 连续的 thought+tool 折成一个活动轨道；其余（正文 / 权限 / 报错）原样流过。
+          // 刻意不用 useMemo：Store 里的 items 是原地 push 的观察数组，
+          // 引用不变会让 memo 永不失效 —— 每次渲染重算，几十条的量级可以忽略。
+          const blocks = groupBlocks(S.displayItems)
+          const lastIdx = blocks.length - 1
+          const lastIsActivity = !viewingHist && S.busy && lastIdx >= 0 && blocks[lastIdx].type === 'activity'
+          return (
+            <>
+              {blocks.map((b, bi) => {
+                if (b.type === 'activity')
+                  return <AiActivityTrack key={b.key} trackKey={b.key} phases={b.phases} live={lastIsActivity && bi === lastIdx} />
+                const it = b.item
+                const i = b.i
 
-          if (it.kind === 'text')
-            return (
-              <AiMarkdown key={i} text={it.text} />
-            )
+                if (it.kind === 'user')
+                  return (
+                    <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '86%', background: 'var(--nk-accent-soft)', borderRadius: 10, padding: '6px 10px', fontSize: 14, color: ink, lineHeight: 1.7 }}>
+                      {it.text}
+                    </div>
+                  )
 
-          if (it.kind === 'thought')
-            return (
-              <div key={i} style={{ borderLeft: `2px solid ${line}`, paddingLeft: 8, fontSize: 12, color: muted, cursor: 'pointer' }} onClick={() => S.toggleThought(it.at)}>
-                <div>它在想…（{it.text.length} 字）{it.open ? ' ▾' : ' ▸'}</div>
-                {it.open && <div style={{ marginTop: 4, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{it.text}</div>}
-              </div>
-            )
+                if (it.kind === 'text') return <AiMarkdown key={i} text={it.text} />
 
-          if (it.kind === 'tool')
-            return (
-              <div key={i} style={{ border: `1px solid ${line}`, borderRadius: 6, padding: '6px 9px', fontSize: 13, background: 'var(--nk-canvas)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontWeight: 600, color: ink }}>{it.title}</span>
-                  <span style={{ flex: 1 }} />
-                  <span style={chip(it.status)}>{label(it.status)}</span>
-                </div>
-                {Array.isArray(it.locations) && it.locations.length > 0 && (
-                  <div style={{ marginTop: 5, fontSize: 12, color: muted }}>{it.locations.map((l: any) => l?.path || JSON.stringify(l)).join(' · ')}</div>
-                )}
-              </div>
-            )
-
-          if (it.kind === 'permission')
-            return (
+                if (it.kind === 'permission')
+                  return (
               <div key={i} style={{ border: `1px solid var(--nk-line-strong)`, borderRadius: 6, padding: 10, background: 'var(--nk-warn-soft, rgba(163,106,0,.08))' }}>
                 <div style={{ fontSize: 13, lineHeight: 1.7, color: ink, marginBottom: 8 }}>
                   它请求权限：<b>{(it.toolCall as any)?.title || (it.toolCall as any)?.kind || '未知操作'}</b>
@@ -293,8 +268,13 @@ export const AiPanelComp = observer(() => {
               </div>
             )
 
-          return null
-        })}
+                return null
+              })}
+              {/* 活着但还没有活相位（比如正在出正文）—— 底部一行呼吸，别让面板看着卡住 */}
+              {!viewingHist && S.busy && !lastIsActivity && <ActivityOrb label="跟进中" />}
+            </>
+          )
+        })()}
       </div>
 
       {/* 输入区（回看历史时隐藏，避免误发到当前会话） */}
