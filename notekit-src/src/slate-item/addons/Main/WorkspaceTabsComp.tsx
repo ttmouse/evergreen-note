@@ -22,6 +22,7 @@ export const WorkspaceTabsComp = observer(() => {
   const dragKeyRef = useRef<string | null>(null) // 同步拖拽态（state 只负责触发渲染）
   const pressedKeyRef = useRef<string | null>(null)
   const startXRef = useRef(0)
+  const startYRef = useRef(0)
   const originXRef = useRef(0) // 标签条视口左缘
   const ghostLeftRef = useRef(0) // 浮层初始视口 X（position:fixed 用）
   const ghostTopRef = useRef(0)
@@ -30,6 +31,7 @@ export const WorkspaceTabsComp = observer(() => {
   const baseWRef = useRef(new Map<string, number>())
   const lastXRef = useRef<number | null>(null) // 上一次指针的内容相对 X（判穿越）
   const offsetXRef = useRef(0)
+  const offsetYRef = useRef(0)
   const rafRef = useRef(0)
   const ghostRef = useRef<HTMLDivElement | null>(null)
   const prevLeftRef = useRef(new Map<string, number>()) // FLIP 基线（offsetLeft）
@@ -127,22 +129,27 @@ export const WorkspaceTabsComp = observer(() => {
       const key = pressedKeyRef.current
       if (!key) return
       const dx = e.clientX - startXRef.current
+      const dy = e.clientY - startYRef.current
       if (!dragKeyRef.current) {
-        if (Math.abs(dx) <= DRAG_THRESHOLD) return // 阈值内视为点击
+        // 水平或垂直任一方向超过阈值才进拖拽态；都未超过视为点击
+        if (Math.abs(dx) <= DRAG_THRESHOLD && Math.abs(dy) <= DRAG_THRESHOLD) return
         dragKeyRef.current = key
         offsetXRef.current = dx
+        offsetYRef.current = dy
         lastXRef.current = contentX(e.clientX)
         baselineFlip() // 进入拖拽态先基线化，第一次换位也有动画
         main.selectWorkspaceTab(key) // 进入拖拽态的同时激活该标签
         setDraggingKey(key)
         return
       }
-      // 跟手：只写 ref + rAF 直写 transform，不触发渲染
+      // 跟手：副本两轴都跟随；只写 ref + rAF 直写 transform，不触发渲染。
+      // 排序只由水平位置决定，垂直移动不改顺序。
       offsetXRef.current = dx
+      offsetYRef.current = dy
       if (!rafRef.current) {
         rafRef.current = requestAnimationFrame(() => {
           rafRef.current = 0
-          if (ghostRef.current) ghostRef.current.style.transform = `translate3d(${offsetXRef.current}px, 0, 0)`
+          if (ghostRef.current) ghostRef.current.style.transform = `translate3d(${offsetXRef.current}px, ${offsetYRef.current}px, 0)`
         })
       }
       const px = contentX(e.clientX)
@@ -199,7 +206,7 @@ export const WorkspaceTabsComp = observer(() => {
   // 浮层首帧对齐：setDraggingKey 的渲染提交后、绘制前补上初始 transform，避免先闪原位
   useLayoutEffect(() => {
     if (draggingKey && ghostRef.current) {
-      ghostRef.current.style.transform = `translate3d(${offsetXRef.current}px, 0, 0)`
+      ghostRef.current.style.transform = `translate3d(${offsetXRef.current}px, ${offsetYRef.current}px, 0)`
     }
   }, [draggingKey])
 
@@ -210,6 +217,7 @@ export const WorkspaceTabsComp = observer(() => {
     event.preventDefault()
     pressedKeyRef.current = key
     startXRef.current = event.clientX
+    startYRef.current = event.clientY
     const rect = listRef.current?.getBoundingClientRect()
     originXRef.current = rect ? rect.left : 0
     const elRect = event.currentTarget.getBoundingClientRect()

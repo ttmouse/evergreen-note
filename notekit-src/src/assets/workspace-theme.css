@@ -1378,15 +1378,27 @@ body .workspace-tabs::-webkit-scrollbar { display: none; }
 body .workspace-tab {
   display: flex;
   align-items: center;
-  flex: 0 0 auto;
+  position: relative;
+  flex: 1 1 auto;
   gap: 6px;
   height: 32px;
-  max-width: 220px;
+  min-width: 85px;
+  max-width: 155px;
   padding: 0 4px 0 10px;
   border-radius: 9px;
   color: var(--nk-ink);
   cursor: grab;
   -webkit-app-region: no-drag;
+}
+/* 非激活标签之间的极弱分割线：任一侧是激活标签就不显示，激活标签读成连续凸起块 */
+body .workspace-tab:not(.is-active) + .workspace-tab:not(.is-active)::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 6px;
+  width: 1px;
+  height: calc(100% - 12px);
+  background: var(--nk-line);
 }
 body .workspace-tab:active { cursor: grabbing; }
 body .workspace-tab { transition: transform 120ms ease; }
@@ -1415,8 +1427,10 @@ body .workspace-tab.is-active,
 body .workspace-tab:hover { background: var(--nk-tab-hover); }
 body .workspace-tab-title {
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  /* 文字过长不用省略号硬切，右缘 14px 柔和渐隐（渐隐到透明即跟随标签自身背景色） */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent);
 }
 body .workspace-tab-close {
   display: inline-flex;
