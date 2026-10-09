@@ -304,8 +304,11 @@ export const AiPanelComp = observer(() => {
         })()}
       </div>
 
-      {/* 输入区（回看历史时隐藏，避免误发到当前会话） */}
-      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', display: viewingHist ? 'none' : 'block', flexShrink: 0 }}>
+      {/* 输入区
+          这里**永远不隐藏**。原先回看历史时是 display:none —— 那是代码里唯一能让
+          输入框整个消失的路径，而症状（输入框不见 + 底下空白）跟「面板坏了」无法区分。
+          改成可见但禁用：意图一样（不误发到当前会话），但用户永远看得见它在哪。 */}
+      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', flexShrink: 0, opacity: viewingHist ? 0.55 : 1 }}>
         {/* 离底了就给个明确出口，别让人靠反复滚找输入框 */}
         {!atBottom && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
@@ -335,12 +338,26 @@ export const AiPanelComp = observer(() => {
                 send()
               }
             }}
-            placeholder={S.busy ? '它正在干活…（可点停止）' : '让它改这篇笔记，或问它点什么'}
+            disabled={viewingHist}
+            placeholder={
+              viewingHist
+                ? '正在回看历史（只读）—— 点上方「回到最新」继续'
+                : S.busy
+                  ? '它正在干活…（可点停止）'
+                  : '让它改这篇笔记，或问它点什么'
+            }
             style={{ flex: 1, font: 'inherit', fontSize: 13, padding: '6px 10px', borderRadius: 6, border: `1px solid var(--nk-line-strong)`, background: 'var(--nk-canvas)', color: ink, outline: 'none' }}
           />
           {S.busy ? (
             <button onClick={() => S.cancel()} style={{ fontSize: 13, padding: '6px 14px', borderRadius: 6, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, cursor: 'pointer' }}>
               停止
+            </button>
+          ) : viewingHist ? (
+            <button
+              onClick={() => (S.viewing = null)}
+              style={{ fontSize: 13, padding: '6px 14px', borderRadius: 6, border: `1px solid ${acc}`, background: acc, color: '#fff', cursor: 'pointer', fontWeight: 600 }}
+            >
+              回到最新
             </button>
           ) : (
             <button onClick={send} style={{ fontSize: 13, padding: '6px 14px', borderRadius: 6, border: `1px solid ${acc}`, background: acc, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>

@@ -27,6 +27,35 @@ const clampWidth = (n: number) => Math.max(320, Math.min(900, n))
 const AiPanelHost = observer(() => {
   const [width, setWidth] = useState(loadWidth)
   const draggingRef = useRef(false)
+  const hostRef = useRef<HTMLDivElement>(null)
+  /**
+   * 视口夹取：只在「父级给出的高度超出窗口」时才介入。
+   *
+   * 为什么需要：面板是 flex 行里 align-items:stretch 的成员，高度由父级决定。
+   * 一旦某个祖先被内容抻得比窗口高（实测在某些布局状态下会发生），
+   * 面板就会跟着变高 → 底部的输入区被排到窗口外 → 表现为「输入框完全不见、底下空白」。
+   * 正常情况父级高度 == 可用高度，这里返回 null，一点行为都不变。
+   */
+  const [cap, setCap] = useState<number | null>(null)
+  useEffect(() => {
+    const el = hostRef.current
+    if (!el) return
+    const compute = () => {
+      const rect = el.getBoundingClientRect()
+      const avail = window.innerHeight - rect.top
+      const parentH = el.parentElement?.getBoundingClientRect().height ?? avail
+      setCap(parentH > avail + 1 ? Math.max(200, Math.floor(avail)) : null)
+    }
+    compute()
+    window.addEventListener('resize', compute)
+    const ro = new ResizeObserver(compute)
+    if (el.parentElement) ro.observe(el.parentElement)
+    ro.observe(el)
+    return () => {
+      window.removeEventListener('resize', compute)
+      ro.disconnect()
+    }
+  }, [])
 
   // 拖拽期间挂全局监听（move 挂在 window 上，出面板也不中断）；松手即持久化。
   useEffect(() => {
@@ -56,15 +85,18 @@ const AiPanelHost = observer(() => {
   if (!aiPanelStore.open) return null
   return (
     <div
+      ref={hostRef}
       className="ai-panel-area"
+      data-height-cap={cap ?? 'none'}
       style={{
         flex: `0 0 ${width}px`,
         width,
-        height: '100%',
+        height: cap ?? '100%',
         // 这一层是面板的宿主：不许被父级顶高、也不许超出父级 ——
         // 否则标题栏那点高度就能把底部的输入框推出窗口（且窗口本身不会滚）。
+        // cap 有值时（父级比窗口还高）连 100% 都不信，直接用实测可用高度。
         minHeight: 0,
-        maxHeight: '100%',
+        maxHeight: cap ?? '100%',
         overflow: 'hidden',
         borderLeft: '1px solid var(--nk-line)',
         background: 'var(--nk-surface)',
