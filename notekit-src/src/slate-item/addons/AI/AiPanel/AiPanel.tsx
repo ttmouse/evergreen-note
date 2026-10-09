@@ -149,7 +149,7 @@ export function createAiPanelAddon({ app, $ }: NewAddonParams) {
       // 右上角工具条图标（与 DateTool/Andy 同一挂点），点击开/合面板
       ;($.main as any).addExtraCommands({
         aiPanel: {
-          title: '就地助手（⌥⇧9）',
+          title: 'AI（⌥⇧9）',
           icon: 'svg_ai',
           onClick: () => this.toggle(),
         },
@@ -165,7 +165,7 @@ export function createAiPanelAddon({ app, $ }: NewAddonParams) {
     addonCommands() {
       return {
         aiPanel: {
-          title: '就地助手',
+          title: 'AI',
           hotkey: 'mod+shift+9',
           context: 'global',
           handle: () => this.open(),

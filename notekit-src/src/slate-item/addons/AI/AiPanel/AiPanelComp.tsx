@@ -121,7 +121,6 @@ export const AiPanelComp = observer(() => {
       {/* 头 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, boxSizing: 'border-box', flexShrink: 0, padding: '0 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted, position: 'relative' }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'block' }} />
-        <span style={{ letterSpacing: '.04em' }}>就地助手</span>
         <span style={{ flex: 1 }} />
         <span title={S.agent || ''} style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {S.agent || (S.connected ? '连接中…' : '未连接')}
