@@ -198,6 +198,41 @@ const tool = (title, toolKind, status = 'completed', rawInput) =>
 }
 
 {
+  // ---- 表不漂：**能分类就必须有动词** ----
+  // 旧版是五张并行表（token→相位 / 连写名→相位 / token→动词 / 连写名→动词 / 子类 token 集合），
+  // 给 grep 补了分类却忘了补动词，行里就显示「调用」——而且不报错。这条用例专盯它。
+  const names = [
+    'bash', 'shell', 'run_script', 'bash_output', 'kill_shell', 'my_custom_bash', 'terminal',
+    'read_file', 'readfile', 'read_thread', 'view', 'cat', 'ls', 'list', 'tasklist', 'todoread',
+    'grep', 'glob', 'web_search', 'search_thread', 'find', 'web_fetch', 'fetch', 'browse',
+    'write_file', 'create', 'mkdir', 'edit_file', 'patch', 'str_replace_editor', 'todowrite',
+    'delete_file', 'remove', 'move_file', 'rename', 'skill',
+  ]
+  for (const nm of names) {
+    const kind = phaseKindOfName(nm)
+    const verb = rowForTool(tool(nm, 'other')).verb
+    ok(`表不漂：${nm} 能分类就必须有动词`, kind === null || verb !== '调用', `kind=${kind} verb=${verb}`)
+  }
+}
+
+{
+  // ---- 子类计数与行动词**同源**（同一张表的两个属性，改一个必须改另一个）----
+  const only = (nm) => phaseLabel(buildPhases([tool(nm, 'other')])[0], false)
+  eq('同源：write_file 行动词「新建」', rowForTool(tool('write_file', 'other')).verb, '新建')
+  eq('同源：write_file 计入「新建 1」', only('write_file'), { verb: '已修改', rest: '新建 1' })
+  eq('同源：delete_file 行动词「删除」', rowForTool(tool('delete_file', 'other')).verb, '删除')
+  eq('同源：delete_file 计入「删除 1」', only('delete_file'), { verb: '已修改', rest: '删除 1' })
+  eq('同源：move_file 行动词「移动」', rowForTool(tool('move_file', 'other')).verb, '移动')
+  eq('同源：move_file 计入「移动 1」', only('move_file'), { verb: '已修改', rest: '移动 1' })
+  eq('同源：edit_file 落在兜底的「编辑」', [rowForTool(tool('edit_file', 'other')).verb, only('edit_file')],
+    ['编辑', { verb: '已修改', rest: '编辑 1' }])
+  // skill 归 generic（不影响轨道分相位），但行上动词必须具体
+  eq('skill 相位是 generic', phaseKindOfName('skill'), 'generic')
+  eq('skill 行动词具体', rowForTool(tool('skill', 'other')).verb, '用了技能')
+  eq('skill 相位文案', only('skill'), { verb: '已使用', rest: '' })
+}
+
+{
   // 真机形状：DSH 的 title 只有工具名，内容在 rawInput 里
   eq('行：bash + rawInput.command → 执行 <命令>',
     rowForTool(tool('bash', 'other', 'in_progress', { command: 'pwd && ls -la' })),

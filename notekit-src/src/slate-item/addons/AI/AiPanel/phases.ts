@@ -14,9 +14,9 @@ import type { AiItem } from './AiPanelStore'
 
 export type PhaseKind = 'thinking' | 'exploring' | 'making' | 'running' | 'generic'
 
-export type ThoughtItem = Extract<AiItem, { kind: 'thought' }>
+type ThoughtItem = Extract<AiItem, { kind: 'thought' }>
 export type ToolItem = Extract<AiItem, { kind: 'tool' }>
-export type Part = ThoughtItem | ToolItem
+type Part = ThoughtItem | ToolItem
 
 export type Phase = {
   kind: PhaseKind
@@ -30,45 +30,115 @@ export const MAX_VISIBLE_PHASES = 8
 
 const isPart = (it: AiItem): it is Part => it.kind === 'thought' || it.kind === 'tool'
 
+// ------------------------------------------------------------------ 工具表
+
 /**
- * ⚠️ 实测（2026-10-09 真机）：DSH 对**所有**工具都发 `kind: "other"`。
- * 所以相位**不能**只看 ACP 的 kind —— 那会把一切都压成 generic（"使用中 / 调用"）。
- * 这也正是 Alma 按工具名查表、而不是按 ACP kind 分类的原因。
+ * **一张表，多个属性。** 一个工具名对应的事实只有一组：它属于哪个相位、行上用哪个动词、
+ * 是否读文件（决定「N 个文件」还是「N 处」）、是否属于 making 的某个子类
+ * （决定「新建/编辑/删除/移动 N」怎么分）。
  *
- * 分类顺序：① 连写别名精确命中 → ② 分词后逐 token 精确命中 → ③ ACP 的 kind → ④ generic。
+ * 为什么坚持一张表：这里原先有五张并行表（token→相位、连写名→相位、token→动词、
+ * 连写名→动词、四个子类 token 集合）。给 `grep` 补了分类却忘了补动词，
+ * 行里就会显示「调用」——**而且不报错**。一个事实只在一处说，才不会漂。
  *
- * **这里刻意不做子串匹配**。子串猜看起来聪明，实际是 bug 工厂：
+ * key 是**归一化后的名或 token**（小写、去掉所有非字母数字）。
+ * 查表分两级：① 整名命中（覆盖 readfile / websearch 这类连写名）→ ② 分词命中
+ * （覆盖 my_custom_bash 这种带前缀的名）。
+ *
+ * ⚠️ **刻意不做子串匹配**。子串猜看起来聪明，实际是 bug 工厂：
  * `renew` 命中 write、`budget` 命中 get、`spreadsheet` 命中 read。
  * 猜错的代价（把只读的当成改动）远大于猜不出的代价（显示成「调用」，一眼就知道没归类）。
  */
-const TOOL_TOKEN_PHASE: Record<string, PhaseKind> = {
-  bash: 'running', shell: 'running', sh: 'running', zsh: 'running', terminal: 'running',
-  exec: 'running', execute: 'running', run: 'running', command: 'running', script: 'running',
-  read: 'exploring', view: 'exploring', cat: 'exploring', open: 'exploring', glob: 'exploring',
-  grep: 'exploring', search: 'exploring', find: 'exploring', list: 'exploring', ls: 'exploring',
-  fetch: 'exploring', web: 'exploring', browse: 'exploring', query: 'exploring', inspect: 'exploring',
-  write: 'making', edit: 'making', create: 'making', new: 'making', mkdir: 'making',
-  delete: 'making', remove: 'making', unlink: 'making', move: 'making', rename: 'making',
-  patch: 'making', apply: 'making', update: 'making', replace: 'making', append: 'making', insert: 'making',
-  todo: 'making',
+type ToolSpec = {
+  phase: PhaseKind
+  verb: string
+  /** 读文件类；配合 rawInput 里的 file_path 计入「N 个文件」 */
+  readsFile?: boolean
+  /** making 的子类，用于分项计数。缺省即「编辑」 */
+  makes?: 'create' | 'delete' | 'move'
 }
 
-/** 没有分隔符的连写名，分词分不开 —— 显式列出，不靠子串猜 */
-const TOOL_ALIAS_PHASE: Record<string, PhaseKind> = {
-  todowrite: 'making',
-  todoread: 'exploring',
-  readfile: 'exploring',
-  readthread: 'exploring',
-  searchthread: 'exploring',
-  websearch: 'exploring',
-  webfetch: 'exploring',
-  strreplaceeditor: 'making',
-  notebookedit: 'making',
-  runscript: 'running',
-  bashoutput: 'running',
-  killshell: 'running',
+const TOOLS: Record<string, ToolSpec> = {
+  // —— 执行
+  bash: { phase: 'running', verb: '执行' },
+  shell: { phase: 'running', verb: '执行' },
+  sh: { phase: 'running', verb: '执行' },
+  zsh: { phase: 'running', verb: '执行' },
+  terminal: { phase: 'running', verb: '执行' },
+  exec: { phase: 'running', verb: '执行' },
+  execute: { phase: 'running', verb: '执行' },
+  run: { phase: 'running', verb: '执行' },
+  command: { phase: 'running', verb: '执行' },
+  script: { phase: 'running', verb: '执行' },
+  bashoutput: { phase: 'running', verb: '执行' }, // 连写名
+  killshell: { phase: 'running', verb: '执行' }, // 连写名
+  runscript: { phase: 'running', verb: '执行' }, // 连写名
+
+  // —— 探索：读
+  read: { phase: 'exploring', verb: '查看', readsFile: true },
+  view: { phase: 'exploring', verb: '查看', readsFile: true },
+  cat: { phase: 'exploring', verb: '查看', readsFile: true },
+  open: { phase: 'exploring', verb: '查看', readsFile: true },
+  load: { phase: 'exploring', verb: '查看', readsFile: true },
+  get: { phase: 'exploring', verb: '查看' },
+  list: { phase: 'exploring', verb: '查看' },
+  ls: { phase: 'exploring', verb: '查看' },
+  readfile: { phase: 'exploring', verb: '查看', readsFile: true }, // 连写名
+  readthread: { phase: 'exploring', verb: '查看' }, // 连写名
+  searchthread: { phase: 'exploring', verb: '查看' }, // 连写名
+  todoread: { phase: 'exploring', verb: '查看' }, // 连写名
+  tasklist: { phase: 'exploring', verb: '查看' }, // 连写名
+  taskget: { phase: 'exploring', verb: '查看' }, // 连写名
+
+  // —— 探索：搜
+  glob: { phase: 'exploring', verb: '搜索' },
+  grep: { phase: 'exploring', verb: '搜索' },
+  search: { phase: 'exploring', verb: '搜索' },
+  find: { phase: 'exploring', verb: '搜索' },
+  query: { phase: 'exploring', verb: '搜索' },
+  inspect: { phase: 'exploring', verb: '搜索' },
+  websearch: { phase: 'exploring', verb: '搜索' }, // 连写名
+
+  // —— 探索：取
+  fetch: { phase: 'exploring', verb: '抓取' },
+  web: { phase: 'exploring', verb: '抓取' },
+  browse: { phase: 'exploring', verb: '抓取' },
+  http: { phase: 'exploring', verb: '抓取' },
+  url: { phase: 'exploring', verb: '抓取' },
+  webfetch: { phase: 'exploring', verb: '抓取' }, // 连写名
+
+  // —— 修改：新建
+  write: { phase: 'making', verb: '新建', makes: 'create' },
+  create: { phase: 'making', verb: '新建', makes: 'create' },
+  new: { phase: 'making', verb: '新建', makes: 'create' },
+  mkdir: { phase: 'making', verb: '新建', makes: 'create' },
+  touch: { phase: 'making', verb: '新建', makes: 'create' },
+
+  // —— 修改：编辑
+  edit: { phase: 'making', verb: '编辑' },
+  patch: { phase: 'making', verb: '编辑' },
+  apply: { phase: 'making', verb: '编辑' },
+  update: { phase: 'making', verb: '编辑' },
+  replace: { phase: 'making', verb: '编辑' },
+  append: { phase: 'making', verb: '编辑' },
+  insert: { phase: 'making', verb: '编辑' },
+  todo: { phase: 'making', verb: '编辑' },
+  strreplaceeditor: { phase: 'making', verb: '编辑' }, // 连写名
+  notebookedit: { phase: 'making', verb: '编辑' }, // 连写名
+  todowrite: { phase: 'making', verb: '编辑' }, // 连写名
+
+  // —— 修改：删除 / 移动（必须分项报，归进「编辑」就是把破坏性操作说轻）
+  delete: { phase: 'making', verb: '删除', makes: 'delete' },
+  remove: { phase: 'making', verb: '删除', makes: 'delete' },
+  unlink: { phase: 'making', verb: '删除', makes: 'delete' },
+  move: { phase: 'making', verb: '移动', makes: 'move' },
+  rename: { phase: 'making', verb: '移动', makes: 'move' },
+
+  // —— 用技能
+  skill: { phase: 'generic', verb: '用了技能' },
 }
 
+/** ACP 的 tool_call.kind 只在工具名认不出时兜底 —— 实测 DSH 一律发 "other"，不可靠 */
 const ACP_KIND_TO_PHASE: Record<string, PhaseKind> = {
   read: 'exploring',
   search: 'exploring',
@@ -80,9 +150,19 @@ const ACP_KIND_TO_PHASE: Record<string, PhaseKind> = {
   think: 'thinking',
 }
 
+const ACP_KIND_TO_VERB: Record<string, string> = {
+  read: '查看',
+  search: '搜索',
+  fetch: '抓取',
+  edit: '编辑',
+  delete: '删除',
+  move: '移动',
+  execute: '执行',
+  think: '思考',
+}
+
 /** 归一化：小写 + 去掉所有分隔符（`web_search` / `web-search` / `webSearch` → `websearch`） */
-const normalizeToolName = (name: unknown): string =>
-  String(name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+const normalizeToolName = (name: unknown): string => String(name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '')
 
 /** 分词（`read_file` → ['read','file']）；非 ASCII 名分词为空，走不出去就是 null */
 const toolTokens = (name: unknown): string[] =>
@@ -91,23 +171,28 @@ const toolTokens = (name: unknown): string[] =>
     .split(/[^a-z0-9]+/)
     .filter(Boolean)
 
-/** 工具名 → 相位；认不出返回 null（导出以便单测） */
-export function phaseKindOfName(name: unknown): PhaseKind | null {
+/** 工具名 → 规格；认不出返回 null */
+const specOf = (name: unknown): ToolSpec | null => {
   const flat = normalizeToolName(name)
   if (!flat) return null
-  if (TOOL_ALIAS_PHASE[flat]) return TOOL_ALIAS_PHASE[flat]
-  for (const t of toolTokens(name)) if (TOOL_TOKEN_PHASE[t]) return TOOL_TOKEN_PHASE[t]
-  return null
+  return TOOLS[flat] ?? toolTokens(name).map((t) => TOOLS[t]).find(Boolean) ?? null
+}
+
+/** 工具名 → 相位；认不出返回 null（导出以便单测） */
+export function phaseKindOfName(name: unknown): PhaseKind | null {
+  return specOf(name)?.phase ?? null
 }
 
 export function phaseKindOf(it: Part): PhaseKind {
   if (it.kind === 'thought') return 'thinking'
   return (
-    phaseKindOfName(it.title) ??                       // DSH 把原始工具名放在 title 里
+    phaseKindOfName(it.title) ?? // DSH 把原始工具名放在 title 里
     ACP_KIND_TO_PHASE[String(it.toolKind || '').toLowerCase()] ??
     'generic'
   )
 }
+
+// ------------------------------------------------------------------ 分相位
 
 /** 相邻同类合并成相位；非 thought/tool 的条目直接跳过（不进轨道） */
 export function buildPhases(items: AiItem[]): Phase[] {
@@ -129,57 +214,55 @@ export function countUnits(phases: Phase[]): number {
 
 export const allThinking = (phases: Phase[]): boolean => phases.every((p) => p.kind === 'thinking')
 
+// ------------------------------------------------------------------ 文案
+
 /** rawInput 的两种形状：直接给，或包一层 `{args:{...}}`（ACP 两种都见过） */
 const rawArgs = (it: ToolItem): Record<string, any> => {
   const raw = it.rawInput && typeof it.rawInput === 'object' ? (it.rawInput as Record<string, any>) : {}
   return raw.args && typeof raw.args === 'object' ? raw.args : raw
 }
 
-// 精确 token，不用子串：`get` 会误伤 get_weather，`cat` 会误伤 category
-const FILE_READ_TOKENS = new Set(['read', 'view', 'cat', 'open', 'load'])
-const CREATE_TOKENS = new Set(['write', 'create', 'new', 'mkdir', 'touch'])
-
-const hasAnyToken = (name: unknown, set: Set<string>): boolean => toolTokens(name).some((t) => set.has(t))
-
-const isFileRead = (it: Part): boolean => {
-  if (it.kind !== 'tool') return false
-  if (!hasAnyToken(it.title, FILE_READ_TOKENS)) return false
+const hasFilePath = (it: ToolItem): boolean => {
   const args = rawArgs(it)
   return typeof args.file_path === 'string' || typeof args.path === 'string'
 }
 
-const isCreate = (it: Part): boolean => it.kind === 'tool' && hasAnyToken(it.title, CREATE_TOKENS)
-// 删除/移动要单独报 —— 归进「编辑」就是把破坏性操作报成普通改动（Alma 的两分法
-// 对它自己的工具集是诚实的，因为那个相位里只有 Edit/Write；我们把 delete/move 也归了进来）
-const DELETE_TOKENS = new Set(['delete', 'remove', 'unlink'])
-const MOVE_TOKENS = new Set(['move', 'rename'])
-const isDelete = (it: Part): boolean => it.kind === 'tool' && hasAnyToken(it.title, DELETE_TOKENS)
-const isMove = (it: Part): boolean => it.kind === 'tool' && hasAnyToken(it.title, MOVE_TOKENS)
+/**
+ * 相位的**名词**（一个词，不带进行/完成态）—— 只给头像 tooltip 用。
+ * 不复用 phaseLabel 的动词：那个是两态（思考中/已思考），当悬停提示用会别扭。
+ */
+export const PHASE_NOUN: Record<PhaseKind, string> = {
+  thinking: '思考',
+  exploring: '探索',
+  making: '修改',
+  running: '执行',
+  generic: '其他工具',
+}
 
 /**
  * 相位的「动词 + 剩余」。同一个相位有进行/完成两态 —— 整棵树看起来「活着」全靠它。
  * 文案与 Alma 逐条对齐：
  *   思考中 / 已思考       探索中 / 已探索 · N 个文件 或 N 处
- *   修改中 / 已修改 · 新建 N · 编辑 M      执行中 / 已执行 · N 条命令
- *   使用中 / 已使用 · N 步
+ *   修改中 / 已修改 · 新建 N · 编辑 M · 删除 K · 移动 J
+ *   执行中 / 已执行 · N 条命令      使用中 / 已使用 · N 步
  */
 export function phaseLabel(phase: Phase, live: boolean): { verb: string; rest: string } {
   const n = phase.items.length
+  const tools = phase.items.filter((it): it is ToolItem => it.kind === 'tool')
   switch (phase.kind) {
     case 'thinking':
       return { verb: live ? '思考中' : '已思考', rest: '' }
     case 'exploring': {
       // 全是「读文件」才说「N 个文件」，否则一律「N 处」（同 Alma：reads === n ? files : places）
-      const files = phase.items.filter(isFileRead).length
+      const files = tools.filter((it) => specOf(it.title)?.readsFile && hasFilePath(it)).length
       return { verb: live ? '探索中' : '已探索', rest: `${n} ${files === n && n > 0 ? '个文件' : '处'}` }
     }
     case 'making': {
-      // 四类分开计：新建 / 编辑 / 删除 / 移动，只报非零项。
-      // （Alma 只分新建与编辑，因为它的 making 集合里只有 Edit/Write；我们多收了两类，
-      //   就必须把它们说出来，否则一次删除会显示成「编辑 1」。）
-      const creates = phase.items.filter(isCreate).length
-      const deletes = phase.items.filter(isDelete).length
-      const moves = phase.items.filter(isMove).length
+      // 四类分开计，只报非零项 —— 与 TOOLS 表同一份事实，不会漂
+      const makes = (k: string) => tools.filter((it) => specOf(it.title)?.makes === k).length
+      const creates = makes('create')
+      const deletes = makes('delete')
+      const moves = makes('move')
       const edits = n - creates - deletes - moves
       const pieces: string[] = []
       if (creates) pieces.push(`新建 ${creates}`)
@@ -195,39 +278,7 @@ export function phaseLabel(phase: Phase, live: boolean): { verb: string; rest: s
   }
 }
 
-/** 动词：与相位同一套精确查表（同样不做子串猜） */
-const VERB_BY_TOKEN: Record<string, string> = {
-  bash: '执行', shell: '执行', sh: '执行', zsh: '执行', terminal: '执行',
-  exec: '执行', execute: '执行', run: '执行', command: '执行', script: '执行',
-  glob: '搜索', grep: '搜索', search: '搜索', find: '搜索', query: '搜索', ls: '搜索',
-  fetch: '抓取', browse: '抓取', http: '抓取', url: '抓取',
-  write: '新建', create: '新建', new: '新建', mkdir: '新建', touch: '新建',
-  delete: '删除', remove: '删除', unlink: '删除',
-  move: '移动', rename: '移动',
-  edit: '编辑', patch: '编辑', replace: '编辑', apply: '编辑', update: '编辑',
-  append: '编辑', insert: '编辑',
-  read: '查看', view: '查看', cat: '查看', get: '查看', open: '查看', load: '查看', list: '查看',
-  todo: '计划', task: '计划', plan: '计划',
-  skill: '用了技能',
-}
-
-/** 连写名单独给动词（分词分不开） */
-const VERB_BY_ALIAS: Record<string, string> = {
-  websearch: '搜索',
-  webfetch: '抓取',
-  strreplaceeditor: '编辑',
-  notebookedit: '编辑',
-  runscript: '执行',
-  bashoutput: '执行',
-  killshell: '执行',
-  todowrite: '计划',
-  todoread: '计划',
-}
-
-const VERB_BY_ACP_KIND: Record<string, string> = {
-  read: '查看', search: '搜索', fetch: '抓取', edit: '编辑',
-  delete: '删除', move: '移动', execute: '执行', think: '思考',
-}
+// ------------------------------------------------------------------ 行
 
 export type ToolRow = { verb: string; object: string; running: boolean; error: boolean }
 
@@ -254,15 +305,14 @@ function shorten(v: string): string {
 /**
  * 一行 = 动词 + 宾语。
  * 宾语优先取 rawInput 里最有信息量的那个字段（命令 / 路径 / 模式 / 查询词），
- * 取不到才退回 title —— DSH 的 title 只有工具名（"bash"），单用它读起来没有内容。
+ * 取不到才退回工具名 —— DSH 的 title 只有工具名（"bash"），单用它读起来没有内容。
+ * command 优先于 description：DSH 的 description 是自动生成的英文样板
+ * （"List all files in current directory"），当宾语还不如命令本身。
  */
 export function rowForTool(it: ToolItem): ToolRow {
   const name = String(it.title || '').trim()
   const kind = String(it.toolKind || '').toLowerCase()
-
   const args = rawArgs(it)
-  // command 优先于 description：DSH 的 description 是自动生成的英文样板
-  // （"List all files in current directory"），当宾语还不如命令本身。
   const detail =
     str(args.command) ||
     str(args.description) ||
@@ -273,22 +323,19 @@ export function rowForTool(it: ToolItem): ToolRow {
     str(args.url) ||
     ''
 
-  const verb =
-    VERB_BY_ALIAS[normalizeToolName(name)] ||
-    toolTokens(name).map((t) => VERB_BY_TOKEN[t]).find(Boolean) ||
-    VERB_BY_ACP_KIND[kind] ||
-    '调用'
-
   return {
-    verb,
+    // 动词与相位同源：同一张 TOOLS 表
+    verb: specOf(name)?.verb ?? ACP_KIND_TO_VERB[kind] ?? '调用',
     object: shorten(detail) || shorten(name) || '…',
     running: it.status === 'pending' || it.status === 'in_progress',
     error: it.status === 'failed',
   }
 }
 
+// ------------------------------------------------------------------ 分块
+
 /** 一个回合的流水切成「块」：连续的 thought+tool 合成一个活动轨道，其余原样流过 */
-export type Block =
+type Block =
   | { type: 'flow'; item: AiItem; i: number }
   | { type: 'activity'; phases: Phase[]; key: string; i: number }
 

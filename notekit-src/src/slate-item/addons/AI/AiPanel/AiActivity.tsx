@@ -12,11 +12,11 @@
 import React, { useState } from 'react'
 import {
   type Phase,
-  type Part,
   type ToolItem,
   MAX_VISIBLE_PHASES,
   allThinking,
   countUnits,
+  PHASE_NOUN,
   phaseLabel,
   rowForTool,
 } from './phases'
@@ -132,7 +132,7 @@ export const AI_ACTIVITY_CSS = `
 }
 `
 
-export const ActivityOrb = ({ label = '跟进中' }: { label?: string }) => (
+export const ActivityOrb = ({ label }: { label: string }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 32, color: muted }}>
     <span className="nk-dotgrid">
       {Array.from({ length: 8 }, (_, i) => {
@@ -149,12 +149,10 @@ export const ActivityOrb = ({ label = '跟进中' }: { label?: string }) => (
 
 const ToolRow = ({
   it,
-  rowKey,
   open,
   onToggle,
 }: {
   it: ToolItem
-  rowKey: string
   open: boolean
   onToggle: () => void
 }) => {
@@ -288,7 +286,7 @@ const PhaseBody = ({
           </div>
         )
       }
-      return <ToolRow key={key} it={it} rowKey={key} open={!!openRows[key]} onToggle={() => toggleRow(key)} />
+      return <ToolRow key={key} it={it} open={!!openRows[key]} onToggle={() => toggleRow(key)} />
     })}
   </>
 )
@@ -401,7 +399,7 @@ export const AiActivityTrack = ({
         key={`av-${i}`}
         type="button"
         disabled={live}
-        title={phase.kind}
+        title={PHASE_NOUN[phase.kind]}
         onClick={() => {
           setSelected((prev) => (prev === i ? null : i))
           setOpen(false)
