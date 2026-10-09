@@ -196,7 +196,9 @@ export const AiPanelComp = observer(() => {
         maxHeight: '100%',
         overflow: 'hidden',
         position: 'relative',
-        background: 'var(--nk-surface)',
+        // 侧边栏整体 = 画布色（用户指定 #fafafc；亮色主题的 --nk-canvas 就是它）。
+        // 用变量而非写死，夜间模式才不会跟着刺眼。
+        background: 'var(--nk-canvas)',
       }}
     >
       <style>{AI_MD_CSS}{AI_ACTIVITY_CSS}</style>

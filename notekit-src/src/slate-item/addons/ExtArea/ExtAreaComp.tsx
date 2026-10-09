@@ -129,7 +129,7 @@ export const ExtAreaComp = observer(() => {
   let cssClass = cls`
     position: relative;
     z-index: 10;
-    background-color: #fcfcfc;
+    background-color: var(--nk-canvas);
     flex-basis: ${px(width)};
     height: 100%;
     overflow-wrap: break-word;

@@ -297,7 +297,9 @@ const Card = ({
       bottom: front ? undefined : depth * 6,
       borderRadius: 8,
       border: `1px solid ${line}`,
-      background: front ? canvas : surface,
+      // 侧边栏底色=canvas 后：front 用 surface（浮起），back 用 canvas（沉底）——
+      // 原 front=canvas 会跟新底色融为一体
+      background: front ? surface : canvas,
       padding: '6px 9px',
       overflow: 'hidden',
       zIndex: 100 - depth,
