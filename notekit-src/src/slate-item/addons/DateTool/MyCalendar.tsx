@@ -60,41 +60,61 @@ export function useRenderDay(props: InfoCalendarProps) {
   return (day: dayjs.Dayjs, _: any, DayProps: any) => {
     const fmtDate = dayjs(day).format(YYYY_MM_DD);
     let style: any = {};
+    // D125F26FCF5E-18：热力不再整格填灰阶（深底会吞掉数字），降为数字下方的小圆点；
+    // 引用（mentions）与提醒（due）视觉分离：引用=橙点，提醒=右上红角标计数。
     let level = 0;
+    let heatColor: string | undefined;
     if (fmtDate !== $.reminder.fmtToday) {
-      const bg = $.heatmap?.calcBgColor(fmtDate);
       level =
         Math.ceil(($.heatmap.calcPercent(fmtDate) * 100) / 10) * 100;
+      const bg = $.heatmap?.calcBgColor(fmtDate);
       if (bg && bg !== 'transparent') {
-        style.backgroundColor = bg;
+        heatColor = bg;
       }
     }
-    if (!isEmpty($.dbMemory.indexed.mentions[fmtDate])) {
-      style.border = `1px solid var(--cl-orange-300)`;
-    }
+    const hasMentions = !isEmpty($.dbMemory.indexed.mentions[fmtDate]);
+    const hasHeat = level > 0 && !!heatColor;
 
     const dueCount = $.reminder?.getCountOfDueItems(fmtDate);
-    if (!isEmpty(dueCount)) {
-      style = {
-        ...style,
+    const hasDue = !isEmpty(dueCount);
 
-        position: 'relative',
-        border: `1px solid var(--cl-orange-300)`,
-
-        '&::after': {
-          content: `"${dueCount}"`,
-          display: 'inline-flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          position: 'absolute',
-          bottom: 0,
-          right: 0,
-          width: 12,
-          height: 12,
-          borderRadius: '50%',
-          fontSize: 9,
-          backgroundColor: 'var(--cl-red-300)',
-        },
+    if (hasHeat || hasMentions || hasDue) {
+      style.position = 'relative';
+    }
+    if (hasHeat || hasMentions) {
+      style['&::before'] = {
+        content: '""',
+        position: 'absolute',
+        bottom: 2,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: hasHeat && hasMentions ? 3 : 4,
+        height: 4,
+        borderRadius: 2,
+        // 同时有记录密度与引用时：橙点居中，灰阶点经 box-shadow 靠左
+        backgroundColor: hasMentions
+          ? 'var(--cl-orange-500, #ec8b33)'
+          : heatColor,
+        ...(hasHeat && hasMentions
+          ? { boxShadow: `-4px 0 0 ${heatColor}` }
+          : {}),
+      };
+    }
+    if (hasDue) {
+      style['&::after'] = {
+        content: `"${dueCount}"`,
+        display: 'inline-flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'absolute',
+        top: -2,
+        right: -2,
+        width: 14,
+        height: 14,
+        borderRadius: '50%',
+        fontSize: 10,
+        color: '#fff',
+        backgroundColor: 'var(--cl-red-500, #e5484d)',
       };
     }
 

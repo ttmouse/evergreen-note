@@ -318,11 +318,11 @@ td {
   background: var(--dark-kanban-secondary) !important
 }
 
-.MuiPickersDay-root {
+.MuiPickersDay-root:not(.dialog-datetool *) {
   background: inherit !important;
 }
 
-.MuiPickersDay-root:hover {
+.MuiPickersDay-root:not(.dialog-datetool *):hover {
   background: var(--dark-important) !important;
 }
 
@@ -352,11 +352,11 @@ td {
   color: var(--dark-text) !important;
 }
 
-.MuiPickersDay-today:not(.Mui-selected) {
+.MuiPickersDay-today:not(.Mui-selected):not(.dialog-datetool *) {
   border: 1px solid lightyellow !important;
 }
 
-.MuiPickersDay-root.Mui-selected {
+.MuiPickersDay-root.Mui-selected:not(.dialog-datetool *) {
   background: var(--cl-blue-600) !important;
   border: 1px solid white !important;
 }
