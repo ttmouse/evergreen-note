@@ -386,10 +386,17 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         isEmpty(getUrlParams().pop)
           ? {
               onClick: () => {
-                shell.openFloatWindow({
-                  ky: theItem.ky,
-                  title: typeof theTitle === 'string' ? theTitle : undefined,
-                })
+                // 弹出之后把主窗口里这张卡片收掉：同一篇笔记不该同时开在两处，
+                // 用户 2026-10-10 明确「点击后变成独立窗口的同时，主窗口里的浮层就应该消失」。
+                // 开窗失败或 IPC 异常就把卡片留着，免得用户既没窗口也没卡片、上下文全丢。
+                void $.floatViewer
+                  .popoutToWindow(theItem.ky, typeof theTitle === 'string' ? theTitle : undefined)
+                  .then((res: any) => {
+                    if (res && res.ok === false) return
+                    // 临时预览卡片不一定登记在 floatViewerList 里，这里按已知 id 兜一次；
+                    // 重复关闭无害（close 内部就是 remove + unregister）。
+                    $.dialog.close(dialogId)
+                  })
               },
             }
           : undefined
@@ -423,6 +430,45 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
         },
       })
       return dialogId
+    }
+
+    /**
+     * 在浮层里打开一篇笔记（Cmd+P 搜索行右侧的入口用；回车走的仍是搜索原本的逻辑）。
+     * 显式选「浮层」= 要一张留住的卡片，所以固定住（点击别处不自动收），
+     * 顺带登记进 floatViewerList，后续 popoutToWindow 才能按笔记收口。
+     */
+    showCard(ky: string) {
+      if (isEmpty(ky)) return
+      this.show({ item: ky, isPin: true })
+    }
+
+    /**
+     * 把一篇笔记弹成独立原生窗口（只认 Electron 外壳）。
+     * 打开/聚焦成功后，把主窗口里同一篇笔记的浮层卡片一并收掉——同一处内容不同时
+     * 开两份（用户 2026-10-10 拍板：变成独立窗口的同时，主窗口里的浮层就该消失）。
+     * 开窗失败则原样保留卡片，把结果交给调用方判断。
+     */
+    async popoutToWindow(ky: string, title?: string) {
+      const shell = (window as any).notekitShell
+      if (isEmpty(ky) || typeof shell?.openFloatWindow !== 'function') {
+        return { ok: false, error: 'no-shell' }
+      }
+      const res = await Promise.resolve(
+        shell.openFloatWindow({ ky, title: isEmpty(title) ? undefined : title })
+      ).catch(() => null)
+      // 没开出窗口就什么都别动（IPC 抛错时 res 为 null）
+      if (!res || res.ok === false) return res ?? { ok: false, error: 'ipc-failed' }
+      $.floatViewer.closeCardsOf(ky)
+      return res
+    }
+
+    /** 关掉主窗口里所有指向这篇笔记的浮层卡片，返回被关掉的 dialogId */
+    closeCardsOf(ky: string) {
+      const ids = [...$.dialog.store.entries]
+        .filter(([id]) => app.states.floatViewerList.some(dlg => dlg.dialogId === id && dlg.key === ky))
+        .map(([id]) => id)
+      ids.forEach(id => $.dialog.close(id))
+      return ids
     }
 
     closeActiveNote() {

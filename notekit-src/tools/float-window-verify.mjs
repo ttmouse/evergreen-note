@@ -105,6 +105,34 @@ const shot = async (cdp, name) => {
   console.log(`   ↳ 截图 ${name}`)
 }
 
+/** 页面侧探针：卡片节点数 vs 真正可见的卡片数（关闭后可能残留零高占位节点）*/
+const CARD_PROBE = `(() => {
+  const cards = [...document.querySelectorAll('.nui-dialog.dialog-float-viewer')]
+  const ids = cards.map((el) => el.id)
+  const visible = cards.filter((el) => {
+    const r = el.getBoundingClientRect()
+    const cs = getComputedStyle(el)
+    return r.height > 1 && r.width > 1 && cs.display !== 'none' && cs.visibility !== 'hidden'
+  })
+  return {
+    count: cards.length,
+    ids,
+    visible: visible.length,
+    sizes: cards.map((el) => {
+      const r = el.getBoundingClientRect()
+      return [Math.round(r.width), Math.round(r.height)]
+    }),
+  }
+})()`
+
+const clickAt = async (cdp, box) => {
+  if (!box) throw new Error('点不到坐标：目标元素不存在或不可见')
+  for (const type of ['mousePressed', 'mouseReleased']) {
+    await cdp.call('Input.dispatchMouseEvent', { type, x: Math.round(box.x), y: Math.round(box.y), button: 'left', clickCount: 1 })
+  }
+  return box
+}
+
 const clickSelector = async (cdp, selector) => {
   const box = await cdp.evaluate(`(() => {
     const el = document.querySelector(${JSON.stringify(selector)})
@@ -113,11 +141,41 @@ const clickSelector = async (cdp, selector) => {
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 }
   })()`)
   if (!box) throw new Error(`点不到元素：${selector}`)
-  for (const type of ['mousePressed', 'mouseReleased']) {
-    await cdp.call('Input.dispatchMouseEvent', { type, x: Math.round(box.x), y: Math.round(box.y), button: 'left', clickCount: 1 })
-  }
-  return box
+  return clickAt(cdp, box)
 }
+
+/**
+ * 搜索面板里定位「真笔记」那一行。不靠文案（界面语言可能是中文也可能是英文），
+ * 而按结构区分：真笔记行的正文以自己的标题开头；列表首位的「创建主题」动作行
+ * 是「动作文案 + 关键词」，以关键词开头却不以关键词结尾于行首——所以用
+ * startsWith(标题) 判定笔记行，其余含关键词的行即动作行。
+ */
+const NOTE_ROW_FINDER = (titlePart) => `(() => {
+  const rows = [...document.querySelectorAll('.search-result-item')]
+  const text = (el) => (el.textContent || '').trim()
+  return rows.find((el) => text(el).startsWith(${JSON.stringify(titlePart)}))
+})()`
+
+/** 搜索面板里找到那行笔记，返回行内某个入口图标的中心坐标 */
+const rowIconCenter = (cdp, titlePart, cls) =>
+  cdp.evaluate(`(() => {
+    const row = ${NOTE_ROW_FINDER(titlePart)}
+    if (!row) return null
+    const el = row.querySelector(${JSON.stringify(cls)})
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: Math.round(r.width), h: Math.round(r.height) }
+  })()`)
+
+/** 搜索面板里那行笔记标题区（避开右侧图标）的中心坐标——用于回归「点行本体走原逻辑」 */
+const rowBodyCenter = (cdp, titlePart) =>
+  cdp.evaluate(`(() => {
+    const row = ${NOTE_ROW_FINDER(titlePart)}
+    if (!row) return null
+    const head = row.querySelector('.node-head') || row
+    const r = head.getBoundingClientRect()
+    return { x: r.x + 40, y: r.y + r.height / 2 }
+  })()`)
 
 let main = null
 let pop = null
@@ -185,6 +243,29 @@ try {
   const popUrl = (await listTargets(DEBUG_PORT)).find((t) => t.type === 'page' && t.url.includes('pop='))?.url ?? ''
   check('S2 点「↗」后开出第二个原生窗口（?pop=<ky>）', popUrl.includes(`pop=${encodeURIComponent(ky)}`), { popUrl })
 
+  // ── S6 弹出后主窗口里的浮层应当收掉（同一篇笔记不同时开两处）───────────
+  let cardGone = false
+  for (let i = 0; i < 40; i++) {
+    cardGone = await main.evaluate(`!document.querySelector('.nui-dialog.dialog-float-viewer')`)
+    if (cardGone) break
+    await sleep(200)
+  }
+  const leftover = await main.evaluate(`(() => {
+    const app = window.__notekitApp
+    return {
+      dom: !!document.querySelector('.nui-dialog.dialog-float-viewer'),
+      list: (app.states.floatViewerList || []).length,
+      stack: (app.addons.floatViewer.activeWindowStack || []).length,
+      preview: (app.addons.floatViewer.previewDialogIds || { size: 0 }).size,
+    }
+  })()`)
+  check(
+    'S6 弹出后主窗口浮层已收掉且列表/栈清干净',
+    cardGone && !leftover?.dom && leftover?.list === 0 && leftover?.stack === 0,
+    leftover
+  )
+  await shot(main, '03-main-window-after-popout.png')
+
   // ── S3 浮窗里只渲染那篇笔记 ────────────────────────────────────────────
   let state = null
   for (let i = 0; i < 120; i++) {
@@ -216,18 +297,241 @@ try {
   check('S3e 窗口标题取到笔记标题', !!state?.title && state.title !== 'Evergreen note', { title: state?.title })
   await shot(pop, '02-independent-window.png')
 
-  // ── S4 去重：同一 ky 再点一次不新增窗口 ────────────────────────────────
-  const before = (await listTargets(DEBUG_PORT)).filter((t) => t.type === 'page' && t.url.includes('pop=')).length
+  // ── S4 去重：同一笔记再弹一次不新增窗口，卡片也照样收掉 ────────────────
+  const popCount = async () => (await listTargets(DEBUG_PORT)).filter((t) => t.type === 'page' && t.url.includes('pop=')).length
+  const before = await popCount()
+  await main.evaluate(`window.__notekitApp.addons.floatViewer.show({ item: ${JSON.stringify(ky)}, isPin: true })`)
+  for (let i = 0; i < 60; i++) {
+    if (await main.evaluate(`!!document.querySelector('.nk-popout-btn')`)) break
+    await sleep(300)
+  }
   await clickSelector(main, '.nk-popout-btn')
-  await sleep(1500)
-  const after = (await listTargets(DEBUG_PORT)).filter((t) => t.type === 'page' && t.url.includes('pop=')).length
-  check('S4 同一笔记重复点「↗」不新增窗口', before === 1 && after === 1, { before, after })
+  await sleep(1600)
+  const after = await popCount()
+  const cardGoneAgain = await main.evaluate(`!document.querySelector('.nui-dialog.dialog-float-viewer')`)
+  check('S4 重复弹不新增窗口，且卡片再次收掉', before === 1 && after === 1 && cardGoneAgain === true, { before, after, cardGoneAgain })
+
+  // ── S7 Cmd+P 搜索行右侧的两个额外入口 ─────────────────────────────────
+  const titlePart = '独立窗口验收笔记'
+  const openSearch = () =>
+    main.evaluate(`window.__notekitApp.addons.search.showDialog({ keyword: ${JSON.stringify(titlePart)} })`)
+  const searchState = () =>
+    main.evaluate(`(() => {
+      const rows = [...document.querySelectorAll('.search-result-item')]
+      const text = (el) => (el.textContent || '').trim()
+      const row = ${NOTE_ROW_FINDER(titlePart)}
+      // 含关键词但不以它开头的行 = 列表首位那个「创建主题 / Create topic」动作行
+      const actionRows = rows.filter(
+        (el) => (el.textContent || '').includes(${JSON.stringify(titlePart)}) && !text(el).startsWith(${JSON.stringify(titlePart)})
+      )
+      const panel = document.querySelector('.SearchDialog')
+      const pr = panel?.getBoundingClientRect()
+      return {
+        rows: rows.length,
+        found: !!row,
+        card: !!(row && row.querySelector('.nk-search-open-card')),
+        win: !!(row && row.querySelector('.nk-search-open-window')),
+        // 动作行不是笔记，不该有这两个入口（曾因守卫看错字段而开出 floatview-undefined 空壳卡片）
+        actionRows: actionRows.length,
+        actionClean: actionRows.every(
+          (el) => !el.querySelector('.nk-search-open-card') && !el.querySelector('.nk-search-open-window')
+        ),
+        panelOpen: !!panel && !!pr && pr.height > 0,
+      }
+    })()`)
+  const waitSearch = async (pred, ms = 10000) => {
+    const until = Date.now() + ms
+    let s = null
+    while (Date.now() < until) {
+      s = await searchState()
+      if (pred(s)) return s
+      await sleep(200)
+    }
+    return s
+  }
+
+  await openSearch()
+  const s7 = await waitSearch((s) => s.found)
+  check('S7 搜索行右侧有「浮层 / 独立窗口」两个入口', !!s7?.found && s7.card === true && s7.win === true, s7)
+  check(
+    'S7b 列表首位的「创建主题」动作行不带这两个入口',
+    s7?.actionRows === 1 && s7?.actionClean === true,
+    { actionRows: s7?.actionRows, actionClean: s7?.actionClean }
+  )
+  await shot(main, '04-search-row-entries.png')
+
+  // ── S7d 悬浮提示走 i18n：缺 key 时 Tip 会静默不渲染，所以必须实测提示文案 ──
+  const hoverTip = async (cls) => {
+    const box = await rowIconCenter(main, titlePart, cls)
+    if (!box) return { text: '' }
+    await main.call('Input.dispatchMouseEvent', {
+      type: 'mouseMoved',
+      x: Math.round(box.x),
+      y: Math.round(box.y),
+    })
+    await sleep(1300)
+    const text = await main.evaluate(
+      `(document.querySelector('.MuiTooltip-tooltip')?.textContent || '').trim()`
+    )
+    return { text, x: Math.round(box.x), y: Math.round(box.y) }
+  }
+  const tipCard = await hoverTip('.nk-search-open-card')
+  const tipWin = await hoverTip('.nk-search-open-window')
+  check(
+    'S7d 两个入口的悬浮提示能解析出文案（i18n 有 key）',
+    tipCard.text.length > 0 && tipWin.text.length > 0,
+    { tipCard, tipWin }
+  )
+
+  // ── S7c 双主题：两个入口在浅色/夜间都要看得见（DESIGN.md §4 交互状态双主题自证）──
+  const themeProbe = () =>
+    main.evaluate(`(() => {
+      const row = ${NOTE_ROW_FINDER(titlePart)}
+      const icon = (cls) => {
+        const el = row?.querySelector(cls)
+        if (!el) return null
+        const r = el.getBoundingClientRect()
+        const cs = getComputedStyle(el)
+        return { w: Math.round(r.width), h: Math.round(r.height), color: cs.color, opacity: cs.opacity }
+      }
+      return {
+        night: document.body.classList.contains('night-mode'),
+        card: icon('.nk-search-open-card'),
+        win: icon('.nk-search-open-window'),
+      }
+    })()`)
+  const probeOk = (p) =>
+    !!p?.card &&
+    !!p?.win &&
+    p.card.w >= 8 &&
+    p.win.w >= 8 &&
+    Number(p.card.opacity) > 0.3 &&
+    Number(p.win.opacity) > 0.3
+  const lightProbe = await themeProbe()
+  // 供证据图精准圈注：把搜索行与两个图标的几何（CSS px，另带 dpr）一并落盘
+  const searchGeometry = await main.evaluate(`(() => {
+    const row = ${NOTE_ROW_FINDER(titlePart)}
+    const rect = (el) => {
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }
+    }
+    return {
+      dpr: window.devicePixelRatio,
+      panel: rect(document.querySelector('.SearchDialog')),
+      row: rect(row),
+      card: rect(row?.querySelector('.nk-search-open-card')),
+      win: rect(row?.querySelector('.nk-search-open-window')),
+      head: rect(row?.querySelector('.node-head')),
+    }
+  })()`)
+  // 隔离实例默认跟随系统深色，所以「切换前」不一定是浅色——按实测主题命名截图
+  const firstTheme = await themeProbe()
+  await main.evaluate(`window.__notekitApp.addons.nightMode.toggleNightMode()`)
+  await sleep(800)
+  const secondTheme = await themeProbe()
+  await shot(main, `04b-search-row-entries-${secondTheme?.night ? 'night' : 'light'}.png`)
+  await main.evaluate(`window.__notekitApp.addons.nightMode.toggleNightMode()`)
+  await sleep(800)
+  check(
+    'S7c 两个入口在浅色/夜间两种主题下都渲染可见',
+    probeOk(firstTheme) && probeOk(secondTheme) && firstTheme?.night !== secondTheme?.night,
+    { firstTheme, secondTheme }
+  )
+
+  // ── S8 点「浮层」入口：主窗口出现卡片、面板收起、不新开窗口 ───────────────
+  const cardIcon = await rowIconCenter(main, titlePart, '.nk-search-open-card')
+  const popBefore8 = await popCount()
+  await clickAt(main, cardIcon)
+  let s8 = null
+  for (let i = 0; i < 40; i++) {
+    s8 = await main.evaluate(`(() => {
+      const card = document.querySelector('.nui-dialog.dialog-float-viewer')
+      const panel = document.querySelector('.SearchDialog')
+      const pr = panel?.getBoundingClientRect()
+      return {
+        card: !!card && card.getBoundingClientRect().height > 0,
+        panelOpen: !!panel && !!pr && pr.height > 0,
+      }
+    })()`)
+    if (s8.card && !s8.panelOpen) break
+    await sleep(200)
+  }
+  const popAfter8 = await popCount()
+  check(
+    'S8 点「浮层」入口：卡片出现、面板收起、不新开窗口',
+    s8?.card === true && s8?.panelOpen === false && popAfter8 === popBefore8,
+    { ...s8, popBefore8, popAfter8 }
+  )
+  await shot(main, '05-open-in-float-card.png')
+
+  // ── S9 点「独立窗口」入口：开出原生窗口、面板收起、主窗口不留卡片 ─────────
+  // 先清场（关掉卡片与既有浮窗），验证这条入口能真的新开一个窗口
+  await main.evaluate(`window.__notekitApp.addons.floatViewer.closeCardsOf(${JSON.stringify(ky)})`)
+  await pop.evaluate(`window.notekitShell.closeFloatWindow()`)
+  for (let i = 0; i < 40 && (await popCount()) > 0; i++) await sleep(250)
+  const closedPop = await popCount()
+  const afterCleanup = await main.evaluate(`(() => {
+    const app = window.__notekitApp
+    return { card: ${CARD_PROBE}, list: (app.states.floatViewerList || []).map((d) => ({ id: d.dialogId, key: d.key })), ky: ${JSON.stringify(ky)} }
+  })()`)
+  console.log('   ↳ S9 清场后：' + JSON.stringify(afterCleanup))
+  await openSearch()
+  const s9pre = await waitSearch((s) => s.found)
+  const winIcon = await rowIconCenter(main, titlePart, '.nk-search-open-window')
+  await clickAt(main, winIcon)
+  let s9 = null
+  for (let i = 0; i < 60; i++) {
+    const state = await main.evaluate(`(() => {
+      const panel = document.querySelector('.SearchDialog')
+      const pr = panel?.getBoundingClientRect()
+      return { card: ${CARD_PROBE}, panelOpen: !!panel && !!pr && pr.height > 0 }
+    })()`)
+    s9 = { ...state, pop: await popCount(), list: await main.evaluate(`(window.__notekitApp.states.floatViewerList || []).map((d) => ({ id: d.dialogId, key: d.key }))`) }
+    if (s9.pop === 1 && !s9.panelOpen) break
+    await sleep(300)
+  }
+  check(
+    'S9 点「独立窗口」入口：新开原生窗口、面板收起、主窗口无残留卡片',
+    closedPop === 0 && s9?.pop === 1 && s9?.panelOpen === false && s9?.card?.visible === 0,
+    { closedPop, s9, s9pre: s9pre?.found }
+  )
+  await shot(main, '06-open-in-window.png')
+
+  // ── S10 回归：点行本体（非图标）仍走搜索原本的逻辑 ───────────────────────
+  await openSearch()
+  await waitSearch((s) => s.found)
+  const popBefore10 = await popCount()
+  await clickAt(main, await rowBodyCenter(main, titlePart))
+  let s10 = null
+  for (let i = 0; i < 40; i++) {
+    s10 = await main.evaluate(`(() => {
+      const panel = document.querySelector('.SearchDialog')
+      const pr = panel?.getBoundingClientRect()
+      return {
+        card: ${CARD_PROBE},
+        panelOpen: !!panel && !!pr && pr.height > 0,
+        activeKey: window.__notekitApp.addons.main.workspaceActiveKey,
+        showsNote: (document.body.innerText || '').includes(${JSON.stringify(titlePart)}),
+      }
+    })()`)
+    if (!s10.panelOpen && s10.showsNote) break
+    await sleep(300)
+  }
+  check(
+    'S10 回归：点行本体仍走原逻辑（打开该笔记，不开卡片/新窗口）',
+    s10?.card?.visible === 0 &&
+      s10?.panelOpen === false &&
+      s10?.showsNote === true &&
+      (await popCount()) === popBefore10,
+    s10
+  )
 
   // ── S5 浮窗启动不触发「只有主窗口能调」的主进程报错 ─────────────────────
   const bootErrors = logs.split('\n').filter((line) => line.includes('仅允许应用主窗口'))
   check('S5 浮窗启动无越权 IPC 报错', bootErrors.length === 0, { bootErrors, tail: logs.slice(-400) })
 
-  await writeFile(path.join(outDir, 'result.json'), JSON.stringify({ ky, popoutBox, results, failures }, null, 2))
+  await writeFile(path.join(outDir, 'result.json'), JSON.stringify({ ky, popoutBox, searchGeometry, results, failures }, null, 2))
   console.log(`\n结果：${results.length - failures.length}/${results.length} 通过`)
   if (failures.length) console.log('失败：' + failures.join('、'))
 } catch (error) {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { AlarmIcon, PaperPlaneTiltIcon, StopIcon, ArrowCounterClockwiseIcon, ArrowDownIcon, ArrowLeftIcon, ArrowLineLeftIcon, ArrowLineRightIcon, ArrowRightIcon, ArrowSquareOutIcon, ArrowUUpLeftIcon, ArrowUUpRightIcon, ArrowUpIcon, ArrowsClockwiseIcon, ArrowsLeftRightIcon, ArrowsOutLineVerticalIcon, BookOpenIcon, BracketsCurlyIcon, BracketsSquareIcon, BroomIcon, CalendarBlankIcon, CardsIcon, CaretDownIcon, CaretLeftIcon, CaretRightIcon, ChalkboardIcon, ChatCircleIcon, ChatCircleTextIcon, CheckIcon, CheckSquareIcon, CircleIcon, ClockIcon, ClockCounterClockwiseIcon, CloudIcon, CloudArrowDownIcon, CloudArrowUpIcon, CloudSlashIcon, CodeIcon, CodeBlockIcon, CopyIcon, CornersOutIcon, DiceFiveIcon, DivideIcon, DotsSixVerticalIcon, DotsThreeIcon, DownloadSimpleIcon, FileTextIcon, FireIcon, FlowArrowIcon, FunnelSimpleIcon, GearIcon, GlobeIcon, GraphIcon, GridFourIcon, GridNineIcon, HashIcon, HighlighterIcon, ImageIcon, InfoIcon, KanbanIcon, KeyboardIcon, LineSegmentIcon, LinkIcon, LinkSimpleIcon, ListIcon, ListNumbersIcon, MagicWandIcon, MagnifyingGlassIcon, MagnifyingGlassPlusIcon, MarkdownLogoIcon, MinusIcon, NumberCircleZeroIcon, PaintBrushIcon, PaintBrushBroadIcon, PaletteIcon, PaperclipIcon, ParagraphIcon, PencilSimpleIcon, PlayIcon, PlusIcon, PrinterIcon, ProhibitIcon, PushPinIcon, PuzzlePieceIcon, QuestionIcon, RobotIcon, ScissorsIcon, SidebarSimpleIcon, SigmaIcon, SignOutIcon, SortAscendingIcon, SortDescendingIcon, SparkleIcon, SquaresFourIcon, StarIcon, TableIcon, TextAaIcon, TextAlignLeftIcon, TextBIcon, TextHFiveIcon, TextHFourIcon, TextHOneIcon, TextHSixIcon, TextHThreeIcon, TextHTwoIcon, TextItalicIcon, TextStrikethroughIcon, TextTIcon, TextUnderlineIcon, TimerIcon, ToggleLeftIcon, TranslateIcon, TrashIcon, TrayArrowDownIcon, TrayArrowUpIcon, TreeStructureIcon, UploadSimpleIcon, XIcon } from '@phosphor-icons/react'
+import { AlarmIcon, PaperPlaneTiltIcon, StopIcon, ArrowCounterClockwiseIcon, ArrowDownIcon, ArrowLeftIcon, ArrowLineLeftIcon, ArrowLineRightIcon, ArrowRightIcon, ArrowSquareOutIcon, ArrowUUpLeftIcon, ArrowUUpRightIcon, ArrowUpIcon, ArrowsClockwiseIcon, ArrowsLeftRightIcon, ArrowsOutLineVerticalIcon, BookOpenIcon, BracketsCurlyIcon, BracketsSquareIcon, BroomIcon, CalendarBlankIcon, CardsIcon, CaretDownIcon, CaretLeftIcon, CaretRightIcon, ChalkboardIcon, ChatCircleIcon, ChatCircleTextIcon, CheckIcon, CheckSquareIcon, CircleIcon, ClockIcon, ClockCounterClockwiseIcon, CloudIcon, CloudArrowDownIcon, CloudArrowUpIcon, CloudSlashIcon, CodeIcon, CodeBlockIcon, CopyIcon, CornersOutIcon, DiceFiveIcon, DivideIcon, DotsSixVerticalIcon, DotsThreeIcon, DownloadSimpleIcon, FileTextIcon, FireIcon, FlowArrowIcon, FunnelSimpleIcon, GearIcon, GlobeIcon, GraphIcon, GridFourIcon, GridNineIcon, HashIcon, HighlighterIcon, ImageIcon, InfoIcon, KanbanIcon, KeyboardIcon, LineSegmentIcon, LinkIcon, LinkSimpleIcon, ListIcon, ListNumbersIcon, MagicWandIcon, MagnifyingGlassIcon, MagnifyingGlassPlusIcon, MarkdownLogoIcon, MinusIcon, NumberCircleZeroIcon, PaintBrushIcon, PaintBrushBroadIcon, PaletteIcon, PaperclipIcon, ParagraphIcon, PencilSimpleIcon, PictureInPictureIcon, PlayIcon, PlusIcon, PrinterIcon, ProhibitIcon, PushPinIcon, PuzzlePieceIcon, QuestionIcon, RobotIcon, ScissorsIcon, SidebarSimpleIcon, SigmaIcon, SignOutIcon, SortAscendingIcon, SortDescendingIcon, SparkleIcon, SquaresFourIcon, StarIcon, TableIcon, TextAaIcon, TextAlignLeftIcon, TextBIcon, TextHFiveIcon, TextHFourIcon, TextHOneIcon, TextHSixIcon, TextHThreeIcon, TextHTwoIcon, TextItalicIcon, TextStrikethroughIcon, TextTIcon, TextUnderlineIcon, TimerIcon, ToggleLeftIcon, TranslateIcon, TrashIcon, TrayArrowDownIcon, TrayArrowUpIcon, TreeStructureIcon, UploadSimpleIcon, XIcon } from '@phosphor-icons/react'
 
 const phosphorIcons = {
   Alarm: AlarmIcon,
@@ -79,6 +79,7 @@ const phosphorIcons = {
   PaperPlaneTilt: PaperPlaneTiltIcon,
   Paragraph: ParagraphIcon,
   PencilSimple: PencilSimpleIcon,
+  PictureInPicture: PictureInPictureIcon,
   Play: PlayIcon,
   Plus: PlusIcon,
   Printer: PrinterIcon,
@@ -255,6 +256,8 @@ const iconMap = {
   svg_placeholder: phosphorIcons.DotsThree,
   // 浮层「弹出为独立窗口」：方形向上箭头（macOS 语义：把内容移出当前容器）
   svg_popout: phosphorIcons.ArrowSquareOut,
+  // 「在浮层里打开」：画中画语义（内容浮在当前界面之上的小窗）
+  svg_floatcard: phosphorIcons.PictureInPicture,
   svg_translate: phosphorIcons.Translate,
   svg_ai: phosphorIcons.Sparkle,
   svg_ai2: phosphorIcons.Sparkle,

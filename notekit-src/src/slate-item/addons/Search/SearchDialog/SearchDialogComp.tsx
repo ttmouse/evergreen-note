@@ -11,6 +11,7 @@ import { useSelect } from '../../../hooks/useArrowSelect'
 import { $t } from '../../../../i18n'
 import throttle from 'lodash/fp/throttle'
 import { ScrollLoad2 } from '../../../notekit-ui/components/ScrollLoad/ScrollLoad'
+import { SYMBOL_SIZE, Symbol } from '../../../notekit-ui/components/Symbol/Symbol'
 import { Tip } from '@/slate-item/components/Tip/Tip'
 
 const inputStyle = [
@@ -251,6 +252,30 @@ export function SearchResultItem(
   const nodeCount = isTopic ? $.counter.countDescendants(item) : 0
   const wordCount = isTopic ? $.counter.countWordsOfTree(item).count : 0
 
+  // 「创建主题」这类动作行不是笔记（哨兵 ky 'create-topic'，走 onConfirm/onChoose），
+  // 不给额外入口——否则会把 'create-topic' 当 ky 传下去，开出一张 floatview-undefined 的空壳卡片。
+  const isNoteRow =
+    !isEmpty(item.ky) &&
+    item.ky !== 'create-topic' &&
+    !(item as any).onConfirm &&
+    !(item as any).onChoose
+  const canOpenWindow =
+    isNoteRow && typeof (window as any).notekitShell?.openFloatWindow === 'function'
+  const itemTitle = isNoteRow ? Item.headString(item) : ''
+
+  // 两个额外入口：回车/点击仍然走搜索原本的逻辑（onChoose），这里只额外打开、
+  // 并把搜索面板收掉（与回车选中的手感一致）。都 stopPropagation，避免又触发选中。
+  const openInCard = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    $.floatViewer.showCard(item.ky)
+    $.searchDialog.close()
+  }
+  const openInWindow = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    void $.floatViewer.popoutToWindow(item.ky, itemTitle)
+    $.searchDialog.close()
+  }
+
   return (
     <div className={cssClass.join(' ')} onClick={onClick}>
       <div
@@ -286,6 +311,36 @@ export function SearchResultItem(
             </Tip>
           )}
         </span>
+        {isNoteRow && (
+          <span
+            className="search-result-actions"
+            style={{
+              flexShrink: 0,
+              marginLeft: 8,
+              display: 'flex',
+              alignItems: 'center',
+              // 间距走 DESIGN.md §5.2 档位 {4,8,12,16,24,32}
+              gap: 4,
+            }}
+          >
+            <Symbol
+              icon="svg_floatcard"
+              size={SYMBOL_SIZE.XS}
+              tip={$t`floatViewer.open_in_card`}
+              cssClass={['nk-search-open-card']}
+              onClick={openInCard}
+            />
+            {canOpenWindow && (
+              <Symbol
+                icon="svg_popout"
+                size={SYMBOL_SIZE.XS}
+                tip={$t`floatViewer.open_in_window`}
+                cssClass={['nk-search-open-window']}
+                onClick={openInWindow}
+              />
+            )}
+          </span>
+        )}
       </div>
       <CrumbsComp truncate crumbs={crumbs} />
     </div>

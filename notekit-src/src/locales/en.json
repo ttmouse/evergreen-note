@@ -276,7 +276,9 @@
   },
   "floatViewer": {
     "title": "Float viewer",
-    "quote": "Diaplay a float dialog to view the detail of a link when mouse hover"
+    "quote": "Diaplay a float dialog to view the detail of a link when mouse hover",
+    "open_in_card": "Open in float layer",
+    "open_in_window": "Open in separate window"
   },
   "help": {
     "title": "Help",
