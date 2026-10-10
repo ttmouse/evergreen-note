@@ -21,8 +21,9 @@ import { InlinesBarContext, PUB_KEY_INLINES_BAR } from './InlinesBar'
 import { useClickAway } from '../../../hooks/useClickAway'
 
 /* 悬停链接时弹出的编辑铅笔按钮（D125F26FCF5E-20）。
- * 它浮在正文之上，必须自证是一个能点的圆片：不透明底色 + 可分辨的 1px 边界 +
- * 墨色笔形，两个主题都取 token。原来的两处问题：
+ * 它浮在正文之上，必须自证是一个能点的圆片：不透明实底 + 墨色笔形，两个主题都取
+ * token，且**不画描边线**（用户 2026-10-10 决定：去掉轮廓边缘线，只用背景色表现
+ * 圆片）。原来的两处问题：
  *   ① 底色写的是 background-color: var(--bg-color) —— DESIGN.md §4 已登记待清理
  *      的死变量，浅色下落到 all-styles 的 :root #fff、夜间落到 --nk-surface，
  *      同一按钮逐主题行为不可预期；
@@ -31,31 +32,52 @@ import { useClickAway } from '../../../hooks/useClickAway'
  *      4.5% 透明度的 --nk-hover（夜间那条带 !important，底色是不透明的
  *      --nk-hover，所以只有浅色犯病）——白底细边当场变成半透明底，正文从圆片里
  *      透出来，正是「悬停时会变成半透明」的现象。
- * 所以底色/边界改挂在外层 .inlines-edit-btn 上（不落 .node-icon 的逐态规则），
- * 内层只承担几何与笔形；两态都是不透明色，1px 边界用 --nk-muted 保证可分辨
- * （§9 已登记的「浮层必须有可分辨边界」语义，比原来的 --cl-slate-300 细线
- * 1.35:1 明显）。 */
+ * 所以底色改挂在外层 .inlines-edit-btn 上（不落 .node-icon 的逐态规则），内层只
+ * 承担几何与笔形。形状既然靠填充而非边界来读，就必须用**不透明的实色档**：§4.5 的
+ * 逐态 token --nk-hover 在浅色下是 rgba(0,0,0,.045)，拿它当填充等于把正文透出来
+ * （正是要修的现象），所以取 --nk-line（浅 #eee / 夜 #2c3238）作静止底、
+ * --nk-line-strong（浅 #ddd / 夜 #3a4149）作悬停底，两档都实色、悬停更深一档。
+ * 本节属 §4 分层第 5 项「编辑器内组件」——逐态由组件自治，不适用 §4.5 工作区逐态。 */
 const outerStyle = cls`
   position: fixed;
   z-index: 100000;
   visibility: hidden;
   margin-left: 4px !important;
   border-radius: 9999px;
-  background-color: var(--nk-surface, #fff);
-  box-shadow: 0 0 0 1px var(--nk-muted, #999);
+  background-color: var(--nk-line, #eee);
   color: var(--nk-ink, #333);
-  transition: background-color 120ms ease-out, box-shadow 120ms ease-out;
+  transition: background-color 120ms ease-out, transform 120ms ease-out;
 
   &:hover {
     background-color: var(--nk-line-strong, #ddd);
-    box-shadow: 0 0 0 1px var(--nk-ink, #333);
+    /* 悬停还有个与主题无关的放大信号：夜间那条 html body.night-mode .node-icon:hover
+       (0,3,2，!important) 会盖掉内层底色，只靠换色时夜间等于没有反馈；放大走的是
+       transform，不受任何底色规则的优先级影响。scale(1.1) 是本项目既有的悬停语汇
+       （见 LayoutFactory/default.style.ts 的 .tool-item:hover）。 */
+    transform: scale(1.08);
   }
 `
 
-/* 内层只留几何：底色归外层圆片，免得被 .node-icon 的逐态底色（夜间那条还是
- * !important）盖掉外层。笔形颜色由外层 color 继承。 */
+/* 内层只留几何，不参与上色：填充一律由外层圆片表达。
+ * 这一条不是洁癖——内层带通用 .node-icon 类，两主题各有逐态规则直接改它的底色：
+ *   浅色 body:not(.night-mode) .node-icon:hover{background-color: var(--nk-hover)}（4.5% 透明）
+ *   夜间 .node-icon{background:inherit!important} + .node-icon:hover{background-color:var(--dark-important)!important}
+ * 结果是外层换了底色也看不见（内层整片盖住 24px 圆片）：浅色悬停退回半透明、夜间悬停
+ * 只剩 2 级灰差＝等于没有反馈。内层比通用命名的 .node-icon(0,1,0)/(0,2,0) 多带一层
+ * .inlines-edit-btn 前缀(0,2,0)/(0,3,0) 才压得住注入层的 !important。 */
 const iconStyle = cls`
   border-radius: 9999px;
+
+  .inlines-edit-btn & {
+    background-color: transparent !important;
+    /* 内层预设带 transition: all .5s，会在首次悬停时把「退回透明」的过程拖半秒，
+       期间看到的仍是旧底色 —— 逐态改色统一交给外层 120ms，内层不做补间。 */
+    transition: none !important;
+  }
+
+  .inlines-edit-btn &:hover {
+    background-color: transparent !important;
+  }
 `
 
 let currentInlineDom: HTMLElement | null = null

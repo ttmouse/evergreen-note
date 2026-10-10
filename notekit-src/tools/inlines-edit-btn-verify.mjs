@@ -9,8 +9,9 @@
  * 覆盖（浅色/夜间各跑一遍）：
  *   A1 悬停行内链接 → 铅笔按钮出现（visibility visible、opacity 1）
  *   A2 鼠标移到铅笔按钮上 → 按钮保持可见、opacity 恒为 1（不得变淡）
- *   A3 按钮有实底色（不是靠透明撑形状的幽灵按钮）
- *   A4 按钮描边对页面底色对比 ≥ 3:1（WCAG 非文本对比）
+ *   A3 按钮有实底色（不是靠透明撑形状的幽灵按钮；形状全靠填充表达）
+ *   A4 按钮不画描边线（outline/border/box-shadow 皆无），且实底与笔记底面可分辨
+ *      （≥1.10:1，防止填充退化到看不见）——用户要求「去掉轮廓边缘线，只用背景色」
  *   A5 铅笔对按钮底色对比 ≥ 4.5:1
  *   A6 悬停态不弱于静止态（同为主题内更强的状态，而不是变淡）
  *   A7 鼠标停在按钮上 ≥700ms 不被隐藏定时器收掉
@@ -178,8 +179,12 @@ const readState = () => evalT(`(() => {
     theme: document.body.classList.contains('night-mode') ? 'night' : 'day',
     btn: {
       opacity: cs.opacity, visibility: cs.visibility, display: cs.display,
-      background: cs.backgroundColor, boxShadow: cs.boxShadow, borderRadius: cs.borderRadius,
-      color: cs.color, transition: cs.transition, hovered: btn.matches(':hover'),
+      background: cs.backgroundColor, borderRadius: cs.borderRadius,
+      /* 归一化「有没有可见的线」：0 宽 / none / 全透明阴影都算没有 */
+      boxShadow: cs.boxShadow === 'none' || cs.boxShadow.endsWith('0)') ? 'none' : cs.boxShadow,
+      outline: parseFloat(cs.outlineWidth) > 0 && cs.outlineStyle !== 'none' ? cs.outlineWidth + ' ' + cs.outlineStyle + ' ' + cs.outlineColor : 'none',
+      border: parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none' ? cs.borderTopWidth + ' ' + cs.borderTopStyle + ' ' + cs.borderTopColor : 'none',
+      color: cs.color, transition: cs.transition, transform: cs.transform, hovered: btn.matches(':hover'),
       rect: { x: r.left, y: r.top, w: r.width, h: r.height },
     },
     icon: ics ? { opacity: ics.opacity, background: ics.backgroundColor, color: ics.color, outline: ics.outlineColor + ' ' + ics.outlineWidth, transform: ics.transform, rect: ir ? { x: ir.left, y: ir.top, w: ir.width, h: ir.height } : null } : null,
@@ -286,15 +291,21 @@ const runTheme = async (themeLabel) => {
     const inkHover = parseColor(hover.svg?.fill) || parseColor(hover.icon.color)
     const diff = (a, b) => !!a && !!b && (a.r !== b.r || a.g !== b.g || a.b !== b.b || a.a !== b.a)
     check(`A3[${themeLabel}] 静止态圆片有不透明实底`, !!restFill && restFill.a > 0.95, { restFill: rest.icon.background, outer: rest.btn.background })
-    const ringRatio = restRing ? ratio(restRing, noteBg) : 0
-    const ringRatioHover = hoverRing ? ratio(hoverRing, noteBg) : 0
-    check(`A4[${themeLabel}] 1px 边界对底面对比 ≥3:1`, Math.max(ringRatio, ringRatioHover) >= 3, { ringRatio, ringRatioHover, restRing: rest.btn.boxShadow, hoverRing: hover.btn.boxShadow, noteBg })
+    const ringRatio = restFill && noteBg ? ratio(restFill, noteBg) : 0
+    const ringRatioHover = hoverFill && noteBg ? ratio(hoverFill, noteBg) : 0
+    const noLine = (st) => st.btn.outline === 'none' && st.btn.border === 'none' && st.btn.boxShadow === 'none'
+    const noEdgeLine = noLine(rest) && noLine(hover)
+    check(`A4[${themeLabel}] 不画描边线（outline/border/box-shadow 皆无）+ 实底与笔记底面可分辨 ≥1.10:1`,
+      noEdgeLine && Math.min(ringRatio, ringRatioHover) >= 1.1,
+      { noEdgeLine, restOutline: rest.btn.outline, restBorder: rest.btn.border, restBoxShadow: rest.btn.boxShadow, ringRatio, ringRatioHover, noteBg, restFill, hoverFill })
     const inkRatio = inkRest && restFill ? ratio(inkRest, restFill) : 0
     check(`A5[${themeLabel}] 笔形对圆片底色对比 ≥4.5:1（静止态）`, inkRatio >= 4.5, { inkRatio, inkRest: rest.svg?.fill, restFill })
     const bothOpaque = !!restFill && restFill.a > 0.95 && !!hoverFill && hoverFill.a > 0.95
-    const visibleChange = diff(restFill, hoverFill) || diff(restRing, hoverRing)
-    check(`A6[${themeLabel}] 悬停态不弱于静止态（两态都不透明 + 有可见变化）`, bothOpaque && visibleChange, { restFill, hoverFill, restRing: rest.btn.boxShadow, hoverRing: hover.btn.boxShadow, inkHover: hover.svg?.fill })
-    ring.ratios = { ringRatio, ringRatioHover, inkRatio }
+    const scaleOf = st => { const m = /matrix\(([^)]+)\)/.exec(st.btn.transform || ''); return m ? parseFloat(m[1].split(',')[0]) : 1 }
+    const scaleChange = Math.abs(scaleOf(hover) - scaleOf(rest)) > 0.02
+    const visibleChange = diff(restFill, hoverFill) || diff(restRing, hoverRing) || scaleChange
+    check(`A6[${themeLabel}] 悬停态不弱于静止态（两态都不透明 + 有可见变化）`, bothOpaque && visibleChange, { restFill, hoverFill, restRing: rest.btn.boxShadow, hoverRing: hover.btn.boxShadow, scaleRest: rest.btn.transform, scaleHover: hover.btn.transform, scaleChange, inkHover: hover.svg?.fill })
+    ring.ratios = { fillVsSurface: ringRatio, fillVsSurfaceHover: ringRatioHover, inkRatio }
   }
   return ring
 }
