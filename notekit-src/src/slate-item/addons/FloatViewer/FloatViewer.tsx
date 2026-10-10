@@ -23,6 +23,7 @@ import { after, original } from '../../engine/helper'
 import { mkid } from '@/slate-item/utils/string/mkid'
 import { atLater } from '@/slate-item/utils/atLater'
 import { showSnack } from '@/slate-item/utils/msg/showSnack'
+import { getUrlParams } from '@/slate-item/utils/string/url'
 import { ROUTE_KEY } from '../Router/Router'
 
 export type FloatViewerItem = {
@@ -372,6 +373,27 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
       if (isEmpty(theTitle)) theTitle = isEmpty(theItem.leaves) ? theItem.ori : Item.headString(theItem, { parseRefer: true })
       if (isEmpty(theTitle)) theTitle = "Untitled"
 
+      // 「弹出为独立窗口」：只有 Electron 外壳提供 openFloatWindow 时才出现按钮；
+      // Andy 阅读列本身已经是一列，不挂；已经在独立浮窗里的也不挂（避免套娃）。
+      // 另外要求这篇笔记有个能被另一个 renderer 读到的 ky：草稿（⌘N 新建、还没落库）
+      // 与虚拟页（日记/主题列表等）弹出去只会是个空窗，不给按钮。
+      const shell = (window as any).notekitShell
+      const canPopout =
+        typeof shell?.openFloatWindow === 'function' &&
+        app.states.floatViewerMode !== 'andy' &&
+        !isEmpty(theItem?.ky) &&
+        !theItem?.draft &&
+        isEmpty(getUrlParams().pop)
+          ? {
+              onClick: () => {
+                shell.openFloatWindow({
+                  ky: theItem.ky,
+                  title: typeof theTitle === 'string' ? theTitle : undefined,
+                })
+              },
+            }
+          : undefined
+
       $.floatViewer.showDialog({
         key: theItem.ky,
         title: theTitle as any,
@@ -386,6 +408,7 @@ export function createFloatViewerAddon(addonParams: NewAddonParams) {
           width: 625,
           // Note previews remain modeless; callers can opt in for utility panels.
           mask: false,
+          canPopout,
           canClickWay: (ev) => {
             const target = ev.target as HTMLElement
             const exclude = [

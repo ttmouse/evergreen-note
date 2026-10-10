@@ -14,6 +14,12 @@ contextBridge.exposeInMainWorld('notekitShell', {
   captureWakeShortcut: (capturing) => ipcRenderer.invoke('wake-shortcut:capture', capturing),
   getSettingsShortcut: () => ipcRenderer.invoke('settings-shortcut:get'),
   setSettingsShortcut: (accelerator) => ipcRenderer.invoke('settings-shortcut:set', accelerator),
+  /** 把一篇笔记弹成独立窗口；同一个 ky 重复调用只聚焦已有窗口 */
+  openFloatWindow: (payload) => ipcRenderer.invoke('float-window:open', payload),
+  /** 独立浮窗用笔记标题覆盖窗口标题（只影响自己这个窗口） */
+  setFloatWindowTitle: (title) => ipcRenderer.send('float-window:title', title),
+  /** 独立浮窗关闭自己 */
+  closeFloatWindow: () => ipcRenderer.send('float-window:close'),
   version: process.versions.electron,
   platform: process.platform,
 })

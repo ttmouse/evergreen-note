@@ -66,6 +66,13 @@ export type DialogProps = PanelProps & {
     | {
         pin?: boolean
       }
+  /**
+   * 弹出为独立窗口：标题栏右侧多一个「↗」按钮。
+   * 只负责回调，怎么开窗由调用方决定（本层不认识 Electron）。
+   */
+  canPopout?: {
+    onClick?: () => void
+  }
   canMinimize?: boolean
   mask?: boolean | number
 
@@ -199,6 +206,7 @@ export const Dialog = (props: DialogProps) => {
     canResize = true,
     canClose = true,
     canPin = false,
+    canPopout,
     canFold = false,
     SnapProps = { targetBox: window, place: ['center', 'top-in'] },
     buttons,
@@ -634,6 +642,18 @@ export const Dialog = (props: DialogProps) => {
       color: states.pin ? 'info' : 'default',
       onClick() {
         dispatch({ type: 'set_pin', payload: !states.pin })
+      },
+    })
+  }
+  if (canPopout) {
+    symbolList.push({
+      icon: 'svg_popout',
+      size: SYMBOL_SIZE.XS,
+      order: 1500,
+      // 稳定类名：验收脚本按它定位按钮，别依赖图标名或位置
+      cssClass: ['nk-popout-btn'],
+      onClick() {
+        canPopout.onClick?.()
       },
     })
   }

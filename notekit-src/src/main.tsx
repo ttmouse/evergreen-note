@@ -7,6 +7,7 @@ import './assets/workspace-theme.css'
 import './assets/scrollbars.css'
 import { installScrollbars } from './slate-item/utils/dom/scrollbars'
 import { App } from './slate-item/engine/App'
+import { Item } from './slate-item/interfaces/item'
 import { createAddons } from './edit.addons'
 import { getCurrentDbid } from './slate-item/addons/DbDisk/helper'
 import React from 'react'
@@ -176,6 +177,57 @@ if (!isEmpty(evergreenOpenKy)) {
       }
       if (tries++ < 20) setTimeout(tryOpen, 500)
       else console.warn('[evergreen] 等待数据库就绪超时，放弃打开：', evergreenOpenKy)
+    }
+    tryOpen()
+  })
+}
+
+/**
+ * 独立浮窗模式：URL 带 ?pop=<ky> 时，这个窗口只渲染那篇笔记的浮层卡片。
+ *
+ * 由 Electron 外壳的「↗ 弹出为独立窗口」打开（desktop/main.cjs 的 float-window:open）。
+ * 这里不做第二套渲染：卡片、编辑器、双链跳转全部复用 FloatViewer，本模式只负责
+ *   ① 收起主界面（body.nk-float-window，见 workspace-theme.css）
+ *   ② 把卡片挂到 app 根容器（而不是浮层列容器，后者属于被收起的主界面）
+ *   ③ 用笔记标题当窗口标题
+ */
+const floatWindowKy = getUrlParams().pop
+if (!isEmpty(floatWindowKy)) {
+  document.body.classList.add('nk-float-window')
+  pub.on(pub.evt.uiMounted, () => {
+    let tries = 0
+    const tryOpen = () => {
+      const $ = (app as any).addons
+      const dbMemory = $.dbMemory
+      if (dbMemory?.initFinished) {
+        const item = dbMemory.getItem(floatWindowKy, { isRecur: true })
+        if (isEmpty(item) || item.ky !== floatWindowKy) {
+          showSnack({ content: `未找到笔记：${floatWindowKy}`, severity: 'warning' })
+          console.warn('[float-window] 未找到笔记：', floatWindowKy)
+          return
+        }
+        const title = isEmpty(item.leaves) ? item.ori : Item.headString(item, { parseRefer: true })
+        if (!isEmpty(title)) {
+          document.title = title
+          document.querySelector('.nui-dialog-title')?.setAttribute('title', title)
+          ;(window as any).notekitShell?.setFloatWindowTitle?.(title)
+        }
+        $.floatViewer.show({
+          item,
+          // 挂到 app 根容器：浮层列的容器在主界面里，会被 .nk-float-window 一起收起。
+          container: appContainer,
+          DialogProps: {
+            mask: false,
+            // 窗口里只有这一张卡片，点空白处不该把它关掉（默认 canClickWay 会关）。
+            canClickWay: () => false,
+            // 最小化会把它折进「浮层列」标签条，而标签条在浮窗里是收起的，故禁用。
+            canFold: false,
+          },
+        })
+        return
+      }
+      if (tries++ < 20) setTimeout(tryOpen, 500)
+      else console.warn('[float-window] 等待数据库就绪超时，放弃打开：', floatWindowKy)
     }
     tryOpen()
   })

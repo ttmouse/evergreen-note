@@ -1864,3 +1864,55 @@ body .backlink-reading-head:focus-visible {
   color: #fff;
   background: var(--cl-red-500, #e5484d);
 }
+
+/* ---------------------------------------------------------------
+ * 笔记独立浮窗（原生窗口里的浮层卡片）
+ *
+ * 由 desktop/main.cjs 的「↗ 弹出为独立窗口」以 ?pop=<ky> 打开：同一个应用页，
+ * 但 body 带 .nk-float-window。此时收起主界面，只留那篇笔记的卡片，并把它铺满
+ * 整个窗口——窗口标题交给 AppKit 原生标题栏，所以卡片自己的标题栏在浮窗里隐藏，
+ * 免得和原生标题栏重复两层。卡片内容（正文/编辑器/双链）完全复用浮层实现。
+ *
+ * 选择器要带 html + body.nk-float-window，并且都钉在 .nui-dialog.dialog-float-viewer
+ * 上：① 上面对「浮层自适应高度」的规则是 html body .nui-dialog.dialog-item-float
+ * （类计数 3），只有更具体的选择器才压得住它那条
+ * max-height: calc(100vh - 2.5em) —— 不压就会在窗口底部留 40px 空带；
+ * ② 只认笔记卡片这一种 dialog，浮窗里若再弹出设置/确认等对话框，它们保持原样，
+ * 不该被拉满整窗。
+ * --------------------------------------------------------------- */
+html body.nk-float-window {
+  background-color: var(--nk-canvas, var(--bg-color));
+}
+html body.nk-float-window .app-root-node {
+  display: none;
+}
+html body.nk-float-window .nui-dialog.dialog-float-viewer {
+  /* fixed 而非 absolute：卡片 Portal 的挂载容器（#app-xxx）比视口矮一截
+     （留给隐藏标题栏的 40px 缩进在浮窗里成了空带），absolute+inset 会跟着容器
+     一起矮。fixed 直接对齐视口，浮窗里卡片才是真正的满窗。 */
+  position: fixed !important;
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  /* width/height 用 auto 让 inset:0 把四条边都钉在视口上；
+     不能写 100vw/100vh——真出现滚动条时 vw 会把滚动条宽度也算进去。 */
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+html body.nk-float-window .nui-dialog.dialog-float-viewer > .nui-dialog-head {
+  display: none;
+}
+html body.nk-float-window .nui-dialog.dialog-float-viewer > .nui-dialog-body {
+  /* flex:1 让正文吃掉标题栏让出来的那一行；max-height 同理要压掉浮层的
+     calc(100vh - 2.5em - 45px)。 */
+  flex: 1 1 auto !important;
+  height: auto !important;
+  max-height: none !important;
+}

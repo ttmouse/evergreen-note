@@ -78,8 +78,22 @@ function assertShellSender(event) {
   }
 }
 
+/**
+ * 只读偏好查询（唤起/设置快捷键）允许任何应用窗口调用。
+ * 独立浮窗跑的是同一个应用页，启动时也会读这两个快捷键用于渲染设置项；
+ * 只放行 get，写入仍只认主窗口——否则浮窗会把自己的显示问题变成一条
+ * 「Error occurred in handler」噪声。
+ */
+function assertAppSender(event) {
+  if (event.senderFrame !== event.sender.mainFrame) throw new Error('此操作仅允许应用窗口调用')
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (!win || (win !== mainWindow && ![...floatWindows.values()].includes(win))) {
+    throw new Error('此操作仅允许应用窗口调用')
+  }
+}
+
 ipcMain.handle('wake-shortcut:get', event => {
-  assertShellSender(event)
+  assertAppSender(event)
   return wakeShortcut.get()
 })
 ipcMain.handle('wake-shortcut:set', (event, accelerator) => {
@@ -93,7 +107,7 @@ ipcMain.handle('wake-shortcut:capture', (event, capturing) => {
   globalShortcut.setSuspended(settingsShortcutRecording)
 })
 ipcMain.handle('settings-shortcut:get', event => {
-  assertShellSender(event)
+  assertAppSender(event)
   return settingsShortcut.get()
 })
 ipcMain.handle('settings-shortcut:set', (event, accelerator) => {
@@ -106,6 +120,81 @@ ipcMain.handle('settings-shortcut:set', (event, accelerator) => {
 ipcMain.on('set-theme', (event, theme) => {
   if (event.sender !== mainWindow?.webContents || !['light', 'dark'].includes(theme)) return
   nativeTheme.themeSource = theme
+})
+
+/* ------------------------- 笔记独立浮窗（原生窗口） -------------------------
+ * 浮层卡片标题栏上的「↗」把一篇笔记弹成一个真正的 OS 窗口：可以移出主窗口、
+ * 放到另一块屏、和别的 App 并排。实现上不复制渲染逻辑——新窗口加载同一个
+ * 应用页，只是多带一个 `?pop=<ky>`，渲染层在该模式下收起主界面、只渲染那篇
+ * 笔记的浮层卡片（见 src/main.tsx / src/assets/workspace-theme.css 的
+ * body.nk-float-window 规则）。
+ *
+ * 一个 ky 只允许一个窗口：再次点「↗」聚焦已有窗口，不叠罗汉。
+ * 数据仍是同一套：窗口只是多一个 renderer，读写都经 server.mjs 的同一个 SQLite。
+ */
+const floatWindows = new Map()
+
+/** 允许主窗口与浮窗自身调用；其它窗口一律拒绝。 */
+function floatSenderWindow(event) {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (!win) throw new Error('此操作仅允许应用窗口调用')
+  return win
+}
+
+function createFloatWindow(payload) {
+  const ky = typeof payload?.ky === 'string' ? payload.ky.trim() : ''
+  if (!ky) return { ok: false, error: '缺少笔记 ky' }
+  const title = typeof payload?.title === 'string' && payload.title.trim() ? payload.title.trim() : APP_NAME
+
+  const existing = floatWindows.get(ky)
+  if (existing && !existing.isDestroyed()) {
+    if (existing.isMinimized()) existing.restore()
+    existing.show()
+    existing.focus()
+    return { ok: true, reused: true }
+  }
+
+  // 标准原生边框：标题栏即笔记名，拖动/最小化/关闭都由 AppKit 提供，
+  // 不需要再为无边框窗口补 -webkit-app-region 拖拽区。
+  const win = new BrowserWindow({
+    width: 680,
+    height: 780,
+    minWidth: 420,
+    minHeight: 320,
+    title,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+  floatWindows.set(ky, win)
+  win.on('closed', () => {
+    if (floatWindows.get(ky) === win) floatWindows.delete(ky)
+  })
+  const url = `${APP_URL}${APP_URL.includes('?') ? '&' : '?'}pop=${encodeURIComponent(ky)}`
+  win.loadURL(url)
+  pushLog(`[float-window] 打开独立窗口 ky=${ky} title=${title}`)
+  return { ok: true }
+}
+
+ipcMain.handle('float-window:open', (event, payload) => {
+  floatSenderWindow(event)
+  return createFloatWindow(payload)
+})
+
+// 窗口标题由渲染层定（笔记标题在页面里才算得出来）；只改浮窗自己的标题。
+ipcMain.on('float-window:title', (event, title) => {
+  if (typeof title !== 'string' || !title.trim()) return
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (!win || win === mainWindow) return
+  if (![...floatWindows.values()].includes(win)) return
+  win.setTitle(title)
+})
+
+ipcMain.on('float-window:close', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (win && win !== mainWindow) win.close()
 })
 
 // The local build watcher publishes this marker only after all assets are ready.
