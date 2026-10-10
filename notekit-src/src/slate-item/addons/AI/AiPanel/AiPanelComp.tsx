@@ -120,7 +120,7 @@ const AI_MD_CSS = `
 `
 
 export const AiPanelComp = observer(() => {
-  const { extArea, editorView, app, dbMemory } = useAddons() as any
+  const { editorView, app, dbMemory } = useAddons() as any
   const [draft, setDraft] = useState('')
   const [histOpen, setHistOpen] = useState(false)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -171,7 +171,6 @@ export const AiPanelComp = observer(() => {
     return `${d.getMonth() + 1}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
   }
 
-  const dotColor = S.state === 'busy' ? acc : S.state === 'ready' ? '#28c840' : S.state === 'stopped' ? muted : '#febc2e'
   // 数据源接线（2026-10-09 19:3x，store 拥有者落地）：旧的 history/viewing「只读快照」已换成
   // 真会话列表 —— 每段对应 agent 侧一条 ACP 会话，切过去可以直接接着聊。
   // 仍然只做「读不到就当空」：面板宁可少一块，也不能整片白掉（18:44 的事故）。
@@ -204,14 +203,9 @@ export const AiPanelComp = observer(() => {
       <style>{AI_MD_CSS}{AI_ACTIVITY_CSS}</style>
       {/* 头 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, boxSizing: 'border-box', flexShrink: 0, padding: '0 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted, position: 'relative' }}>
-        <span
-          title={S.agent || ''}
-          style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'block', flexShrink: 0 }}
-        />
         <span style={{ flex: 1 }} />
-        {/* agent 名+版本（deepseek-harness-acp v0.0.1）是内部实现细节，不进界面 ——
-            那正是「别把 internals 露给用户」这条的正面例子。名字挪到状态点的 title 上（悬停可查），
-            文字只保留真正对用户有用的两种非就绪态。 */}
+        {/* 顶部不再放状态色点（D125F26FCF5E-22）：就绪时的绿点没有信息量、纯噪音；
+            非就绪态本来就写文字，不需要再配一个点。agent 名+版本是内部实现细节，不进界面。 */}
         {S.state !== 'ready' && S.state !== 'busy' ? (
           <span style={{ color: muted }}>{S.connected ? '连接中…' : '未连接'}</span>
         ) : null}
@@ -254,14 +248,10 @@ export const AiPanelComp = observer(() => {
         >
           <SvgIcon name="svg_add" width={16} />
         </button>
-        <button
-          onClick={() => extArea?.foldup(true)}
-          title="收起面板"
-          aria-label="收起面板"
-          style={{ border: 'none', background: 'none', color: muted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', padding: 2 }}
-        >
-          <SvgIcon name="svg_arrow_double_right" width={16} />
-        </button>
+        {/* 「收起面板」按钮已移除（D125F26FCF5E-22：用户指出最右侧那个箭头图标多余）。
+            同一个动作本来就有正式入口 —— 右上角工具条的 AI 图标与 mod+shift+9 热键，
+            而这里的 onClick 调的是 extArea.foldup()（收起的是编辑器下拉那一列，
+            根本不是这块面板），标题与行为不符。同动作多入口是噪音，删掉这一个。 */}
 
         {/* 历史下拉 */}
         {histOpen && (

@@ -134,7 +134,7 @@ try {
         const bs = getComputedStyle(b)
         return { label: b.getAttribute('aria-label') || b.title || '', region: bs.webkitAppRegion || bs.getPropertyValue('-webkit-app-region') }
       }),
-      dot: (() => {
+      spacer: (() => {
         const d = head.querySelector('span')
         if (!d) return null
         const ds = getComputedStyle(d)
@@ -145,10 +145,10 @@ try {
   if (headProbe.err) throw new Error('探针失败：' + headProbe.err)
   check('S2 面板 header 计算样式 -webkit-app-region == drag', headProbe.region === 'drag', headProbe.region)
 
-  // S3 header 里的按钮/状态点是 no-drag
-  const btnsOk = headProbe.buttons.length >= 3 && headProbe.buttons.every((b) => b.region === 'no-drag')
-  check('S3 header 内按钮全部 no-drag（历史/新对话/收起）', btnsOk, headProbe.buttons)
-  check('S3b 状态点（span）不阻断：header 整体 drag 已含它', headProbe.dot === 'no-drag' || headProbe.dot === 'drag' || headProbe.dot === 'none', headProbe.dot)
+  // S3 header 里的按钮是 no-drag（D125F26FCF5E-22 之后只剩「历史会话 / 新对话」两个）
+  const btnsOk = headProbe.buttons.length >= 2 && headProbe.buttons.every((b) => b.region === 'no-drag')
+  check('S3 header 内按钮全部 no-drag（历史/新对话）', btnsOk, headProbe.buttons)
+  check('S3b header 内的占位 span 不阻断：header 整体 drag 已含它', headProbe.spacer === 'no-drag' || headProbe.spacer === 'drag' || headProbe.spacer === 'none', headProbe.spacer)
 
   // S4 历史下拉是 no-drag（点开它再测）
   const dropProbe = await main.evaluate(`(() => {
