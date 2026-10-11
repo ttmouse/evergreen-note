@@ -24,7 +24,12 @@ export type AiItem =
   | { kind: 'error'; at: number; text: string }
   | { kind: 'exit'; at: number; text: string }
 
-export type NoteRef = { ky?: string; title?: string } | null
+export type NoteRef = {
+  ky?: string
+  title?: string
+  /** 页内被显式选中的块（AiContext.ts 组装，已截断）：服务端把它们内联进环境信息 */
+  selection?: { blocks: { ky?: string; text: string }[] }
+} | null
 
 /**
  * 一段对话。
@@ -483,11 +488,21 @@ export class AiPanelStore {
         return
       }
     }
-    await fetch(`${API}/prompt`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: t, note, sessionId: conv.acpSessionId }),
-    })
+    try {
+      await fetch(`${API}/prompt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: t, note, sessionId: conv.acpSessionId }),
+      })
+    } catch (e: any) {
+      // 发送失败必须落到界面上（纪律：绝不留静默挂起）——此时 turn_start 还没来，
+      // 不主动推一条 error 行的话，用户看到的就只是「点了没反应」。
+      runInAction(() => {
+        this.error = `发送失败：${e?.message ?? e}`
+        conv.items.push({ kind: 'error', at: Date.now(), text: this.error! })
+      })
+      this.persist()
+    }
   }
 
   async cancel() {

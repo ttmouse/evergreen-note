@@ -6,6 +6,15 @@ import { aiPanelStore as S, NoteRef } from './AiPanelStore'
 import { groupBlocks } from './phases'
 import { AiActivityTrack, ActivityOrb, AI_ACTIVITY_CSS } from './AiActivity'
 import { SvgIcon } from '../../../../components/SvgIcon'
+import {
+  AiContext,
+  AiOpKind,
+  contextLabel,
+  contextNote,
+  operationPrompt,
+  resolveAiContext,
+} from './AiContext'
+import { pub } from '../../../utils/pub'
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -117,10 +126,47 @@ const AI_MD_CSS = `
 .ai-md.nk-settle { animation: nkSettle .3s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes nkSettle { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ai-md.nk-settle { animation: none; } }
+
+/* 快捷操作（归纳 / 下一步）与输入区文字按钮（撤销改动）：走 App 的 ghost 语言 ——
+   透明底、muted 文字、hover 背景 --nk-hover + ink。不加边框不加实底，
+   与 workspace-theme.css 的 nav-footer / 菜单项按钮同一套。 */
+.ai-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--nk-muted);
+  cursor: pointer;
+  transition: background .12s;
+}
+.ai-quick-btn:hover:not(:disabled) { background: var(--nk-hover); color: var(--nk-ink); }
+.ai-quick-btn:disabled { cursor: default; opacity: .45; }
+
+/* 头部图标按钮：与主区工具栏（workspace-theme.css .workspace-navigation button /
+   .workspace-header-actions > .node）同一套规格 —— 30×30 热区、6px 圆角、
+   默认 --nk-muted、hover 背景 --nk-hover 且图标转 --nk-ink、18px 图标。 */
+.ai-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--nk-muted);
+  cursor: pointer;
+}
+.ai-icon-btn:hover:not(:disabled) { background: var(--nk-hover); color: var(--nk-ink); }
+.ai-icon-btn:disabled { cursor: default; }
 `
 
 export const AiPanelComp = observer(() => {
-  const { editorView, app, dbMemory } = useAddons() as any
+  const { editorView, app, dbMemory, blockSelection } = useAddons() as any
   const [draft, setDraft] = useState('')
   const [histOpen, setHistOpen] = useState(false)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -132,6 +178,65 @@ export const AiPanelComp = observer(() => {
     // 打开面板即确保会话就绪（懒启动，失败会进 error 行）
     S.ensureSession().catch(() => {})
   }, [])
+
+  // ------------------------------------------------------- 上下文感知（页面 / 选中块）
+
+  /**
+   * BlockSelection 插件是普通类（非 observable），事件驱动重算：selectionChanged
+   * 覆盖拖选/点光标（Slate 每次 set_selection 都会发），editorChanged 兼顾块增删。
+   * 上下文永远在「发送那一刻」现读，这里的重算只为让标签不落后。
+   */
+  /** 从 BlockSelection 的选块 DOM 逐个读原文；读不到（已卸载/折叠）的块跳过 */
+  const readSelectedBlocks = (): { ky?: string; text: string }[] => {
+    const ids: string[] = Array.isArray(blockSelection?.selectedIds) ? blockSelection.selectedIds : []
+    const out: { ky?: string; text: string }[] = []
+    for (const id of ids) {
+      try {
+        const item = (document.getElementById(id) as any)?.$item
+        const text = typeof item?.GetPlainText === 'function' ? String(item.GetPlainText() ?? '') : ''
+        if (text.trim()) out.push({ ky: item.ky, text })
+      } catch {
+        // 块在取文时恰好卸载：少一块上下文好过整次操作报错
+      }
+    }
+    return out
+  }
+
+  /** 读「此刻」的上下文。发送与按钮都走它——不依赖 React 渲染时序。 */
+  const resolveNow = (): AiContext | null => {
+    try {
+      const ky = editorView?.currentItemKy
+      const node = ky ? dbMemory?.getItem(ky, { isRecur: false }) : null
+      return resolveAiContext({
+        pageKy: ky || null,
+        pageTitle: node?.ori || null,
+        blocks: readSelectedBlocks(),
+      })
+    } catch {
+      return null
+    }
+  }
+
+  /** 展示用：事件到来时重算（BlockSelection 非 observable，靠 pub 事件驱动）。 */
+  const [aiContext, setAiContext] = useState<AiContext | null>(null)
+  useEffect(() => {
+    const refresh = () => setAiContext(resolveNow())
+    refresh()
+    pub.on(pub.evt.selectionChanged, refresh)
+    pub.on(pub.evt.editorChanged, refresh)
+    return () => {
+      pub.off(pub.evt.selectionChanged, refresh)
+      pub.off(pub.evt.editorChanged, refresh)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * 手势级暂存：mousedown（任何默认行为都还没跑）先抓一份「此刻上下文」。
+   * 为什么需要：点面板按钮/输入框会让编辑器失焦，选区可能在 click 之前就被清掉 ——
+   * 到 onClick 才读，选块上下文就丢了。stash 在每次手势开始时覆盖、用后即弃。
+   */
+  const opCtxRef = useRef<AiContext | null>(null)
 
   // 只在「本来就贴底」时跟随新内容。用户一旦往上滚，就不再抢滚动条。
   useEffect(() => {
@@ -147,22 +252,25 @@ export const AiPanelComp = observer(() => {
     el.scrollTop = el.scrollHeight
   }
 
-  const currentNote = (): NoteRef => {
-    try {
-      const ky = editorView?.currentItemKy
-      if (!ky) return null
-      const node = dbMemory?.getItem(ky, { isRecur: false })
-      return { ky, title: node?.ori ?? undefined }
-    } catch {
-      return null
-    }
-  }
-
+  /**
+   * 随请求发给 agent 的环境信息：有选中块 → 块原文内联；否则当前页面（ky + 标题，
+   * 正文 agent 用 ev 自取）。语义与优先级见 AiContext.ts —— 选中块永远压过页面。
+   */
   const send = async () => {
     const t = draft.trim()
     if (!t || S.busy) return
+    const ctx = opCtxRef.current ?? aiContext
+    opCtxRef.current = null
     setDraft('')
-    await S.send(t, currentNote())
+    await S.send(t, ctx ? (contextNote(ctx) as NoteRef) : null)
+  }
+
+  /** 快捷操作：一键「归纳」/「下一步建议」，同样吃当前上下文（手势暂存优先） */
+  const runOp = (op: AiOpKind) => {
+    const ctx = opCtxRef.current ?? aiContext
+    opCtxRef.current = null
+    if (!ctx || S.busy) return
+    S.send(operationPrompt(ctx, op), contextNote(ctx) as NoteRef)
   }
 
   const fmtTime = (at: number) => {
@@ -202,7 +310,7 @@ export const AiPanelComp = observer(() => {
     >
       <style>{AI_MD_CSS}{AI_ACTIVITY_CSS}</style>
       {/* 头 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, boxSizing: 'border-box', flexShrink: 0, padding: '0 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted, position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 44, boxSizing: 'border-box', flexShrink: 0, padding: '0 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted, position: 'relative' }}>
         <span style={{ flex: 1 }} />
         {/* 顶部不再放状态色点（D125F26FCF5E-22）：就绪时的绿点没有信息量、纯噪音；
             非就绪态本来就写文字，不需要再配一个点。agent 名+版本是内部实现细节，不进界面。 */}
@@ -210,43 +318,26 @@ export const AiPanelComp = observer(() => {
           <span style={{ color: muted }}>{S.connected ? '连接中…' : '未连接'}</span>
         ) : null}
         <button
+          className="ai-icon-btn"
           onClick={() => setHistOpen((v) => !v)}
           title={`切换会话：点任意一段都能直接接着聊${convs.length > 1 ? `（共 ${convs.length} 段）` : ''}`}
           aria-label="历史会话"
-          style={{
-            border: 'none',
-            background: 'none',
-            color: histOpen || convs.length > 1 ? ink : muted,
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 2,
-            padding: 2,
-          }}
+          style={{ color: histOpen || convs.length > 1 ? ink : undefined }}
         >
-          <SvgIcon name="svg_recent" width={16} />
-          {convs.length > 1 && <span style={{ fontSize: 10, lineHeight: 1 }}>{convs.length - 1}</span>}
+          <SvgIcon name="svg_recent" width={18} />
         </button>
         {/* 「清空」的语义收窄：它从来不删除任何东西，实际是「收工 + 另起一段」，
             名字却读着像删除。换成名副其实的入口，并把空段的静默 no-op 变成明确禁用
             （原先在空白段上点，什么都不会发生 —— 那正是「没法新建对话」的由来）。 */}
         <button
+          className="ai-icon-btn"
           onClick={() => canNewConv && S.clear()}
           disabled={!canNewConv}
           title={canNewConv ? '新建对话：当前这段会留在历史里，另起一段空白的' : '当前已经是新对话了'}
           aria-label="新对话"
-          style={{
-            border: 'none',
-            background: 'none',
-            color: canNewConv ? ink : muted,
-            opacity: canNewConv ? 1 : 0.4,
-            cursor: canNewConv ? 'pointer' : 'default',
-            display: 'inline-flex',
-            alignItems: 'center',
-            padding: 2,
-          }}
+          style={{ opacity: canNewConv ? 1 : 0.4 }}
         >
-          <SvgIcon name="svg_add" width={16} />
+          <SvgIcon name="svg_add" width={18} />
         </button>
         {/* 「收起面板」按钮已移除（D125F26FCF5E-22：用户指出最右侧那个箭头图标多余）。
             同一个动作本来就有正式入口 —— 右上角工具条的 AI 图标与 mod+shift+9 热键，
@@ -334,20 +425,22 @@ export const AiPanelComp = observer(() => {
       >
         {S.items.length === 0 && (
           <div style={{ color: muted, fontSize: 13, lineHeight: 1.9 }}>
-            光标所在的那篇笔记，它看得见（靠 ky 自己用 ev 去读）。
-            <br />
-            说一句话开工：
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-              {['这篇笔记还缺什么', '查一下库里有没有同名主题', '把这段变成常青笔记'].map((q) => (
-                <button
-                  key={q}
-                  onClick={() => S.send(q, currentNote())}
-                  style={{ fontSize: 13, padding: '4px 11px', borderRadius: 14, border: `1px solid ${line}`, background: 'transparent', color: ink, cursor: 'pointer' }}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
+            {aiContext ? (
+              <>
+                它看得见你正在看的内容（{contextLabel(aiContext)}）——
+                {aiContext.mode === 'selection'
+                  ? '选中的块会作为主要对象。'
+                  : '只带页面引用，正文由它自己按需读取。'}
+                <br />
+                点下方「归纳」或「下一步」一键开工，也可以直接说一句话：
+              </>
+            ) : (
+              <>
+                打开一篇笔记后，它就能基于当前页面（或你选中的块）归纳、给下一步建议。
+                <br />
+                也可以直接说一句话开工：
+              </>
+            )}
           </div>
         )}
 
@@ -420,31 +513,81 @@ export const AiPanelComp = observer(() => {
           历史已从「只读快照」改成真会话 —— 切到哪一段，发的话就进那一段自己的 ACP 会话，
           所以没有"回看时不能打字"这回事了（旧的两态一并删掉）。 */}
       <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', flexShrink: 0 }}>
+        {/* 上下文行：这次请求带什么，一眼看清。选中块 > 页面（优先级在 AiContext 里定死）；
+            快捷操作与自由输入共用这份上下文 —— 一个事实只在一处说。 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, minHeight: 24 }}>
+          <span style={{ display: 'inline-flex', flexShrink: 0 }}>
+            <SvgIcon
+              name={aiContext?.mode === 'selection' ? 'svg_highlight' : 'svg_document'}
+              width={14}
+              color={muted}
+            />
+          </span>
+          <span
+            title={
+              aiContext
+                ? aiContext.mode === 'selection'
+                  ? '选中的块会随请求发给 AI（有截断上限），页面只作背景'
+                  : '只带当前页面的引用（ky + 标题），正文由 AI 按需自己读取'
+                : '打开一篇笔记后，这里会显示随请求发送的上下文'
+            }
+            style={{ fontSize: 12, color: muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {aiContext ? `上下文：${contextLabel(aiContext)}` : '上下文：无（光标不在笔记内）'}
+          </span>
+          <span style={{ flex: 1 }} />
+          <button
+            className="ai-quick-btn"
+            onMouseDown={() => (opCtxRef.current = resolveNow())}
+            onClick={() => runOp('summarize')}
+            disabled={!aiContext || S.busy}
+            title={
+              aiContext
+                ? aiContext.mode === 'selection'
+                  ? `归纳这 ${aiContext.blocks.length} 个选中的块`
+                  : '归纳当前这篇笔记'
+                : '先打开一篇笔记（或选中几个块）再归纳'
+            }
+            style={{ fontSize: 12, flexShrink: 0 }}
+          >
+            <SvgIcon name="svg_list" width={14} />
+            归纳
+          </button>
+          <button
+            className="ai-quick-btn"
+            onMouseDown={() => (opCtxRef.current = resolveNow())}
+            onClick={() => runOp('suggest')}
+            disabled={!aiContext || S.busy}
+            title={
+              aiContext
+                ? aiContext.mode === 'selection'
+                  ? `基于这 ${aiContext.blocks.length} 个选中的块给下一步建议`
+                  : '基于当前这篇笔记给下一步建议'
+                : '先打开一篇笔记（或选中几个块）再要建议'
+            }
+            style={{ fontSize: 12, flexShrink: 0 }}
+          >
+            <SvgIcon name="svg_arrow_right2" width={14} />
+            下一步
+          </button>
+        </div>
         {/* 离底了就给个明确出口，别让人靠反复滚找输入框 */}
         {!atBottom && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
             <button
+              className="ai-icon-btn"
               onClick={jumpToBottom}
               title="回到最新"
               aria-label="回到最新"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: 3,
-                borderRadius: 12,
-                border: `1px solid ${line}`,
-                background: 'var(--nk-surface)',
-                color: muted,
-                cursor: 'pointer',
-              }}
             >
-              <SvgIcon name="svg_arrow_down" width={14} />
+              <SvgIcon name="svg_arrow_down" width={18} />
             </button>
           </div>
         )}
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={draft}
+            onMouseDown={() => (opCtxRef.current = resolveNow())}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -453,71 +596,39 @@ export const AiPanelComp = observer(() => {
               }
             }}
             placeholder={S.busy ? '它正在这一段里干活…（可点停止）' : '让它改这篇笔记，或问它点什么'}
-            style={{ flex: 1, font: 'inherit', fontSize: 13, padding: '6px 10px', borderRadius: 6, border: `1px solid var(--nk-line-strong)`, background: 'var(--nk-canvas)', color: ink, outline: 'none' }}
+            style={{ flex: 1, font: 'inherit', fontSize: 13, padding: '6px 10px', borderRadius: 6, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, outline: 'none' }}
           />
           {S.busy ? (
             <button
+              className="ai-icon-btn"
               onClick={() => S.cancel()}
               title="停止"
               aria-label="停止"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 30,
-                height: 30,
-                borderRadius: 6,
-                border: `1px solid ${line}`,
-                background: 'var(--nk-surface)',
-                color: ink,
-                cursor: 'pointer',
-              }}
             >
-              <SvgIcon name="svg_stop" width={14} />
+              <SvgIcon name="svg_stop" width={16} />
             </button>
           ) : (
             <button
+              className="ai-icon-btn"
               onClick={send}
               title="发送"
               aria-label="发送"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 30,
-                height: 30,
-                borderRadius: 6,
-                border: 'none',
-                background: ink,
-                color: 'var(--nk-surface)',
-                cursor: 'pointer',
-              }}
+              style={{ opacity: draft.trim() ? 1 : 0.45 }}
             >
-              <SvgIcon name="svg_send" width={16} />
+              <SvgIcon name="svg_send" width={18} />
             </button>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 12, color: muted }}>
           {!S.busy && S.snapCount > 0 && (
             <button
+              className="ai-quick-btn"
               onClick={async () => {
                 const n = await S.undoTurn()
                 if (n > 0) S.clear()
               }}
               title={`撤销本次 AI 改动（${S.snapCount} 个节点）`}
               aria-label={`撤销本次 AI 改动（${S.snapCount} 个节点）`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 3,
-                fontSize: 12,
-                padding: '2px 8px',
-                borderRadius: 5,
-                border: `1px solid ${line}`,
-                background: 'var(--nk-surface)',
-                color: ink,
-                cursor: 'pointer',
-              }}
             >
               <SvgIcon name="svg_restore" width={14} />
               撤销改动<span style={{ color: muted }}>{S.snapCount}</span>
