@@ -20,6 +20,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { mkdirSync } from 'node:fs'
 import { AcpClient } from './acp-client.mjs'
+import { composePrompt } from './ai-prompt.mjs'
 
 const PERMISSION_TIMEOUT_MS = 120000
 
@@ -191,16 +192,8 @@ export function createAiAcpService({ dataDir, readBody, writeJson, log = () => {
     }
   }
 
-  /** 把当前笔记拼进 prompt（我们没有"文件路径"可给 agent 自己读） */
-  function composePrompt(text, note) {
-    const parts = []
-    if (note && (note.title || note.ky || note.body)) {
-      const id = note.ky ? `（ky=${note.ky}）` : ''
-      parts.push(`【环境信息】用户正在 Evergreen note 中查看笔记「${note.title || '(无标题)'}」${id}。若本次请求与这篇笔记相关，可用 ev get --ky ${note.ky} 读取或向它追加；若无关（例如整理整个库、处理别的内容），忽略此条即可。`)
-    }
-    parts.push(String(text || ''))
-    return parts.join('\n\n')
-  }
+  // composePrompt 抽到 ai-prompt.mjs（纯函数，可单测）：环境信息只带当前页面 +
+  // 页内被显式选中的块（note.selection.blocks，见 AiContext.ts），隐私边界不变。
 
   /**
    * 拿到一个可用的会话 id：在活跃池里直接用；不在就先 session/resume。
