@@ -7,6 +7,11 @@ import { useHideEmptyNodeBtn } from '../../hooks/useHideEmptyNodeBtn'
 import { useSlateRef } from '../../hooks/useSlateRef'
 import { appendStyle } from '../../utils/dom/appendStyle'
 import { isEmpty } from '../../utils/isEmpty'
+import { Editor, ReactEditor, Transforms, useFocused, useReadOnly, useSelected } from '../../slate.inc'
+import { useEditor } from '../../hooks/useEditor'
+import { tableSourceOf } from '../../addons/MDTable/tableText'
+import { MDTableComp } from '../../addons/MDTable/MDTableComp'
+import '../../addons/MDTable/MDTable.css'
 
 appendStyle(`
   .node-empty-text > .node-head .node-text {
@@ -79,6 +84,41 @@ export const Text = (props: ElementComponentProps<any>) => {
 
   if (!isEmpty(item.placeholder)) {
     attrs.placeholder = item.placeholder || (item as any).$placeholder
+  }
+
+  // Roam 式表格：正文整段是 Markdown 表格时，光标不在本节点就渲染成表格；
+  // 光标一进来就是普通正文（原文），和其它文字一样编辑。（2026-10-12 用户要求）
+  const editor = useEditor()
+  const selected = useSelected()
+  const focused = useFocused()
+  const readOnly = useReadOnly()
+  const tableSource = tableSourceOf(element)
+  const showTable = tableSource !== null && !(selected && focused && !readOnly)
+  // 按下时只拦住原生选区；在 click 阶段（编辑器自己的点击处理之后不会再覆盖）把光标放到原文末尾
+  const stopNative = (e: React.MouseEvent) => {
+    if (readOnly) return
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  const enterSource = (e: React.MouseEvent) => {
+    if (readOnly) return
+    e.preventDefault()
+    e.stopPropagation()
+    const path = ReactEditor.findPath(editor as any, element)
+    ReactEditor.focus(editor as any)
+    Transforms.select(editor, Editor.end(editor, path))
+  }
+
+  if (showTable) {
+    classList.push('node-text-table')
+    return (
+      <div className={classList.join(' ')} onMouseUp={handleClick} {...attrs}>
+        <div className="node-text-table-src">{children}</div>
+        <div contentEditable={false} className="node-text-table-view" onMouseDown={stopNative} onMouseUp={stopNative} onClick={enterSource}>
+          <MDTableComp value={tableSource!} />
+        </div>
+      </div>
+    )
   }
 
   return (

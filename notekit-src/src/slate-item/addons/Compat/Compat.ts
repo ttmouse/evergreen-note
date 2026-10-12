@@ -35,9 +35,9 @@ export class Compat implements IAddon {
         regexp: /(^```table\n.+?\n^```)/gms,
         to: (s: string) => {
           const result = /^```table\n(.+)\n^```/gms.exec(s)
-          return a.mdTable.createElement({
-            value: result?.[1] ?? '',
-          })
+          // 表格存成节点里的普通文字（Roam 式：光标不在节点时由 ItemView/Text 渲染成表格）。
+          // 返回 Text 节点而非字符串，后续粗体/行内代码规则就不会再拆它。
+          return { text: (result?.[1] ?? '').trim() } as any
         },
       },
       htmltable: {

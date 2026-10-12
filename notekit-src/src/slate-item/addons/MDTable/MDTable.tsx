@@ -89,12 +89,8 @@ export function createMDTableAddon({ app, $ }: NewAddonParams) {
             en: { v: 'md table' },
           },
           handle({ editor }) {
-            $.slashMenu.insertText(editor, [
-              $.mdTable.createElement({
-                value: 'Header 1 | Header 2\n-------- | --------\nCell 1   | Cell 2',
-              }) as unknown as Node,
-              { text: '' },
-            ])
+            // 插入普通文字，光标离开本节点即渲染成表格
+            $.slashMenu.insertText(editor, '| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |')
           },
         },
       }

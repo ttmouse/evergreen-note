@@ -1,22 +1,12 @@
-/* 鼠标移入表格时的源码态（MDTableComp.tsx）：外观与笔记正文一致——无边框、无底色、
-   继承正文字体与行高，像在原生文本里编辑 Markdown。flow-root 把表格上下外边距收进容器。 */
-.mdtable-block { display: flow-root; }
-.mdtable-source {
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  font: inherit;
-  letter-spacing: inherit;
-  color: inherit;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  outline: none;
-  resize: none;
+/* Roam 式表格（ItemView/Text.tsx）：光标不在节点时，原文保留在 DOM 里供 Slate 定位但不显示，
+   只显示渲染后的表格；光标进来后整个节点就是普通正文。 */
+.node-text-table > .node-text-table-src {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  white-space: pre-wrap;
-  word-break: break-word;
+  opacity: 0;
+  pointer-events: none;
 }
+.node-text-table > .node-text-table-view { cursor: text; white-space: normal; }
+.node-text-table > .node-text-table-view .MDTable table { margin: 4px 0; }
