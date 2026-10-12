@@ -17,3 +17,28 @@ export function tableSourceOf(el: Element): string | null {
   const s = Node.string(el)
   return isTableText(s) ? s.replace(/\u200b/g, '').trim() : null
 }
+
+function splitRow(line: string) {
+  const s = line.trim().replace(/^\|/, '').replace(/\|$/, '')
+  return s.split(/(?<!\\)\|/).map((c) => c.trim())
+}
+
+/**
+ * 把 GFM 表格文字转成 Roam 式节点表格（layout=tablesimple）：
+ * 每行一个子节点，行的正文是第一格，其余各格依次是这一行的子节点；表头就是第一行。
+ * 不是表格时返回 null。
+ */
+export function tableTextToOutline(s: string): { ori: string; layout: string; subitems: any[] } | null {
+  if (!isTableText(s)) return null
+  const lines = s.replace(/\u200b/g, '').trim().split('\n')
+  const rows = [lines[0], ...lines.slice(2)].map(splitRow)
+  const width = Math.max(...rows.map((r) => r.length))
+  return {
+    ori: '',
+    layout: 'tablesimple',
+    subitems: rows.map((r) => ({
+      ori: r[0] ?? '',
+      subitems: Array.from({ length: width - 1 }, (_, i) => ({ ori: r[i + 1] ?? '', subitems: [] })),
+    })),
+  }
+}

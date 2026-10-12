@@ -260,6 +260,7 @@ class EventHandler implements IAddon {
         // explicitly so repeated ArrowDown presses advance one node at a time.
         if (
           e.key === 'ArrowDown' &&
+          !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey &&
           Range.isCollapsed(selection) &&
           editor.itemTextBeforeCaret() === ''
         ) {

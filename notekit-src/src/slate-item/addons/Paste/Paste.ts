@@ -7,6 +7,7 @@ import { isEmpty, notEmpty } from '../../utils/isEmpty'
 import { mkid } from '../../utils/string/mkid'
 import { ItemEditor } from '../EditorFactory/ItemEditor'
 import { html2outline, isCodeblock, md2outline } from './helper'
+import { tableTextToOutline } from '../MDTable/tableText'
 import { isImgUrl, isUrl } from '../../utils/regexp'
 import { ZERO_WIDTH_SPACE } from '../Strmap/Strmap'
 import { recur } from '../../utils/recur'
@@ -126,12 +127,18 @@ export function createPasteAddon({ $ }: NewAddonParams) {
         }
 
         const result = md2outline(mdStr, true)
+        // Markdown 表格 → Roam 式节点表格：每行一个节点，行可直接拖动/上下移
+        recur(result as any, (item: any) => {
+          const m = /^```table\n([\s\S]+?)\n```$/.exec((item.ori ?? '').trim())
+          const outline = m && tableTextToOutline(m[1])
+          if (outline) Object.assign(item, outline)
+        })
         recur(result as any, (item: UnitPersist) => {
           const v2item = $.compat.convertItem(item as any)
           Object.assign(item, v2item)
         })
 
-        if (editor.itemDepth() === 0) {
+        if (editor.itemDepth() === 0 && !(result.subitems[0] as any)?.layout) {
           const first = result.subitems.shift()
           editor.insertText(first?.ori ?? '')
           ItemTransforms.insertItems(editor, {
