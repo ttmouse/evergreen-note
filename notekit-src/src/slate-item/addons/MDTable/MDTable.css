@@ -1,22 +1,22 @@
-/* 鼠标移入表格时的源码态（MDTableComp.tsx）。flow-root 把表格的上下外边距收进容器，
-   切到源码时按同一高度占位，下方内容不跳动。 */
+/* 鼠标移入表格时的源码态（MDTableComp.tsx）：外观与笔记正文一致——无边框、无底色、
+   继承正文字体与行高，像在原生文本里编辑 Markdown。flow-root 把表格上下外边距收进容器。 */
 .mdtable-block { display: flow-root; }
 .mdtable-source {
   display: block;
   box-sizing: border-box;
   width: 100%;
   margin: 0;
-  padding: 8px 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--nk-ink);
-  background: var(--nk-surface);
-  border: 1px solid var(--nk-line);
-  border-radius: 4px;
-  resize: none;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   outline: none;
-  white-space: pre;
-  overflow-x: auto;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
-.mdtable-source:focus { border-color: var(--nk-accent); }

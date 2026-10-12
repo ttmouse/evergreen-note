@@ -126,8 +126,9 @@ export function InlinesBar2Comp(props: { name: string }) {
     const barDom = ref.current!
     // checkbox 悬停不弹编辑铅笔：点击本身就是切换勾选，且它没有注册
     // fieldset/编辑表单，铅笔点开也是空菜单。其它行内元素不受影响。
+    // Markdown 表格移入即切成纯文本源码直接编辑，同样不要铅笔（2026-10-12 用户要求「没有额外的东西」）。
     const selector =
-      '.inline-element *:not(.plg-codemirror-wrap *, .nav-area *, element-embed *, .element-checkbox, .element-checkbox *)'
+      '.inline-element *:not(.plg-codemirror-wrap *, .nav-area *, element-embed *, .element-checkbox, .element-checkbox *, .mdtable-block, .mdtable-block *)'
 
     // 指针是否仍压在按钮或行内元素上（按坐标实探，不只看事件标志）。
     // 笔记保存/节点重挂会在指针静止时换掉行内元素：浏览器为旧节点补一次

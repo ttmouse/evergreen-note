@@ -52,7 +52,16 @@ export function MDTableElementComp(props: ElementComponentProps<MDTableElement>)
   const [draft, setDraft] = React.useState(element.value);
   const [minHeight, setMinHeight] = React.useState(0);
   const host = React.useRef<HTMLDivElement>(null);
+  const area = React.useRef<HTMLTextAreaElement>(null);
   const editing = !readOnly && (hover || typing);
+
+  // 源码按内容自适应高度，像正文一样有几行占几行
+  React.useLayoutEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    el.style.height = '0px';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [editing, draft]);
 
   React.useEffect(() => {
     if (!typing) setDraft(element.value);
@@ -77,17 +86,19 @@ export function MDTableElementComp(props: ElementComponentProps<MDTableElement>)
     setHover(true);
   };
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
-  const lines = draft.split('\n').length;
 
   const inner = (
-    <div ref={host} className="mdtable-block" onMouseEnter={enter} onMouseLeave={() => setHover(false)}>
+    // 仅悬停未输入时保留表格原高度（不可见占位）：源码比表格矮时指针不会落到区域外、来回闪切；
+    // 点进去输入后释放，文本有多高就多高。
+    <div ref={host} className="mdtable-block" style={{ minHeight: hover && !typing ? minHeight : undefined }}
+      onMouseEnter={enter} onMouseLeave={() => setHover(false)}>
       {editing ? (
         <textarea
+          ref={area}
           className="mdtable-source"
           spellCheck={false}
           value={draft}
-          rows={lines}
-          style={{ minHeight }}
+          rows={1}
           onChange={(e) => save(e.target.value)}
           onFocus={() => setTyping(true)}
           onBlur={() => { flush(); setTyping(false); }}
