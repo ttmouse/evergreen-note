@@ -172,6 +172,15 @@ export const AiPanelComp = observer(() => {
   const bodyRef = useRef<HTMLDivElement>(null)
   const stickRef = useRef(true)
   const [atBottom, setAtBottom] = useState(true)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // 输入框高度随内容长（封顶 ~5 行），发送清空后自动收回单行
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 110)}px`
+  }, [draft])
 
   useEffect(() => {
     S.connect()
@@ -585,18 +594,21 @@ export const AiPanelComp = observer(() => {
           </div>
         )}
         <div style={{ display: 'flex', gap: 8 }}>
-          <input
+          {/* textarea 支持换行（Shift+Enter 换行、Enter 发送），高度随内容长到 5 行封顶 */}
+          <textarea
+            ref={inputRef}
             value={draft}
+            rows={1}
             onMouseDown={() => (opCtxRef.current = resolveNow())}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault()
                 send()
               }
             }}
-            placeholder={S.busy ? '它正在这一段里干活…（可点停止）' : '让它改这篇笔记，或问它点什么'}
-            style={{ flex: 1, font: 'inherit', fontSize: 13, padding: '6px 10px', borderRadius: 6, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, outline: 'none' }}
+            placeholder={S.busy ? '它正在这一段里干活…（可点停止）' : '让它改这篇笔记，或问它点什么（Shift+Enter 换行）'}
+            style={{ flex: 1, font: 'inherit', fontSize: 13, padding: '6px 10px', borderRadius: 6, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, outline: 'none', resize: 'none', lineHeight: 1.5, overflowY: 'auto' }}
           />
           {S.busy ? (
             <button
