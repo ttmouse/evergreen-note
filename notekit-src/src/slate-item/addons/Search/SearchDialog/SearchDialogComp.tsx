@@ -217,6 +217,13 @@ const resultItemStyle = [
 
     > .node-head {
       padding: 4px 0px;
+      align-items: center;
+      line-height: 1.4;
+    }
+
+    .crumbs-outer {
+      margin-top: 2px;
+      line-height: 1.4;
     }
 
     .crumbs-item {
@@ -280,7 +287,12 @@ export function SearchResultItem(
     <div className={cssClass.join(' ')} onClick={onClick}>
       <div
         className="node-head"
-        style={{ display: 'flex', justifyContent: 'space-between' }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+        }}
       >
         {(item as any).headString ?? (
           <WordHighlight
@@ -291,10 +303,12 @@ export function SearchResultItem(
         <span
           style={{
             flexShrink: 0,
-            marginLeft: 8,
             fontSize: '12px',
             color: 'var(--cl-slate-400)',
             fontVariantNumeric: 'tabular-nums',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
           }}
         >
           {isTopic && (
@@ -304,7 +318,7 @@ export function SearchResultItem(
           )}
           {count > 0 && (
             <Tip title={`引用来源笔记 ${count} 篇`}>
-              <span style={isTopic ? { marginLeft: 8 } : undefined}>
+              <span>
                 {isTopic ? '引用 ' : ''}
                 {count}
               </span>
@@ -316,7 +330,6 @@ export function SearchResultItem(
             className="search-result-actions"
             style={{
               flexShrink: 0,
-              marginLeft: 8,
               display: 'flex',
               alignItems: 'center',
               // 间距走 DESIGN.md §5.2 档位 {4,8,12,16,24,32}
