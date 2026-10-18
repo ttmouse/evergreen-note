@@ -256,16 +256,15 @@ export function SearchResultItem(
   const count = $.refer.getBacklinkCount(item.ky) + $.embed.getBacklinkCount(item.ky)
 
   const isTopic = Item.isTopic(item)
-  const nodeCount = isTopic ? $.counter.countDescendants(item) : 0
-  const wordCount = isTopic ? $.counter.countWordsOfTree(item).count : 0
-
-  // 「创建主题」这类动作行不是笔记（哨兵 ky 'create-topic'，走 onConfirm/onChoose），
-  // 不给额外入口——否则会把 'create-topic' 当 ky 传下去，开出一张 floatview-undefined 的空壳卡片。
+  // 节点数/字数统计不限于主题：任何笔记行（含普通块）都展示其子树规模，
+  // 主题之外的行为此前一律不显示，被误读为「缺数据」（D125F26FCF5E-26）。
   const isNoteRow =
     !isEmpty(item.ky) &&
     item.ky !== 'create-topic' &&
     !(item as any).onConfirm &&
     !(item as any).onChoose
+  const nodeCount = isNoteRow ? $.counter.countDescendants(item) : 0
+  const wordCount = isNoteRow ? $.counter.countWordsOfTree(item).count : 0
   const canOpenWindow =
     isNoteRow && typeof (window as any).notekitShell?.openFloatWindow === 'function'
   const itemTitle = isNoteRow ? Item.headString(item) : ''
@@ -321,7 +320,7 @@ export function SearchResultItem(
             gap: 8,
           }}
         >
-          {isTopic && (
+          {isNoteRow && (
             <span>
               {nodeCount} 节点 · {wordCount} 字
             </span>
