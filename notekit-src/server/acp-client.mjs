@@ -259,14 +259,27 @@ export class AcpClient extends EventEmitter {
     return res
   }
 
-  /** 发一轮。返回 stopReason；流式内容通过 'update' 事件出来。 */
-  async prompt(sessionId, text) {
+  /**
+   * 发一轮。返回 stopReason；流式内容通过 'update' 事件出来。
+   * @param {string} sessionId
+   * @param {string} text
+   * @param {Array<object>} [extraBlocks] 追加在 text 块之后的 ACP ContentBlock
+   *   （如 {type:'image', data: base64, mimeType}）。形状不对的项静默忽略；
+   *   agent 是否真具备视觉能力由其模型决定，协议层只保证块形状正确。
+   */
+  async prompt(sessionId, text, extraBlocks = []) {
     if (this.inflight.get(sessionId)) throw new Error('该会话已有一轮在飞（ACP 每会话同一时刻只允许一个 prompt）')
     this.inflight.set(sessionId, true)
     try {
+      const prompt = [{ type: 'text', text: String(text ?? '') }]
+      if (Array.isArray(extraBlocks)) {
+        for (const b of extraBlocks) {
+          if (b && typeof b === 'object' && typeof b.type === 'string' && b.type !== 'text') prompt.push(b)
+        }
+      }
       const res = await this._request(
         'session/prompt',
-        { sessionId, prompt: [{ type: 'text', text: String(text ?? '') }] },
+        { sessionId, prompt },
         30 * 60 * 1000
       )
       return res?.stopReason ?? 'end_turn'

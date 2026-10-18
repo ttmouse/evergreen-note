@@ -5,7 +5,8 @@
  *   GET  /api/ai/acp/status                  → {state, sessionId, busy, agent}
  *   GET  /api/ai/acp/stream                  → SSE：push 会话事件
  *   POST /api/ai/acp/session                 → 确保 agent + 会话就绪
- *   POST /api/ai/acp/prompt  {text, note}    → 发一轮（异步，事件走 SSE）
+ *   POST /api/ai/acp/prompt  {text, note, images[]} → 发一轮（异步，事件走 SSE）
+ *        images[]：{dataUrl} 或 {data, mimeType}，归一成 ACP image 内容块随 prompt 发送
  *   POST /api/ai/acp/cancel                  → 取消当前轮
  *   POST /api/ai/acp/permission {requestId, decision} → 应答 agent 的审批请求
  *   POST /api/ai/acp/stop                    → 杀掉 agent（应用退出时用）
@@ -23,6 +24,36 @@ import { AcpClient } from './acp-client.mjs'
 import { composePrompt } from './ai-prompt.mjs'
 
 const PERMISSION_TIMEOUT_MS = 120000
+const MAX_PROMPT_IMAGES = 8
+const MAX_IMAGE_B64_CHARS = 8 * 1024 * 1024 // 单张 base64 ~8M 字符（≈6MB 原图），超了剔除
+
+/**
+ * /prompt 附图 → ACP image 内容块（{type:'image', data, mimeType}）。
+ * 兼容 {dataUrl}（yqa-g 扩展侧）与 {data, mimeType|mime} 两种形态；
+ * mime 白名单 + 张数/体积上限，不合法的静默剔除——不让一张坏图拖死整轮。
+ * agent/模型是否真具备视觉能力由 dsh 侧决定，这里只保证协议形状正确。
+ */
+function imageBlocksOf(body) {
+  const list = Array.isArray(body?.images) ? body.images : []
+  const blocks = []
+  for (const im of list.slice(0, MAX_PROMPT_IMAGES)) {
+    if (!im || typeof im !== 'object') continue
+    let data = typeof im.data === 'string' ? im.data : ''
+    let mimeType = typeof im.mimeType === 'string' ? im.mimeType : (typeof im.mime === 'string' ? im.mime : '')
+    if (!data && typeof im.dataUrl === 'string') {
+      const m = /^data:([^;]+);base64,(.+)$/.exec(im.dataUrl)
+      if (m) {
+        if (!mimeType) mimeType = m[1]
+        data = m[2]
+      }
+    }
+    if (!data || !mimeType) continue
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(mimeType)) continue
+    if (data.length > MAX_IMAGE_B64_CHARS) continue
+    blocks.push({ type: 'image', data, mimeType })
+  }
+  return blocks
+}
 
 /** agent 子进程要能看见 dsh / ev（GUI 启动的进程 PATH 往往很窄，这里显式补） */
 function agentEnv() {
@@ -38,6 +69,81 @@ function agentEnv() {
   const cur = process.env.PATH || ''
   const PATH = [...new Set([...extraPaths, ...cur.split(':').filter(Boolean)])].join(':')
   return { PATH }
+}
+
+// ------------------------------------------------------------------ ACP update → SSE 事件（纯函数，可单测）
+
+/** rawOutput 转发上限（字符数）：完整工具输出可能非常大，超限截断防撑爆 SSE。 */
+export const MAX_TOOL_OUTPUT_CHARS = 8192
+
+/**
+ * rawOutput 规范化 + 截断：字符串直接用；对象先 JSON.stringify（循环引用兜底 String()）。
+ * 超上限截断并置 rawOutputTruncated:true。转发 ≠ UI 展示——扩展侧（bridge-adapter 的
+ * formatBridgeToolOutput 等）会结构化消费这份输出；截断是转发侧自保，不是「不给看」。
+ */
+export function clipToolOutput(raw) {
+  if (raw == null) return { rawOutput: null, rawOutputTruncated: false }
+  let text
+  if (typeof raw === 'string') text = raw
+  else {
+    try {
+      text = JSON.stringify(raw)
+    } catch {
+      text = undefined // 循环引用等 stringify 失败 → 下面兜底 String()
+    }
+  }
+  if (typeof text !== 'string') text = String(raw)
+  if (text.length <= MAX_TOOL_OUTPUT_CHARS) return { rawOutput: text, rawOutputTruncated: false }
+  return { rawOutput: text.slice(0, MAX_TOOL_OUTPUT_CHARS), rawOutputTruncated: true }
+}
+
+/**
+ * ACP session/update → 要广播的 SSE 事件（{type, payload}）；无需广播的返回 null。
+ * ⚠️ 每个事件都必须带 sessionId：多会话下渲染层靠它分流，否则 A 的回复会串进 B。
+ * 抽成纯函数（同 composePrompt 的做法）以便单测：tool_call / tool_call_update 在
+ * UI 最小字段之上转发 content（原样）与 rawOutput（截断），供扩展侧结构化消费。
+ */
+export function acpUpdateToEvent(sid, update) {
+  const k = update?.sessionUpdate
+  if (k === 'agent_message_chunk') return { type: 'text', payload: { sessionId: sid, text: update.content?.text ?? '' } }
+  if (k === 'agent_thought_chunk') return { type: 'thought', payload: { sessionId: sid, text: update.content?.text ?? '' } }
+  if (k === 'tool_call')
+    return {
+      type: 'tool',
+      payload: {
+        sessionId: sid,
+        toolCallId: update.toolCallId,
+        title: update.title || update.kind || 'tool',
+        kind: update.kind,
+        // rawInput 给 UI 拼「动词 + 宾语」用（DSH 的 title 只有工具名，如 "bash"）。
+        // content / rawOutput 是转发不是展示（旧注释「明确不吃 rawOutput」已废）：
+        // 扩展侧 formatBridgeToolOutput 把 rawOutput / content[] 拼成 markdown chunk；
+        // rawOutput 由 clipToolOutput 统一截断，防止超长输出撑爆 SSE。
+        rawInput: update.rawInput || null,
+        ...clipToolOutput(update.rawOutput),
+        content: update.content ?? null,
+        status: update.status || 'pending',
+        locations: update.locations || null,
+      },
+    }
+  if (k === 'tool_call_update')
+    return {
+      type: 'tool_update',
+      payload: {
+        sessionId: sid,
+        toolCallId: update.toolCallId,
+        status: update.status,
+        title: update.title,
+        kind: update.kind,
+        rawInput: update.rawInput || null,
+        ...clipToolOutput(update.rawOutput),
+        content: update.content ?? null,
+        locations: update.locations || null,
+      },
+    }
+  if (k === 'usage_update') return { type: 'usage', payload: { sessionId: sid, used: update.used, size: update.size } }
+  if (k === 'config_option_update') return { type: 'config', payload: { sessionId: sid, configOptions: update.configOptions } }
+  return null
 }
 
 export function createAiAcpService({ dataDir, readBody, writeJson, log = () => {} }) {
@@ -91,36 +197,11 @@ export function createAiAcpService({ dataDir, readBody, writeJson, log = () => {
   // ------------------------------------------------------------------ agent 生命周期
 
   function wire(c) {
+    // update → SSE 事件的映射抽到 acpUpdateToEvent（纯函数，见文件头部，可单测）。
     c.on('update', ({ sessionId: sid, update }) => {
       if (!update) return
-      const k = update.sessionUpdate
-      // ⚠️ 每个事件都必须带 sessionId：多会话下渲染层靠它分流，否则 A 的回复会串进 B。
-      if (k === 'agent_message_chunk') push('text', { sessionId: sid, text: update.content?.text ?? '' })
-      else if (k === 'agent_thought_chunk') push('thought', { sessionId: sid, text: update.content?.text ?? '' })
-      else if (k === 'tool_call')
-        push('tool', {
-          sessionId: sid,
-          toolCallId: update.toolCallId,
-          title: update.title || update.kind || 'tool',
-          kind: update.kind,
-          // rawInput 给 UI 拼「动词 + 宾语」用（DSH 的 title 只有工具名，如 "bash"）。
-          // 明确不吃 rawOutput：那是完整工具输出，可能很大，UI 一行放不下。
-          rawInput: update.rawInput || null,
-          status: update.status || 'pending',
-          locations: update.locations || null,
-        })
-      else if (k === 'tool_call_update')
-        push('tool_update', {
-          sessionId: sid,
-          toolCallId: update.toolCallId,
-          status: update.status,
-          title: update.title,
-          kind: update.kind,
-          rawInput: update.rawInput || null,
-          locations: update.locations || null,
-        })
-      else if (k === 'usage_update') push('usage', { sessionId: sid, used: update.used, size: update.size })
-      else if (k === 'config_option_update') push('config', { sessionId: sid, configOptions: update.configOptions })
+      const ev = acpUpdateToEvent(sid, update)
+      if (ev) push(ev.type, ev.payload)
     })
 
     // agent 反向请求：目前只有 session/request_permission —— 必须应答
@@ -223,13 +304,13 @@ export function createAiAcpService({ dataDir, readBody, writeJson, log = () => {
     }
   }
 
-  async function runTurn(text, note, wantedSession) {
+  async function runTurn(text, note, wantedSession, imageBlocks = []) {
     const sid = await useSession(wantedSession)
     if (busySessions.get(sid)) throw new Error('该会话上一轮还没结束')
     busySessions.set(sid, true)
-    push('turn_start', { sessionId: sid, text })
+    push('turn_start', { sessionId: sid, text, images: imageBlocks.length })
     try {
-      const stopReason = await client.prompt(sid, composePrompt(text, note))
+      const stopReason = await client.prompt(sid, composePrompt(text, note), imageBlocks)
       push('turn_end', { sessionId: sid, stopReason })
       return stopReason
     } catch (e) {
@@ -350,9 +431,10 @@ export function createAiAcpService({ dataDir, readBody, writeJson, log = () => {
         writeJson(res, { ok: false, error: '空提示词' }, 400)
         return true
       }
+      const imageBlocks = imageBlocksOf(body)
       // 立刻返回，内容走 SSE（避免 HTTP 长挂）
-      runTurn(text, body.note, body.sessionId).catch((e) => log('[acp] 回合失败：' + e.message))
-      writeJson(res, { ok: true, accepted: true })
+      runTurn(text, body.note, body.sessionId, imageBlocks).catch((e) => log('[acp] 回合失败：' + e.message))
+      writeJson(res, { ok: true, accepted: true, images: imageBlocks.length })
       return true
     }
 
