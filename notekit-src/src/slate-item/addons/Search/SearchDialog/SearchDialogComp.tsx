@@ -294,12 +294,22 @@ export function SearchResultItem(
           gap: 8,
         }}
       >
-        {(item as any).headString ?? (
-          <WordHighlight
-            content={Item.headString(item, { parseRefer: true })}
-            keyword={keyword}
-          />
-        )}
+        <span
+          style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {(item as any).headString ?? (
+            <WordHighlight
+              content={Item.headString(item, { parseRefer: true })}
+              keyword={keyword}
+            />
+          )}
+        </span>
         <span
           style={{
             flexShrink: 0,
