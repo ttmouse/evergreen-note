@@ -10,34 +10,13 @@ import { isEmpty } from '../../utils/isEmpty'
 import { showSnack } from '../../utils/msg/showSnack'
 import { parseAddonUrlScheme } from './helper'
 import { resolveLinkTarget } from './linkTarget'
+import { openInSystemBrowser } from '../../utils/openExternal'
 import { ItemEditor, ItemNode } from '@/slate-item'
 import { keyState } from '../KeyClick/helper'
 import { cls } from '@/slate-item/styles'
 import { MAX_Z_INDEX } from '@/slate-item/hooks/useTopZIndex'
 import { HotkeyMaps } from '../Hotkey/Hotkey'
 import { $t } from '../../../i18n'
-
-/**
- * 站外链接：交给系统默认浏览器，绝不在本窗口里导航。
- *
- * 2026-10-20 报障：AI 侧边栏回复里的外链点下去是在 App 自己的窗口里打开的 ——
- * 整个界面被网页顶掉，没有后退入口，只能重启。归类在 linkTarget.resolveLinkTarget
- * （外部站点、非同源端口的代理地址、mailto 等都归 external），这里只负责送出去。
- *
- * 桌面壳里走本地服务的 /api/open-external（沙箱 preload 拿不到 electron.shell）；
- * 纯浏览器（vite dev / 预览）没有外壳，新标签页就是默认浏览器的等价物。
- */
-function openInSystemBrowser(url: string) {
-  if ((window as any).notekitShell?.platform) {
-    fetch('/api/open-external', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
-    }).catch(() => {})
-    return
-  }
-  window.open(url, '_blank', 'noopener,noreferrer')
-}
 
 export type RouteMaps = {
   [route: string]: {

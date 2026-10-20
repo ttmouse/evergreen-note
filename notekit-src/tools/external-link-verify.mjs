@@ -180,6 +180,103 @@ try {
     .filter((e) => e.method === 'Runtime.exceptionThrown')
     .map((e) => JSON.stringify(e.params).slice(0, 200))
   check('E7 页面无未捕获异常', consoleErrors.length === 0, consoleErrors.slice(0, 3))
+
+  // ---- E8/E9：正文里的纯文本 URL（2026-10-20 报障） ----
+  const clickAt = async (x, y) => {
+    for (const type of ['mousePressed', 'mouseReleased']) {
+      await cdp.call('Input.dispatchMouseEvent', { type, x: Math.round(x), y: Math.round(y), button: 'left', clickCount: 1 })
+    }
+    await sleeps(500)
+  }
+
+  await ev(`(async () => { await window.__notekitApp.addons.topic.route('正文链接验收'); return true })()`).catch(() => true)
+  await sleeps(1600)
+
+  const box = await ev(`(() => {
+    const el = document.querySelector('.editor-view [contenteditable="true"]')
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { x: r.left + 40, y: r.top + 20 }
+  })()`)
+  if (box) {
+    await clickAt(box.x, box.y)
+    await cdp.call('Input.insertText', { text: '官网 https://example.com/plain 结束' })
+    await sleeps(700)
+
+    await ev(`(() => { window.__nkOpened = []; window.__nkMarker = 'alive'; return true })()`)
+    const urlPoint = await ev(`(() => {
+      const ed = document.querySelector('.editor-view [contenteditable="true"]')
+      if (!ed) return null
+      const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT)
+      let n
+      while ((n = w.nextNode())) if ((n.nodeValue || '').includes('example.com/plain')) break
+      if (!n) return null
+      const i = (n.nodeValue || '').indexOf('example.com/plain')
+      const r = document.createRange()
+      r.setStart(n, i + 2)
+      r.setEnd(n, i + 3)
+      const b = r.getBoundingClientRect()
+      return { x: b.left + 1, y: b.top + b.height / 2 }
+    })()`)
+    if (urlPoint) await clickAt(urlPoint.x, urlPoint.y)
+
+    const body = await ev(`({ opened: window.__nkOpened, marker: window.__nkMarker, hasApp: !!window.__notekitApp, href: location.href })`)
+    const bodyHit = (body.opened || []).find((o) => o.url.includes('/api/open-external'))
+    check(
+      'E8 正文纯文本 URL 单击：交系统浏览器且窗口不导航',
+      !!urlPoint && !!bodyHit && bodyHit.body.includes('https://example.com/plain') && body.marker === 'alive' && body.hasApp,
+      { urlPoint, body },
+    )
+
+    // E9：点到普通文字仍要落光标（不能被 URL 拦截器吞掉）
+    const textPoint = await ev(`(() => {
+      const ed = document.querySelector('.editor-view [contenteditable="true"]')
+      const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT)
+      let n
+      while ((n = w.nextNode())) if ((n.nodeValue || '').includes('结束')) break
+      if (!n) return null
+      const i = (n.nodeValue || '').indexOf('结束')
+      const r = document.createRange()
+      r.setStart(n, i)
+      r.setEnd(n, i + 1)
+      const b = r.getBoundingClientRect()
+      return { x: b.left + 2, y: b.top + b.height / 2 }
+    })()`)
+    if (textPoint) await clickAt(textPoint.x, textPoint.y)
+    const sel = await ev(`(() => {
+      const s = getSelection()
+      return { collapsed: s?.isCollapsed ?? null, text: s?.anchorNode?.nodeValue ?? null, offset: s?.anchorOffset ?? null }
+    })()`)
+    check('E9 普通文字单击仍落光标', !!textPoint && sel.collapsed === true && String(sel.text || '').includes('结束'), sel)
+
+    // E10：粘贴生成的超链接元素仍能单击打开，且只发一次请求（新型 mousedown 拦截不得抢跑）
+    await ev(`(() => {
+      const ed = document.querySelector('.editor-view [contenteditable="true"]')
+      const dt = new DataTransfer()
+      dt.setData('text/plain', 'https://example.com/linked')
+      ed.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }))
+      return true
+    })()`)
+    await sleeps(800)
+    await ev(`(() => { window.__nkOpened = []; window.__nkMarker = 'alive'; return true })()`)
+    const linkPoint = await ev(`(() => {
+      const a = [...document.querySelectorAll('.editor-view a')].find(x => (x.getAttribute('href') || '').includes('linked'))
+      if (!a) return null
+      const r = a.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    })()`)
+    if (linkPoint) await clickAt(linkPoint.x, linkPoint.y)
+    const linked = await ev(`({ opened: window.__nkOpened, marker: window.__nkMarker, hasApp: !!window.__notekitApp })`)
+    const openedCount = (linked.opened || []).filter((o) => o.url.includes('/api/open-external')).length
+    check(
+      'E10 超链接元素单击：打开且只发一次',
+      !!linkPoint && openedCount === 1 && linked.marker === 'alive' && linked.hasApp,
+      { linkPoint, openedCount, linked },
+    )
+  } else {
+    check('E8 正文纯文本 URL 单击：交系统浏览器且窗口不导航', false, '编辑器未就绪')
+    check('E9 普通文字单击仍落光标', false, '编辑器未就绪')
+  }
 } catch (e) {
   check('执行异常', false, String(e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e))
 } finally {
