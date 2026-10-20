@@ -17,6 +17,28 @@ import { MAX_Z_INDEX } from '@/slate-item/hooks/useTopZIndex'
 import { HotkeyMaps } from '../Hotkey/Hotkey'
 import { $t } from '../../../i18n'
 
+/**
+ * 站外链接：交给系统默认浏览器，绝不在本窗口里导航。
+ *
+ * 2026-10-20 报障：AI 侧边栏回复里的外链点下去是在 App 自己的窗口里打开的 ——
+ * 整个界面被网页顶掉，没有后退入口，只能重启。归类在 linkTarget.resolveLinkTarget
+ * （外部站点、非同源端口的代理地址、mailto 等都归 external），这里只负责送出去。
+ *
+ * 桌面壳里走本地服务的 /api/open-external（沙箱 preload 拿不到 electron.shell）；
+ * 纯浏览器（vite dev / 预览）没有外壳，新标签页就是默认浏览器的等价物。
+ */
+function openInSystemBrowser(url: string) {
+  if ((window as any).notekitShell?.platform) {
+    fetch('/api/open-external', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    }).catch(() => {})
+    return
+  }
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
 export type RouteMaps = {
   [route: string]: {
     title: string
@@ -529,6 +551,16 @@ export function createRouterAddon({ app, $ }: NewAddonParams) {
           const a = el?.closest?.('a')
           if (!a) return
           const link = resolveLinkTarget(a.getAttribute('href'), window.location.origin, window.location.href)
+          if (link.kind === 'external') {
+            // file:// 等本地协议交给外壳原本的 <a> 行为（Hyperlink 注释里说明过这个依赖），
+            // 只有浏览器能处理的协议才走「送出去」这条路。
+            if (!/^(?:https?|mailto):/i.test(link.url)) return
+            // 站外链接：不能让默认行为发生 —— <a href> 的跳转发生在 click 上，
+            // 一放行整个 App 就被那页网页替换（且没有后退入口）。
+            e.preventDefault()
+            openInSystemBrowser(link.url)
+            return
+          }
           if (link.kind !== 'inApp') return
           e.preventDefault()
           // 键盘回车 / 脚本触发没有 mousedown，这里补一次路由

@@ -16,6 +16,7 @@
  * ~/Library/Application Support/Notekit/library/，由外壳显式指定。
  */
 import { createServer } from 'node:http'
+import { execFile } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
@@ -276,6 +277,31 @@ function sendFile(res, file) {
   res.end(readFileSync(file))
 }
 
+/**
+ * 把 URL 交给系统默认浏览器。
+ *
+ * 为什么落在服务端：渲染层需要「点外链 → 系统浏览器」，而沙箱化的 preload（Electron 44
+ * 实测）拿不到 electron.shell，必须由主进程代劳；外壳那条 IPC 桥目前写不进去，
+ * 所以先把这一步落在本地服务。接口带同源校验，只放行 http/https/mailto。
+ */
+function openInBrowser(target) {
+  if (process.env.NOTEKIT_TEST_NO_OPEN === '1') {
+    console.log(`[open-external] （测试不打开）${target}`)
+    return
+  }
+  const [cmd, args] =
+    process.platform === 'darwin'
+      ? ['open', [target]]
+      : process.platform === 'win32'
+        ? ['cmd', ['/c', 'start', '', target]]
+        : ['xdg-open', [target]]
+  // 不经 shell：URL 里的 & 与 ? 不会被当成命令分隔符
+  execFile(cmd, args, (error) => {
+    if (error) console.error(`[open-external] 打开失败: ${error.message}`)
+    else console.log(`[open-external] ${target}`)
+  })
+}
+
 function readRaw(req) {
   return new Promise((resolve) => {
     const chunks = []
@@ -328,6 +354,30 @@ const server = createServer(async (req, res) => {
       const result = await callNoteCommand(await readBody(req))
       verifySaved(result, (dbid, store, key) => storage.get(dbid, store, key))
       return sendJson(res, result)
+    }
+    // ---------- 外链交系统默认浏览器 ----------
+    // 页面里点站外链接（AI 侧边栏回复最多）不能在本窗口导航：那会把整个 App 顶掉，
+    // 没有后退入口（2026-10-20 报障）。渲染层的拦截在 Router.tsx，这里负责真正打开。
+    if (p === '/api/open-external' && req.method === 'POST') {
+      // 只接受同源页面发起：跨站网页发起的 POST 会被 Origin 挡掉，
+      // 自定义头不适用（浏览器会先 preflight），所以这两道校验就够。
+      const site = req.headers['sec-fetch-site']
+      if (req.headers.origin !== `http://127.0.0.1:${PORT}` || (site && site !== 'same-origin')) {
+        return sendJson(res, { ok: false, error: '仅允许应用页面调用' }, 403)
+      }
+      const body = await readBody(req)
+      let target
+      try {
+        target = new URL(String(body?.url || ''))
+      } catch {
+        return sendJson(res, { ok: false, error: 'URL 无法解析' }, 400)
+      }
+      if (!['http:', 'https:', 'mailto:'].includes(target.protocol)) {
+        return sendJson(res, { ok: false, error: '只允许 http/https/mailto' }, 400)
+      }
+      openInBrowser(target.toString())
+      log(`-> ${target}`)
+      return sendJson(res, { ok: true })
     }
     // ---------- 数据接口 ----------
     if (p === '/api/storage/backup' && req.method === 'POST') {
