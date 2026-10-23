@@ -30,7 +30,7 @@ const surface = 'var(--nk-surface)'
 const canvas = 'var(--nk-canvas)'
 const accent = 'var(--nk-accent)'
 const amber = '#febc2e'
-const red = '#d9534f'
+const red = 'var(--nk-danger)'
 
 // ------------------------------------------------------------------ 相位图标
 

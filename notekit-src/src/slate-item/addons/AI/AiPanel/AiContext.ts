@@ -1,5 +1,5 @@
 /**
- * AI 面板的「上下文解析 + 快捷操作」—— 纯函数，不依赖 React / DOM。
+ * AI 面板的「上下文解析」—— 纯函数，不依赖 React / DOM。
  * 选中块的 DOM 读取由调用方（AiPanelComp）注入，这里只吃纯数据，
  * 跟 phases.ts 一样是可以脱 UI 单测的接缝。
  *
@@ -8,7 +8,7 @@
  *      块原文随请求内联（agent 不必再去读库）；页面只作背景（标题 + ky）。
  *   2. 否则当前页面（editorView.currentItemKy）→ page：维持 v1 约定，
  *      只给 ky + 标题，正文由 agent 自己用 `ev get --ky` 读取。
- *   3. 都没有 → null：快捷操作禁用（空态要看得懂），自由对话仍可用。
+ *   3. 都没有 → null：上下文行显示「无上下文」，自由对话仍可用。
  *
  * 隐私边界（硬约束）：默认只出「当前页面及其中被显式选中的块」，
  * 不拼任何页面之外的内容；内联原文有截断上限，防止一次拖 选整页把请求撑爆。
@@ -19,8 +19,6 @@ export type AiContextBlock = { ky?: string; text: string }
 export type AiContext =
   | { mode: 'selection'; blocks: AiContextBlock[]; pageKy?: string; pageTitle?: string }
   | { mode: 'page'; pageKy: string; pageTitle?: string }
-
-export type AiOpKind = 'summarize' | 'suggest'
 
 /** 单块内联原文上限：块再长也只是背景之一，不该独占整个请求 */
 export const MAX_BLOCK_CHARS = 1500
@@ -68,16 +66,6 @@ export function contextLabel(ctx: AiContext): string {
     return `${ctx.blocks.length} 个选中块${page}`
   }
   return ctx.pageTitle ? `页「${ctx.pageTitle}」` : '当前页面'
-}
-
-/**
- * 快捷操作的用户可见指令。聊天气泡里显示的就是它，必须说人话、能被当成一条正常消息回放。
- * 具体怎么答（几条、什么顺序）也写在这里——它是这条消息的一部分，agent 看得到。
- */
-export function operationPrompt(ctx: AiContext, op: AiOpKind): string {
-  const target = ctx.mode === 'selection' ? `我选中的这 ${ctx.blocks.length} 个块` : '当前这篇笔记'
-  if (op === 'summarize') return `请归纳${target}：核心要点是什么，整体在讲什么。`
-  return `基于${target}，给出下一步建议：最多 5 条，按价值排序，每条一句话说明理由。`
 }
 
 export type AiNoteRef = {

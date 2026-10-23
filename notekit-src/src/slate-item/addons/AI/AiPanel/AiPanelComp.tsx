@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { observer } from 'mobx-react'
+import Autocomplete from '@mui/material/Autocomplete'
+import Popper from '@mui/material/Popper'
+import TextField from '@mui/material/TextField'
 import { marked } from 'marked'
 import { useAddons } from '../../../hooks/useAddons'
 import { aiPanelStore as S, NoteRef } from './AiPanelStore'
@@ -8,10 +11,8 @@ import { AiActivityTrack, ActivityOrb, AI_ACTIVITY_CSS } from './AiActivity'
 import { SvgIcon } from '../../../../components/SvgIcon'
 import {
   AiContext,
-  AiOpKind,
   contextLabel,
   contextNote,
-  operationPrompt,
   resolveAiContext,
 } from './AiContext'
 import { pub } from '../../../utils/pub'
@@ -100,6 +101,50 @@ const ink = 'var(--nk-ink)'
 const muted = 'var(--nk-muted)'
 const line = 'var(--nk-line)'
 const acc = 'var(--nk-accent)'
+const danger = 'var(--nk-danger)'
+const WideModelPopper = React.forwardRef<HTMLDivElement, any>((props, ref) => (
+  <Popper
+    {...props}
+    ref={ref}
+    style={{ ...props.style, width: '400px', maxWidth: 'calc(100vw - 24px)' }}
+  />
+))
+
+/** 上下文用量：小圆环进度。悬停/读屏给精确数值，界面上不占文字位。 */
+const UsageRing = ({ used, size }: { used: number; size: number }) => {
+  const pct = size > 0 ? Math.min(100, Math.max(0, (used / size) * 100)) : 0
+  const label = size > 0
+    ? `上下文已用 ${(used / 1000).toFixed(1)}k / ${(size / 1000).toFixed(0)}k（${pct.toFixed(0)}%）`
+    : '上下文用量：暂无数据'
+  const radius = 7
+  const circumference = 2 * Math.PI * radius
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, flexShrink: 0, opacity: size > 0 ? 1 : 0.5 }}
+    >
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+        <circle cx="9" cy="9" r={radius} fill="none" stroke={line} strokeWidth="2" />
+        {pct > 0 && (
+          <circle
+            cx="9"
+            cy="9"
+            r={radius}
+            fill="none"
+            stroke={acc}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={circumference * (1 - pct / 100)}
+            transform="rotate(-90 9 9)"
+          />
+        )}
+      </svg>
+    </span>
+  )
+}
 
 const AI_MD_CSS = `
 .ai-md { font-size: 14px; line-height: 1.85; color: ${ink}; word-break: break-word; }
@@ -127,24 +172,6 @@ const AI_MD_CSS = `
 @keyframes nkSettle { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ai-md.nk-settle { animation: none; } }
 
-/* 快捷操作（归纳 / 下一步）与输入区文字按钮（撤销改动）：走 App 的 ghost 语言 ——
-   透明底、muted 文字、hover 背景 --nk-hover + ink。不加边框不加实底，
-   与 workspace-theme.css 的 nav-footer / 菜单项按钮同一套。 */
-.ai-quick-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--nk-muted);
-  cursor: pointer;
-  transition: background .12s;
-}
-.ai-quick-btn:hover:not(:disabled) { background: var(--nk-hover); color: var(--nk-ink); }
-.ai-quick-btn:disabled { cursor: default; opacity: .45; }
-
 /* 头部图标按钮：与主区工具栏（workspace-theme.css .workspace-navigation button /
    .workspace-header-actions > .node）同一套规格 —— 30×30 热区、6px 圆角、
    默认 --nk-muted、hover 背景 --nk-hover 且图标转 --nk-ink、18px 图标。 */
@@ -163,6 +190,17 @@ const AI_MD_CSS = `
 }
 .ai-icon-btn:hover:not(:disabled) { background: var(--nk-hover); color: var(--nk-ink); }
 .ai-icon-btn:disabled { cursor: default; }
+
+/* 输入区：一个常规的对话输入框 —— 外框包住多行输入与底部操作条，
+   焦点落在 textarea 时整框换边色，替代原先给 textarea 单独描边。 */
+.ai-composer {
+  border: 1px solid var(--nk-line);
+  border-radius: 10px;
+  background: var(--nk-surface);
+  padding: 8px 8px 4px;
+  transition: border-color .12s;
+}
+.ai-composer:focus-within { border-color: var(--nk-line-strong); }
 `
 
 export const AiPanelComp = observer(() => {
@@ -179,13 +217,11 @@ export const AiPanelComp = observer(() => {
     const el = inputRef.current
     if (!el) return
     el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 110)}px`
+    el.style.height = `${Math.min(el.scrollHeight, 132)}px`
   }, [draft])
 
   useEffect(() => {
     S.connect()
-    // 打开面板即确保会话就绪（懒启动，失败会进 error 行）
-    S.ensureSession().catch(() => {})
   }, [])
 
   // ------------------------------------------------------- 上下文感知（页面 / 选中块）
@@ -267,19 +303,14 @@ export const AiPanelComp = observer(() => {
    */
   const send = async () => {
     const t = draft.trim()
-    if (!t || S.busy) return
+    const hasImages = S.pendingImages.length > 0
+    // 只有图、没有字也要能发：这是「贴张截图问一句」的主路径。
+    // 服务端不接受空 text，这里补一句最小的说明。
+    if ((!t && !hasImages) || S.busy) return
     const ctx = opCtxRef.current ?? aiContext
     opCtxRef.current = null
     setDraft('')
-    await S.send(t, ctx ? (contextNote(ctx) as NoteRef) : null)
-  }
-
-  /** 快捷操作：一键「归纳」/「下一步建议」，同样吃当前上下文（手势暂存优先） */
-  const runOp = (op: AiOpKind) => {
-    const ctx = opCtxRef.current ?? aiContext
-    opCtxRef.current = null
-    if (!ctx || S.busy) return
-    S.send(operationPrompt(ctx, op), contextNote(ctx) as NoteRef)
+    await S.send(t || '看看这张图', ctx ? (contextNote(ctx) as NoteRef) : null)
   }
 
   const fmtTime = (at: number) => {
@@ -294,6 +325,32 @@ export const AiPanelComp = observer(() => {
   const convs: any[] = Array.isArray(S.list) ? S.list : []
   const activeConv: any = S.active ?? null
   const viewing: number | null = activeConv?.id ?? null
+  useEffect(() => {
+    // 仅在当前对话变化时取配置；模型列表由 ACP agent 返回。
+    S.loadActiveConfigOptions().catch((e) => console.warn('[ai-panel] 加载模型配置失败', e))
+  }, [viewing])
+  const activeConfigOptions: any[] = activeConv?.acpSessionId
+    ? (S.configOptionsBySession[activeConv.acpSessionId] || [])
+    : []
+  const modelConfig = activeConfigOptions.find((option) =>
+    option?.category === 'model' && option?.type === 'select' && Array.isArray(option?.options)
+  )
+  const modelConfigId = modelConfig?.configId ?? modelConfig?.id
+  const modelChoices = modelConfig
+    ? modelConfig.options.flatMap((group: any) => {
+        const groupName = String(group?.name || group?.group || 'Models')
+        const entries = Array.isArray(group?.options) ? group.options : [group]
+        return entries
+          .map((option: any) => ({
+            value: String(option?.value ?? option?.id ?? ''),
+            name: String(option?.name || option?.label || option?.value || ''),
+            group: groupName,
+          }))
+          .filter((option: any) => option.value && option.name)
+      })
+    : []
+  const selectedModel = modelChoices.find((option: any) => option.value === String(modelConfig?.currentValue ?? '')) ?? null
+  const modelSwitchQueued = !!activeConv?.acpSessionId && !!S.pendingModelBySession[activeConv.acpSessionId]
   // 当前不是在最新的那段上（列表按最近活动排序）→ 给一条横幅说明你在看哪一段
   const isOlder = convs.length > 1 && !!activeConv && convs[0]?.id !== activeConv.id
   // 当前这段是不是空的 —— 空段本来就是个新对话，再按「新对话」没有意义
@@ -320,7 +377,83 @@ export const AiPanelComp = observer(() => {
       <style>{AI_MD_CSS}{AI_ACTIVITY_CSS}</style>
       {/* 头 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 44, boxSizing: 'border-box', flexShrink: 0, padding: '0 12px', borderBottom: `1px solid ${line}`, fontSize: 12, color: muted, position: 'relative' }}>
-        <span style={{ flex: 1 }} />
+        <span style={{ flex: 1, minWidth: 4 }} />
+        {modelConfig ? (
+          <Autocomplete
+            options={modelChoices}
+            value={selectedModel}
+            groupBy={(option: any) => option.group}
+            getOptionLabel={(option: any) => option.name}
+            isOptionEqualToValue={(option: any, value: any) => option.value === value.value}
+            filterOptions={(options: any[], state) => {
+              const query = state.inputValue.trim().toLocaleLowerCase()
+              if (!query) return options
+              return options.filter((option) => `${option.name} ${option.group} ${option.value}`.toLocaleLowerCase().includes(query))
+            }}
+            autoHighlight
+            openOnFocus
+            disableClearable
+            PopperComponent={WideModelPopper}
+            title={modelSwitchQueued ? '本轮回复结束后切换模型' : modelConfig.name || modelConfigId || '选择模型'}
+            onChange={(_, option: any) => {
+              if (!option) return
+              S.selectModel(String(modelConfigId), option.value).catch((e) => {
+                console.error('[ai-panel] 切换模型失败', e)
+                S.loadActiveConfigOptions().catch(() => {})
+              })
+            }}
+            size="small"
+            sx={{
+              width: 'min(230px, 48vw)',
+              minWidth: 90,
+              '& .MuiOutlinedInput-root': {
+                height: 28,
+                padding: '0 6px !important',
+                border: `1px solid ${line}`,
+                borderRadius: '4px',
+                backgroundColor: 'var(--nk-canvas)',
+                color: ink,
+                fontSize: 12,
+                '& fieldset': { border: 0 },
+                '&:hover fieldset': { border: 0 },
+                '&.Mui-focused fieldset': { border: 0 },
+              },
+              '& .MuiAutocomplete-input': { padding: '0 !important', minWidth: '24px !important' },
+              '& .MuiAutocomplete-endAdornment': { right: 2 },
+              '& .MuiSvgIcon-root': { color: muted, fontSize: 18 },
+            }}
+            componentsProps={{
+              popper: { placement: 'bottom-end' },
+              paper: { sx: { backgroundColor: 'var(--nk-surface)', color: ink, border: `1px solid ${line}` } },
+              listbox: {
+                sx: {
+                  maxHeight: 360,
+                  padding: '4px 0',
+                  fontSize: 12,
+                  '& .MuiAutocomplete-option': { fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+                  '& .MuiAutocomplete-groupLabel': { whiteSpace: 'nowrap' },
+                },
+              },
+            }}
+            renderOption={(props, option: any) => (
+              <li
+                {...props}
+                title={`${option.name} · ${option.group}`}
+                style={{ ...props.style, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                {option.name}
+              </li>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="搜索模型"
+                inputProps={{ ...params.inputProps, 'aria-label': '搜索模型' }}
+              />
+            )}
+          />
+        ) : null}
+        {modelSwitchQueued ? <span style={{ color: muted, fontSize: 11, whiteSpace: 'nowrap' }}>回复后切换</span> : null}
         {/* 顶部不再放状态色点（D125F26FCF5E-22）：就绪时的绿点没有信息量、纯噪音；
             非就绪态本来就写文字，不需要再配一个点。agent 名+版本是内部实现细节，不进界面。 */}
         {S.state !== 'ready' && S.state !== 'busy' ? (
@@ -441,13 +574,13 @@ export const AiPanelComp = observer(() => {
                   ? '选中的块会作为主要对象。'
                   : '只带页面引用，正文由它自己按需读取。'}
                 <br />
-                点下方「归纳」或「下一步」一键开工，也可以直接说一句话：
+                直接说一句要它做什么：
               </>
             ) : (
               <>
-                打开一篇笔记后，它就能基于当前页面（或你选中的块）归纳、给下一步建议。
+                打开一篇笔记后，它就能读到当前页面（或你选中的块）。
                 <br />
-                也可以直接说一句话开工：
+                直接说一句要它做什么：
               </>
             )}
           </div>
@@ -471,7 +604,20 @@ export const AiPanelComp = observer(() => {
                 if (it.kind === 'user')
                   return (
                     <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '86%', background: 'var(--nk-hover)', borderRadius: 10, padding: '6px 10px', fontSize: 14, color: ink, lineHeight: 1.7 }}>
-                      {it.text}
+                      {it.text && <div>{it.text}</div>}
+                      {it.images?.map((image) => (
+                        image.dataUrl ? (
+                          <img
+                            key={image.id}
+                            src={image.dataUrl}
+                            alt={image.name}
+                            title={image.name}
+                            style={{ display: 'block', maxWidth: 220, maxHeight: 180, width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: 4, marginTop: it.text ? 6 : 0 }}
+                          />
+                        ) : (
+                          <div key={image.id} style={{ color: muted, fontSize: 12 }}>图片：{image.name}（历史记录不保留原图预览）</div>
+                        )
+                      ))}
                     </div>
                   )
 
@@ -503,7 +649,7 @@ export const AiPanelComp = observer(() => {
 
           if (it.kind === 'exit' || it.kind === 'error')
             return (
-              <div key={i} style={{ border: `1px solid #d9534f`, borderRadius: 6, padding: 9, fontSize: 13, color: '#d9534f', lineHeight: 1.7 }}>
+              <div key={i} style={{ border: `1px solid ${danger}`, borderRadius: 6, padding: 9, fontSize: 13, color: danger, lineHeight: 1.7 }}>
                 {it.kind === 'exit' ? '进程已退出：' : '出错了：'}
                 {it.text}
               </div>
@@ -521,68 +667,10 @@ export const AiPanelComp = observer(() => {
       {/* 输入区：**永远可见、永远可输入**。
           历史已从「只读快照」改成真会话 —— 切到哪一段，发的话就进那一段自己的 ACP 会话，
           所以没有"回看时不能打字"这回事了（旧的两态一并删掉）。 */}
-      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', flexShrink: 0 }}>
-        {/* 上下文行：这次请求带什么，一眼看清。选中块 > 页面（优先级在 AiContext 里定死）；
-            快捷操作与自由输入共用这份上下文 —— 一个事实只在一处说。 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, minHeight: 24 }}>
-          <span style={{ display: 'inline-flex', flexShrink: 0 }}>
-            <SvgIcon
-              name={aiContext?.mode === 'selection' ? 'svg_highlight' : 'svg_document'}
-              width={14}
-              color={muted}
-            />
-          </span>
-          <span
-            title={
-              aiContext
-                ? aiContext.mode === 'selection'
-                  ? '选中的块会随请求发给 AI（有截断上限），页面只作背景'
-                  : '只带当前页面的引用（ky + 标题），正文由 AI 按需自己读取'
-                : '打开一篇笔记后，这里会显示随请求发送的上下文'
-            }
-            style={{ fontSize: 12, color: muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          >
-            {aiContext ? `上下文：${contextLabel(aiContext)}` : '上下文：无（光标不在笔记内）'}
-          </span>
-          <span style={{ flex: 1 }} />
-          <button
-            className="ai-quick-btn"
-            onMouseDown={() => (opCtxRef.current = resolveNow())}
-            onClick={() => runOp('summarize')}
-            disabled={!aiContext || S.busy}
-            title={
-              aiContext
-                ? aiContext.mode === 'selection'
-                  ? `归纳这 ${aiContext.blocks.length} 个选中的块`
-                  : '归纳当前这篇笔记'
-                : '先打开一篇笔记（或选中几个块）再归纳'
-            }
-            style={{ fontSize: 12, flexShrink: 0 }}
-          >
-            <SvgIcon name="svg_list" width={14} />
-            归纳
-          </button>
-          <button
-            className="ai-quick-btn"
-            onMouseDown={() => (opCtxRef.current = resolveNow())}
-            onClick={() => runOp('suggest')}
-            disabled={!aiContext || S.busy}
-            title={
-              aiContext
-                ? aiContext.mode === 'selection'
-                  ? `基于这 ${aiContext.blocks.length} 个选中的块给下一步建议`
-                  : '基于当前这篇笔记给下一步建议'
-                : '先打开一篇笔记（或选中几个块）再要建议'
-            }
-            style={{ fontSize: 12, flexShrink: 0 }}
-          >
-            <SvgIcon name="svg_arrow_right2" width={14} />
-            下一步
-          </button>
-        </div>
+      <div style={{ borderTop: `1px solid ${line}`, padding: '8px 10px', flexShrink: 0, position: 'relative' }}>
         {/* 离底了就给个明确出口，别让人靠反复滚找输入框 */}
         {!atBottom && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+          <div style={{ position: 'absolute', right: 14, top: -15, zIndex: 1 }}>
             <button
               className="ai-icon-btn"
               onClick={jumpToBottom}
@@ -593,65 +681,115 @@ export const AiPanelComp = observer(() => {
             </button>
           </div>
         )}
-        <div style={{ display: 'flex', gap: 8 }}>
-          {/* textarea 支持换行（Shift+Enter 换行、Enter 发送），高度随内容长到 5 行封顶 */}
+        {/* 附图预览：贴进来先看得见，能单独撤掉；发送成功后才清空 */}
+        {S.pendingImages.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+            {S.pendingImages.map((im) => (
+              <div
+                key={im.id}
+                title={`${im.name} · ${Math.max(1, Math.round(im.bytes / 1024))}KB`}
+                style={{ position: 'relative', width: 52, height: 52, borderRadius: 4, overflow: 'hidden', border: `1px solid ${line}`, background: 'var(--nk-surface)' }}
+              >
+                <img src={im.dataUrl} alt={im.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <button
+                  className="ai-icon-btn"
+                  onClick={() => S.removeImage(im.id)}
+                  title="移除这张图"
+                  aria-label="移除这张图"
+                  style={{ position: 'absolute', top: 0, right: 0, width: 16, height: 16, padding: 0, borderRadius: 0, background: 'var(--nk-surface)', color: ink, opacity: 0.9 }}
+                >
+                  <SvgIcon name="svg_close" width={9} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {S.imageError && (
+          <div style={{ fontSize: 12, color: danger, marginBottom: 4 }}>{S.imageError}</div>
+        )}
+        <div className="ai-composer">
+          {/* 多行输入：Enter 发送、Shift+Enter 换行；从两行起，随内容长到约五行封顶 */}
           <textarea
             ref={inputRef}
             value={draft}
-            rows={1}
+            rows={2}
             onMouseDown={() => (opCtxRef.current = resolveNow())}
             onChange={(e) => setDraft(e.target.value)}
+            onPaste={(e) => {
+              // 剪贴板里有图 → 收下当附件，别让浏览器把它当二进制粘进文本框
+              const files = Array.from(e.clipboardData?.items ?? [])
+                .filter((it) => it.kind === 'file' && it.type.startsWith('image/'))
+                .map((it) => it.getAsFile())
+                .filter((f): f is File => !!f)
+              if (files.length === 0) return
+              e.preventDefault()
+              void S.addImages(files)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault()
                 send()
               }
             }}
-            placeholder={S.busy ? '它正在这一段里干活…（可点停止）' : '让它改这篇笔记，或问它点什么（Shift+Enter 换行）'}
-            style={{ flex: 1, font: 'inherit', fontSize: 13, padding: '6px 10px', borderRadius: 6, border: `1px solid ${line}`, background: 'var(--nk-surface)', color: ink, outline: 'none', resize: 'none', lineHeight: 1.5, overflowY: 'auto' }}
+            placeholder={S.busy ? '它正在这一段里干活…（可点停止）' : '发消息给它…（Enter 发送，Shift+Enter 换行）'}
+            style={{ display: 'block', boxSizing: 'border-box', width: '100%', minHeight: 44, font: 'inherit', fontSize: 14, padding: '2px 4px', border: 0, background: 'transparent', color: ink, outline: 'none', resize: 'none', lineHeight: 1.6, overflowY: 'auto' }}
           />
-          {S.busy ? (
-            <button
-              className="ai-icon-btn"
-              onClick={() => S.cancel()}
-              title="停止"
-              aria-label="停止"
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginTop: 2, minHeight: 30 }}>
+            <span style={{ display: 'inline-flex', flexShrink: 0 }}>
+              <SvgIcon
+                name={aiContext?.mode === 'selection' ? 'svg_highlight' : 'svg_document'}
+                width={13}
+                color={muted}
+              />
+            </span>
+            <span
+              title={
+                aiContext
+                  ? aiContext.mode === 'selection'
+                    ? '选中的块会随请求发给 AI（有截断上限），页面只作背景'
+                    : '只带当前页面的引用（ky + 标题），正文由 AI 按需自己读取'
+                  : '打开一篇笔记后，这里会显示随请求发送的上下文'
+              }
+              style={{ minWidth: 0, fontSize: 11, color: muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             >
-              <SvgIcon name="svg_stop" width={16} />
-            </button>
-          ) : (
-            <button
-              className="ai-icon-btn"
-              onClick={send}
-              title="发送"
-              aria-label="发送"
-              style={{ opacity: draft.trim() ? 1 : 0.45 }}
-            >
-              <SvgIcon name="svg_send" width={18} />
-            </button>
-          )}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 12, color: muted }}>
-          {!S.busy && S.snapCount > 0 && (
-            <button
-              className="ai-quick-btn"
-              onClick={async () => {
-                const n = await S.undoTurn()
-                if (n > 0) S.clear()
-              }}
-              title={`撤销本次 AI 改动（${S.snapCount} 个节点）`}
-              aria-label={`撤销本次 AI 改动（${S.snapCount} 个节点）`}
-            >
-              <SvgIcon name="svg_restore" width={14} />
-              撤销改动<span style={{ color: muted }}>{S.snapCount}</span>
-            </button>
-          )}
-          <span>
-            {S.usage.used ? `${(S.usage.used / 1000).toFixed(1)}k / ${(S.usage.size / 1000).toFixed(0)}k` : '未占用'}
-          </span>
-          <span style={{ flex: 1, height: 2, background: line, borderRadius: 2, overflow: 'hidden' }}>
-            <i style={{ display: 'block', height: '100%', background: acc, width: `${Math.min(100, (S.usage.used / Math.max(1, S.usage.size)) * 100)}%` }} />
-          </span>
+              {aiContext ? contextLabel(aiContext) : '无上下文'}
+            </span>
+            <span style={{ flex: 1 }} />
+            {!S.busy && S.snapCount > 0 && (
+              <button
+                className="ai-icon-btn"
+                onClick={async () => {
+                  const n = await S.undoTurn()
+                  if (n > 0) S.clear()
+                }}
+                title={`撤销本次 AI 改动（${S.snapCount} 个节点）`}
+                aria-label={`撤销本次 AI 改动（${S.snapCount} 个节点）`}
+              >
+                <SvgIcon name="svg_restore" width={15} />
+              </button>
+            )}
+            <UsageRing used={S.usage.used} size={S.usage.size} />
+            {S.busy ? (
+              <button
+                className="ai-icon-btn"
+                onClick={() => S.cancel()}
+                title="停止"
+                aria-label="停止"
+              >
+                <SvgIcon name="svg_stop" width={16} />
+              </button>
+            ) : (
+              <button
+                className="ai-icon-btn"
+                onClick={send}
+                title="发送"
+                aria-label="发送"
+                style={{ opacity: draft.trim() || S.pendingImages.length ? 1 : 0.45 }}
+              >
+                <SvgIcon name="svg_send" width={18} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

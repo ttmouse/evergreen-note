@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx'
 
 /** 面板里的一行。刻意不做"会话/消息"数据模型——它只是这一轮的流水。 */
 export type AiItem =
-  | { kind: 'user'; at: number; text: string }
+  | { kind: 'user'; at: number; text: string; images?: { id: string; name: string; dataUrl?: string }[] }
   | { kind: 'text'; at: number; text: string }
   | { kind: 'thought'; at: number; text: string; open: boolean }
   /**
@@ -30,6 +30,18 @@ export type NoteRef = {
   /** 页内被显式选中的块（AiContext.ts 组装，已截断）：服务端把它们内联进环境信息 */
   selection?: { blocks: { ky?: string; text: string }[] }
 } | null
+
+/**
+ * 待发送的一张附图。
+ * dataUrl 是完整 data URL（含 mime），服务端 ai-acp-routes.mjs 两种形状都收：
+ * `{dataUrl}` 或 `{data, mimeType}`；这里走前者，少一个字段就少一次写错的机会。
+ */
+export type AiDraftImage = {
+  id: string
+  dataUrl: string
+  name: string
+  bytes: number
+}
 
 /**
  * 一段对话。
@@ -65,6 +77,22 @@ const OLD_HISTORY_KEY = 'nk-ai-panel-history'
 const OLD_CURRENT_KEY = 'nk-ai-panel-current'
 const MAX_CONVERSATIONS = 30
 
+/** 一次最多带几张图（与服务端 ai-acp-routes.mjs 的 MAX_PROMPT_IMAGES 对齐） */
+const MAX_PENDING_IMAGES = 8
+/** 单张原图上限：服务端收 16M 字符 base64 ≈ 12MB 原图，客户端按原图字节先卡一道 */
+const MAX_IMAGE_BYTES = 12 * 1024 * 1024
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']
+
+/** File → data URL。失败时抛错，由调用方转成用户看得见的一句话。 */
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => (typeof r.result === 'string' ? resolve(r.result) : reject(new Error('读不出图片数据')))
+    r.onerror = () => reject(r.error ?? new Error('图片读取失败'))
+    r.readAsDataURL(file)
+  })
+}
+
 /**
  * AI 面板的唯一状态源。
  * 纪律（方案 §4）：exit / error 必须显式落到界面上，绝不留静默挂起。
@@ -84,6 +112,11 @@ export class AiPanelStore {
   busyBy: Record<string, boolean> = {}
   /** 会话级用量（底部进度条） */
   usageBy: Record<string, { used: number; size: number }> = {}
+  /** ACP 动态配置按会话缓存，当前用于模型下拉。 */
+  configOptionsBySession: Record<string, any[]> = {}
+  modelChanging = false
+  /** 生成中用户选的模型，等本轮结束后应用到下一轮。 */
+  pendingModelBySession: Record<string, { configId: string; value: string }> = {}
 
   /** agent 进程级状态（与具体会话无关） */
   agentState: 'stopped' | 'starting' | 'ready' = 'stopped'
@@ -93,15 +126,25 @@ export class AiPanelStore {
   connected = false
   error: string | null = null
 
+  /**
+   * 待发送的附图。只活在内存里，不进 localStorage —— base64 体积大，刷新后也没必要留着。
+   * 发送成功才清空；失败保留，免得让人重贴一遍。
+   */
+  pendingImages: AiDraftImage[] = []
+  /** 收图被拒的原因（格式/体积/张数）。非 null 时面板要显式提示，不静默吞掉。 */
+  imageError: string | null = null
+
   /** 本回合 AI 改动的节点数（>0 且不在 busy 时，可撤销） */
   snapCount = 0
   undoing = false
   private undoImpl: { undoTurn: () => Promise<number>; beginTurn: () => void } | null = null
 
   private es: EventSource | null = null
+  /** 图片原件只在回合进行期间保留；历史仅记录文件名，避免 localStorage 被 base64 撑满。 */
+  private sentImagesBySession = new Map<string, AiDraftImage[]>()
 
   constructor() {
-    makeAutoObservable(this, { es: false })
+    makeAutoObservable(this, { es: false, sentImagesBySession: false })
     this.load()
   }
 
@@ -212,9 +255,17 @@ export class AiPanelStore {
 
   private persist() {
     try {
+      const conversations = this.conversations.slice(0, MAX_CONVERSATIONS).map((conv) => ({
+        ...conv,
+        items: conv.items.map((item) =>
+          item.kind === 'user' && item.images
+            ? { ...item, images: item.images.map(({ id, name }) => ({ id, name })) }
+            : item
+        ),
+      }))
       localStorage.setItem(
         KEY,
-        JSON.stringify({ activeId: this.activeId, conversations: this.conversations.slice(0, MAX_CONVERSATIONS) })
+        JSON.stringify({ activeId: this.activeId, conversations })
       )
     } catch {}
   }
@@ -324,7 +375,20 @@ export class AiPanelStore {
 
   apply(ev: any) {
     const scoped = !!ev.sessionId
+    const sid: string | undefined = ev.sessionId
     runInAction(() => {
+      if (ev.type === 'config' && ev.sessionId) {
+        if (Array.isArray(ev.configOptions)) {
+          const pending = this.pendingModelBySession[ev.sessionId]
+          const options = pending
+            ? ev.configOptions.map((option: any) =>
+                (option?.configId ?? option?.id) === pending.configId ? { ...option, currentValue: pending.value } : option
+              )
+            : ev.configOptions
+          this.configOptionsBySession = { ...this.configOptionsBySession, [ev.sessionId]: options }
+        }
+        return
+      }
       if (ev.type === 'hello' || ev.type === 'ready') {
         this.agentState = ev.sessionId ? 'ready' : 'starting'
         this.sessionId = ev.sessionId ?? this.sessionId
@@ -348,18 +412,34 @@ export class AiPanelStore {
       // 服务端把某条会话换成了别的 id（resume 后拿到不同 id / 旧会话已不存在时降级）
       if (ev.type === 'session_remap') {
         for (const c of this.conversations) if (c.acpSessionId === ev.from) c.acpSessionId = ev.sessionId
+        const sendingImages = this.sentImagesBySession.get(ev.from)
+        if (sendingImages) {
+          this.sentImagesBySession.set(ev.sessionId, sendingImages)
+          this.sentImagesBySession.delete(ev.from)
+        }
         return
       }
 
       const conv = this.conversationFor(ev.sessionId)
       if (!conv) return
 
-      const sid: string | undefined = ev.sessionId
       switch (ev.type) {
         case 'turn_start':
           if (sid) this.busyBy = { ...this.busyBy, [sid]: true }
           this.undoImpl?.beginTurn()
-          conv.items.push({ kind: 'user', at: ev.at, text: ev.text ?? '' })
+          {
+            const sentImages = sid ? this.sentImagesBySession.get(sid) ?? [] : []
+            const acceptedCount = Math.max(0, Math.min(sentImages.length, Number(ev.images) || 0))
+            conv.items.push({
+              kind: 'user',
+              at: ev.at,
+              text: ev.text ?? '',
+              ...(acceptedCount > 0
+                ? { images: sentImages.slice(0, acceptedCount).map(({ id, name, dataUrl }) => ({ id, name, dataUrl })) }
+                : {}),
+            })
+            if (sid) this.sentImagesBySession.delete(sid)
+          }
           break
         case 'text': {
           const i = this.lastIndex(conv.items, 'text')
@@ -429,6 +509,7 @@ export class AiPanelStore {
           break
         case 'error':
           if (sid) this.busyBy = { ...this.busyBy, [sid]: false }
+          if (sid) this.sentImagesBySession.delete(sid)
           this.error = ev.message ?? '未知错误'
           conv.items.push({ kind: 'error', at: ev.at ?? Date.now(), text: this.error! })
           break
@@ -439,6 +520,9 @@ export class AiPanelStore {
     })
 
     if (!scoped || ['turn_end', 'cancel_sent', 'error', 'permission_result'].includes(ev.type)) this.persist()
+    if (sid && ['turn_end', 'cancel_sent', 'error'].includes(ev.type) && this.pendingModelBySession[sid]) {
+      void this.flushPendingModel(sid)
+    }
   }
 
   // ------------------------------------------------------------------ 动作
@@ -457,14 +541,168 @@ export class AiPanelStore {
       }
       if (j?.agent) this.agent = j.agent
       if (j?.sessionId) this.agentState = 'ready'
+      if (j?.sessionId && Array.isArray(j.configOptions)) this.configOptionsBySession = { ...this.configOptionsBySession, [j.sessionId]: j.configOptions }
     })
     this.persist()
     return j
   }
 
+  /** 确保当前对话有 ACP session，并加载由 agent 提供的配置项。 */
+  async loadActiveConfigOptions() {
+    let conv = this.active
+    if (!conv) conv = this.newConversation()
+    if (conv.legacy && !conv.acpSessionId) await this.ensureSession()
+    if (!conv.acpSessionId) {
+      const created = await fetch(`${API}/session/new`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      const j = await created.json()
+      if (!created.ok || !j?.sessionId) throw new Error(j?.error || `HTTP ${created.status}`)
+      runInAction(() => {
+        conv!.acpSessionId = j.sessionId
+        this.sessionId = j.sessionId
+        this.agentState = 'ready'
+        if (Array.isArray(j.configOptions)) this.configOptionsBySession = { ...this.configOptionsBySession, [j.sessionId]: j.configOptions }
+      })
+      this.persist()
+      return j.configOptions || []
+    }
+    const response = await fetch(`${API}/session/config`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: conv.acpSessionId }),
+    })
+    const j = await response.json()
+    if (!response.ok) throw new Error(j?.error || `HTTP ${response.status}`)
+    if (Array.isArray(j?.configOptions)) runInAction(() => {
+      this.configOptionsBySession = { ...this.configOptionsBySession, [j.sessionId || conv!.acpSessionId!]: j.configOptions }
+    })
+    return j.configOptions || []
+  }
+
+  async selectModel(configId: string, value: string) {
+    const sid = this.active?.acpSessionId
+    if (!sid) return
+    if (this.busyBy[sid] || this.modelChanging) {
+      this.queueModelSwitch(sid, configId, value)
+      return
+    }
+    this.modelChanging = true
+    try {
+      await this.requestModelOption(sid, configId, value)
+    } finally {
+      runInAction(() => { this.modelChanging = false })
+      this.flushPendingModel(sid)
+    }
+  }
+
+  private queueModelSwitch(sessionId: string, configId: string, value: string) {
+    runInAction(() => {
+      this.pendingModelBySession = { ...this.pendingModelBySession, [sessionId]: { configId, value } }
+      this.configOptionsBySession = {
+        ...this.configOptionsBySession,
+        [sessionId]: (this.configOptionsBySession[sessionId] || []).map((option: any) =>
+          (option?.configId ?? option?.id) === configId ? { ...option, currentValue: value } : option
+        ),
+      }
+    })
+  }
+
+  private async requestModelOption(sessionId: string, configId: string, value: string) {
+    const response = await fetch(`${API}/config-option`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, configId, value }),
+    })
+    const j = await response.json()
+    if (!response.ok || !j?.ok) throw new Error(j?.error || `HTTP ${response.status}`)
+    runInAction(() => {
+      const options = Array.isArray(j.configOptions) ? j.configOptions : this.configOptionsBySession[sessionId] || []
+      this.configOptionsBySession = {
+        ...this.configOptionsBySession,
+        [sessionId]: options.map((option: any) =>
+          (option?.configId ?? option?.id) === configId
+            ? { ...option, currentValue: this.pendingModelBySession[sessionId]?.value ?? value }
+            : option
+        ),
+      }
+    })
+  }
+
+  private async flushPendingModel(sessionId: string) {
+    const pending = this.pendingModelBySession[sessionId]
+    if (!pending || this.busyBy[sessionId] || this.modelChanging) return
+    runInAction(() => {
+      this.modelChanging = true
+      const { [sessionId]: _sent, ...remaining } = this.pendingModelBySession
+      this.pendingModelBySession = remaining
+    })
+    try {
+      await this.requestModelOption(sessionId, pending.configId, pending.value)
+    } catch (e: any) {
+      const conv = this.conversationFor(sessionId)
+      runInAction(() => {
+        const { [sessionId]: _failed, ...remaining } = this.pendingModelBySession
+        this.pendingModelBySession = remaining
+        const message = `切换模型失败：${e?.message ?? e}`
+        if (conv) conv.items.push({ kind: 'error', at: Date.now(), text: message })
+      })
+      this.persist()
+    } finally {
+      runInAction(() => { this.modelChanging = false })
+      if (this.pendingModelBySession[sessionId] && !this.busyBy[sessionId]) this.flushPendingModel(sessionId)
+    }
+  }
+
+  /**
+   * 收下一批图（粘贴进来的、文件选择器选的都走这里）。
+   * 逐张体检：格式、体积、张数；不合规的**记原因**并返回，不静默丢弃。
+   * @returns 实际收下的张数
+   */
+  async addImages(files: FileList | File[] | null | undefined): Promise<number> {
+    const list = Array.from(files ?? [])
+    if (list.length === 0) return 0
+    const rejected: string[] = []
+    const accepted: AiDraftImage[] = []
+    for (const f of list) {
+      const name = f.name || '图片'
+      const type = (f.type || '').toLowerCase()
+      if (!IMAGE_TYPES.includes(type)) {
+        rejected.push(`${name} 不是 png/jpeg/gif/webp`)
+        continue
+      }
+      if (f.size > MAX_IMAGE_BYTES) {
+        rejected.push(`${name} 超过 ${Math.round(MAX_IMAGE_BYTES / 1024 / 1024)}MB`)
+        continue
+      }
+      if (this.pendingImages.length + accepted.length >= MAX_PENDING_IMAGES) {
+        rejected.push(`一次最多 ${MAX_PENDING_IMAGES} 张`)
+        break
+      }
+      try {
+        const dataUrl = await readAsDataUrl(f)
+        accepted.push({ id: `${Date.now()}-${accepted.length}-${Math.random().toString(36).slice(2, 8)}`, dataUrl, name, bytes: f.size })
+      } catch (e: any) {
+        rejected.push(`${name} 读取失败：${e?.message ?? e}`)
+      }
+    }
+    runInAction(() => {
+      if (accepted.length > 0) this.pendingImages = [...this.pendingImages, ...accepted]
+      this.imageError = rejected.length > 0 ? [...new Set(rejected)].join('；') : null
+    })
+    return accepted.length
+  }
+
+  removeImage(id: string) {
+    this.pendingImages = this.pendingImages.filter((im) => im.id !== id)
+    this.imageError = null
+  }
+
+  clearImages() {
+    this.pendingImages = []
+    this.imageError = null
+  }
+
   async send(text: string, note: NoteRef) {
     const t = text.trim()
     if (!t || this.busy) return
+    // 本轮带图：形状对齐服务端 imageBlocksOf 的 { dataUrl } 分支
+    const submittedImages = [...this.pendingImages]
+    const images = submittedImages.map((im) => ({ dataUrl: im.dataUrl }))
     const conv = this.activeOrCreate()
     this.error = null
     // 这一段还没有自己的会话 → 现开一条（各段互不污染）
@@ -489,12 +727,35 @@ export class AiPanelStore {
       }
     }
     try {
-      await fetch(`${API}/prompt`, {
+      if (conv.acpSessionId && submittedImages.length > 0) {
+        this.sentImagesBySession.set(conv.acpSessionId, submittedImages)
+      }
+      const r = await fetch(`${API}/prompt`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: t, note, sessionId: conv.acpSessionId }),
+        body: JSON.stringify({
+          text: t,
+          note,
+          sessionId: conv.acpSessionId,
+          ...(images.length > 0 ? { images } : {}),
+        }),
+      })
+      // 以前不看响应：400（如空提示词）会被当成发送成功，用户只看到「点了没反应」。
+      const result = await r.json().catch(() => null)
+      if (!r.ok) {
+        throw new Error(result?.error || `HTTP ${r.status}`)
+      }
+      // 按服务端实际接收数移除附件；被拒绝的图留在输入区，并说明原因，避免静默丢失。
+      if (images.length > 0) runInAction(() => {
+        const acceptedCount = Math.max(0, Math.min(submittedImages.length, Number(result?.images) || 0))
+        const acceptedIds = new Set(submittedImages.slice(0, acceptedCount).map((im) => im.id))
+        this.pendingImages = this.pendingImages.filter((im) => !acceptedIds.has(im.id))
+        this.imageError = acceptedCount < submittedImages.length
+          ? `${submittedImages.length - acceptedCount} 张图片未被服务端接收，已保留在输入区。`
+          : null
       })
     } catch (e: any) {
+      if (conv.acpSessionId) this.sentImagesBySession.delete(conv.acpSessionId)
       // 发送失败必须落到界面上（纪律：绝不留静默挂起）——此时 turn_start 还没来，
       // 不主动推一条 error 行的话，用户看到的就只是「点了没反应」。
       runInAction(() => {

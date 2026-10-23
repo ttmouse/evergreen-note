@@ -121,6 +121,8 @@
   --popup-menu-input-border: #dddddd;
   --node-btn-hover: #0a84ff;
   --nk-hint: #a36a00;
+  /* 失败/危险语义（错误气泡、上传失败提示）。原先散落三处裸 hex，收为 token。 */
+  --nk-danger: #d9534f;
 }
 body:not(.night-mode) {
   background: var(--nk-canvas);
@@ -813,6 +815,7 @@ body.night-mode {
   --popup-menu-input-border: #3a4149;
   --node-btn-hover: #69adff;
   --nk-hint: #e0b25c;
+  --nk-danger: #e57368;
   /* Legacy surface aliases: NightMode injects a maroon --body-bg-color at
      :root that FloatBar/StatusBar/TagsEl still read. Route them to the
      note surface instead (same role as the day theme's #fff). */
@@ -1326,13 +1329,13 @@ html.mac-desktop .workspace-header-actions * {
 /* D125F26FCF5E-21：AI 面板顶部区块支持拖拽移动窗口。
    主窗口是 titleBarStyle:'hidden'，面板 header（蓝点 + 历史/新对话/收起那一行）
    不在任何既有 drag 区内，按住它拖不动窗口。这里把整条 header 设为 drag，
-   再把可点元素（按钮/输入/链接）和历史下拉（header 唯一的直接子 div）排除。
+   再把可点元素（按钮/输入/选择器/链接）和历史下拉（header 唯一的直接子 div）排除。
    不碰 AiPanelComp.tsx 的内联样式：header 恒为面板内 <style> 的相邻 div，
    用结构选择器命中，避免与同文件进行中的改动打架。 */
 html.mac-desktop .ai-panel-area > div > style + div {
   -webkit-app-region: drag;
 }
-html.mac-desktop .ai-panel-area > div > style + div :is(button, input, a, [role="button"]),
+html.mac-desktop .ai-panel-area > div > style + div :is(button, input, select, a, [role="button"]),
 html.mac-desktop .ai-panel-area > div > style + div > div {
   -webkit-app-region: no-drag;
 }
